@@ -1,0 +1,1228 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Read PDFs and screenshots aloud with word-by-word highlighting, skip citations and tables, and pause to write notes. Built to support readers with dyslexia.">
+<title>Read Aloud Notes</title>
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: reader column (upload → text → player) beside a notes column; stacks to one column on phones. */
+:root {
+  --bg: #edf2f0;
+  --surface: #f8fbfa;
+  --ink: #1f2a30;
+  --muted: #5b6a70;
+  --line: #cfdad6;
+  --accent: #1d6b66;
+  --accent-ink: #ffffff;
+  --sent: #fff1b8;
+  --word: #ffd45e;
+  --word-ink: #1f2a30;
+  --danger: #a33a2a;
+  --read-font: "Lexend", "Atkinson Hyperlegible", system-ui, sans-serif;
+  --ui-font: "Atkinson Hyperlegible", "Lexend", system-ui, sans-serif;
+  --read-size: 22px;
+  --read-leading: 1.8;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #151b1d; --surface: #1d2427; --ink: #e3e9e6; --muted: #9aaaa8; --line: #33403f;
+    --accent: #5fc0b6; --accent-ink: #0f1a19; --sent: #3a3522; --word: #e8c24e; --word-ink: #151b1d; --danger: #f08a78;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #151b1d; --surface: #1d2427; --ink: #e3e9e6; --muted: #9aaaa8; --line: #33403f;
+  --accent: #5fc0b6; --accent-ink: #0f1a19; --sent: #3a3522; --word: #e8c24e; --word-ink: #151b1d; --danger: #f08a78;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--ui-font); font-size: 17px; line-height: 1.5; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 48px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; margin-bottom: 20px; }
+h1 { font-family: var(--read-font); font-weight: 700; font-size: 1.9rem; letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+.tagline { color: var(--muted); margin: 0; }
+h2 { font-family: var(--read-font); font-weight: 500; font-size: 1.15rem; margin: 0; }
+
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 24px; align-items: start; }
+@media (max-width: 900px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; min-width: 0; }
+.stack { display: flex; flex-direction: column; gap: 16px; }
+
+button, select, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); padding: 10px 16px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
+button.big { min-height: 56px; padding-inline: 22px; font-size: 1.05rem; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+button.link { border: none; background: none; padding: 4px 6px; min-height: 0; color: var(--accent); text-decoration: underline; }
+button.danger { color: var(--danger); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+svg { width: 20px; height: 20px; flex: none; }
+
+/* Upload */
+.drop { border: 2px dashed var(--line); border-radius: 12px; padding: 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px; transition: border-color .15s, background .15s; }
+.drop.over { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.drop .thumb { width: 88px; height: 66px; border-radius: 8px; object-fit: cover; border: 1px solid var(--line); }
+.drop-text { flex: 1 1 220px; min-width: 0; }
+.drop-text strong { display: block; font-family: var(--read-font); font-weight: 500; }
+.drop-text span { color: var(--muted); font-size: 0.95rem; }
+.status { font-size: 0.95rem; color: var(--muted); min-height: 1.5em; }
+.status.error { color: var(--danger); }
+.example-tag { display: inline-block; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; }
+
+/* Reader */
+.reader-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.reader {
+  font-family: var(--read-font); font-size: var(--read-size); line-height: var(--read-leading);
+  letter-spacing: 0.02em; word-spacing: 0.12em; max-width: 62ch; overflow-wrap: anywhere;
+}
+.reader p { margin: 0 0 1em; }
+.reader .s { border-radius: 4px; transition: background .12s; cursor: pointer; }
+.reader .s.on { background: var(--sent); }
+.reader .w.on { background: var(--word); color: var(--word-ink); border-radius: 4px; box-shadow: 0 0 0 2px var(--word); }
+.reader .cite { color: var(--muted); text-decoration: underline dotted; text-underline-offset: 5px; }
+.reader .s.skip { color: var(--muted); cursor: default; }
+.reader .s.skip:hover { text-decoration: none; }
+.settings .check input { width: 20px; height: 20px; accent-color: var(--accent); }
+.reader .s:hover { text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 6px; }
+#editBox { width: 100%; min-height: 260px; font-family: var(--read-font); font-size: 1.05rem; line-height: 1.6; padding: 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); resize: vertical; }
+.hint { color: var(--muted); font-size: 0.92rem; margin: 0; }
+
+/* Player */
+.player { position: sticky; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 6px 24px color-mix(in srgb, var(--ink) 12%, transparent); }
+.controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.controls .spacer { flex: 1; }
+.settings { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; font-size: 0.95rem; }
+.settings label { display: flex; align-items: center; gap: 8px; }
+.settings select { max-width: 260px; min-width: 0; padding: 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); }
+.settings input[type=range] { width: 110px; accent-color: var(--accent); }
+.val { font-variant-numeric: tabular-nums; min-width: 3.2em; color: var(--muted); }
+
+/* Notes */
+.notes { position: sticky; top: calc(16px + env(safe-area-inset-top, 0px)); }
+@media (max-width: 900px) { .notes { position: static; } }
+.note-form { display: flex; flex-direction: column; gap: 10px; }
+.quote { font-family: var(--read-font); font-size: 0.95rem; color: var(--muted); border-left: 3px solid var(--word); padding: 4px 0 4px 12px; margin: 0; }
+#noteText { width: 100%; min-height: 120px; padding: 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); font-family: var(--read-font); font-size: 1.05rem; line-height: 1.6; resize: vertical; }
+.speak { justify-content: flex-start; }
+.speak.listening { border-color: var(--danger); color: var(--danger); }
+.dictate-tip[hidden] { display: none; }
+.dictate-tip { display: flex; flex-direction: column; gap: 4px; font-size: 0.95rem; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.note .spoken { display: inline-flex; align-items: center; gap: 4px; }
+.note .spoken svg { width: 14px; height: 14px; }
+.note-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.note { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.note .body { font-family: var(--read-font); white-space: pre-wrap; overflow-wrap: anywhere; }
+.note .meta { display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--muted); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+.empty { color: var(--muted); font-size: 0.95rem; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Read Aloud Notes</h1>
+    <p class="tagline">Upload a screenshot. Listen. Pause any time to write a note.</p>
+  </header>
+
+  <div class="grid">
+    <main class="stack">
+      <section class="panel stack" aria-labelledby="upHead">
+        <h2 id="upHead" class="sr">Add a screenshot</h2>
+        <div class="drop" id="drop">
+          <img class="thumb" id="thumb" alt="Your screenshot" hidden>
+          <div class="drop-text">
+            <strong>Add a screenshot or PDF</strong>
+            <span>Choose a file, drag it here, or paste a screenshot with Ctrl+V (⌘V on Mac).</span>
+          </div>
+          <input type="file" id="fileIn" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,.pdf" class="sr" tabindex="-1" aria-hidden="true">
+          <button class="primary big" id="pickBtn" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 17-5-5-8 8"/></svg>
+              Choose file
+            </button>
+        </div>
+        <div class="status" id="status" role="status" aria-live="polite"></div>
+      </section>
+
+      <section class="panel stack" aria-labelledby="textHead">
+        <div class="reader-head">
+          <div class="row">
+            <h2 id="textHead">Text</h2>
+            <span class="example-tag" id="exampleTag">Example text</span>
+          </div>
+          <button class="link" id="editBtn" type="button">Fix or paste text</button>
+        </div>
+        <p class="hint" id="tapHint">Tap any sentence to start reading from there.</p>
+        <div class="reader" id="reader"></div>
+        <div id="editWrap" class="stack" hidden>
+          <label for="editBox" class="hint">Change anything that was read wrongly, or paste your own text.</label>
+          <textarea id="editBox"></textarea>
+          <div class="row">
+            <button class="primary" id="saveEdit" type="button">Use this text</button>
+            <button id="cancelEdit" type="button">Cancel</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="player" aria-label="Reading controls">
+        <div class="controls">
+          <button class="primary big" id="playBtn" type="button" aria-label="Play">
+            <svg id="playIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5Z"/></svg>
+            <span id="playLabel">Play</span>
+          </button>
+          <button class="big" id="backBtn" type="button" title="Previous sentence">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 17 6 12l5-5M18 17l-5-5 5-5"/></svg>
+            <span class="sr">Previous sentence</span>
+          </button>
+          <button class="big" id="fwdBtn" type="button" title="Next sentence">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m13 17 5-5-5-5M6 17l5-5-5-5"/></svg>
+            <span class="sr">Next sentence</span>
+          </button>
+          <span class="spacer"></span>
+          <button class="big" id="noteBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            Pause &amp; note
+          </button>
+        </div>
+        <div class="settings">
+          <label for="voiceSel">Voice <select id="voiceSel"><option>Loading voices…</option></select></label>
+          <label for="rate">Speed <input type="range" id="rate" min="0.5" max="1.6" step="0.05" value="0.95"><span class="val" id="rateVal">0.95×</span></label>
+          <label for="size">Text size <input type="range" id="size" min="16" max="36" step="1" value="22"><span class="val" id="sizeVal">22px</span></label>
+          <label for="leading">Line gap <input type="range" id="leading" min="1.4" max="2.4" step="0.1" value="1.8"><span class="val" id="leadingVal">1.8</span></label>
+          <label for="proseOnly" class="check"><input type="checkbox" id="proseOnly" checked> Paragraphs only (skip tables, figures and captions)</label>
+          <label for="skipCites" class="check"><input type="checkbox" id="skipCites" checked> Skip citations and reference list</label>
+        </div>
+      </section>
+    </main>
+
+    <aside class="panel stack notes" aria-labelledby="notesHead">
+      <div class="reader-head">
+        <h2 id="notesHead">My notes</h2>
+        <span class="hint" id="saveWhere"></span>
+      </div>
+      <form class="note-form" id="noteForm">
+        <blockquote class="quote" id="noteQuote" hidden></blockquote>
+        <label for="noteText" class="sr">Write a note</label>
+        <textarea id="noteText" placeholder="Write or speak a note. Reading pauses while you do."></textarea>
+        <button type="button" id="speakNote" class="speak">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v4M8 21h8"/></svg>
+          <span id="speakLabel">Speak a note</span>
+        </button>
+        <div class="dictate-tip" id="dictateTip" role="note" hidden>
+          <strong>Speak, and your words are typed for you.</strong>
+          Tap the <b>microphone key</b> on your on-screen keyboard (on iPad it's next to the space bar), then talk. Tap it again when you're done.
+          <span class="hint">On a Mac, press the Globe or Fn key twice. On Windows, press Windows + H.</span>
+        </div>
+        <div class="row">
+          <button class="primary" type="submit" id="addNote">Save note</button>
+          <button type="button" id="saveResume">Save &amp; keep reading</button>
+        </div>
+      </form>
+      <ul class="note-list" id="noteList"></ul>
+      <div class="row" id="noteTools" hidden>
+        <button type="button" id="copyNotes">Copy all notes</button>
+        <button type="button" id="dlNotes" hidden>Download notes</button>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+  };
+
+  const EXAMPLE = `Dyslexia is a common learning difference that affects reading and spelling. It is not linked to intelligence (Snowling, 2019). Many people with dyslexia are strong at problem solving, creative thinking and seeing the bigger picture.
+
+Listening to text while following it on screen can make reading less tiring [4]. Try slowing the voice down, making the text bigger, or adding space between the lines until it feels comfortable.
+
+When something is important, press Pause & note and write down what you want to remember.`;
+
+  // ---------- Text model ----------
+  let sentences = []; // {text, spoken, map, el, words:[{start, el}], skip}
+  let isExample = true;
+  let rawText = "";
+
+  // Abbreviations that end in a full stop but don't end a sentence.
+  const ABBR = /^\(?(?:al|e\.g|i\.e|cf|vs|etc|pp?|figs?|eq|no|vol|eds?|dr|mrs?|ms|prof|st|jr|sr|approx|ca|[A-Z])\.$/i;
+  function splitSentences(para) {
+    const out = [];
+    let depth = 0, start = 0;
+    for (let i = 0; i < para.length; i++) {
+      const c = para[i];
+      if (c === "(" || c === "[") depth++;
+      else if (c === ")" || c === "]") depth = Math.max(0, depth - 1);
+      else if (depth === 0 && /[.!?…]/.test(c)) {
+        let j = i + 1;
+        while (j < para.length && /[.!?…"'”’)\]]/.test(para[j])) j++;
+        const citeAfter = para.slice(j).match(/^\s*\[[\d,\s–-]+\]/);
+        if (citeAfter) j += citeAfter[0].length;
+        if (j >= para.length || /^\s+["'“‘(\[]?[A-Z0-9]/.test(para.slice(j, j + 4))) {
+          const piece = para.slice(start, j);
+          const lastWord = (piece.match(/(\S+)$/) || [""])[0];
+          if (c === "." && ABBR.test(lastWord)) continue;
+          out.push(piece);
+          start = j;
+          i = j - 1;
+        }
+      }
+    }
+    if (start < para.length) out.push(para.slice(start));
+    return out.filter((x) => x.trim());
+  }
+
+  // In-text citations: (Smith, 2020; Jones & Lee, 2019a), Smith (2020, p. 4), [3], [2–5].
+  const YEAR = "(?:1[89]|20)\\d{2}[a-z]?|n\\.d\\.";
+  const CITE_RES = [
+    new RegExp(`\\((?=[^()]*\\b(?:${YEAR}))(?=[^()]*[A-Z])[^()]{2,400}\\)`, "g"),
+    new RegExp(`\\(\\s*(?:${YEAR})(?:\\s*[,;:]\\s*(?:pp?\\.\\s*)?(?:\\d+(?:\\s*[-–]\\s*\\d+)?|${YEAR}))*\\s*\\)`, "g"),
+    /\[\s*\d+(?:\s*[-–,]\s*\d+)*\s*\]/g,
+  ];
+  function citeRanges(t) {
+    const r = [];
+    for (const re of CITE_RES) { re.lastIndex = 0; let m; while ((m = re.exec(t))) r.push([m.index, m.index + m[0].length]); }
+    return r.sort((x, y) => x[0] - y[0]);
+  }
+  function inRanges(i, ranges) { return ranges.some(([a, b]) => i >= a && i < b); }
+  const REF_HEAD = /^(?:\d+\.?\s*)?(?:references?|reference list|bibliography|works cited)\.?$/i;
+
+  function render(text) {
+    stopReading();
+    rawText = text;
+    sentences = [];
+    const skipCites = $("skipCites").checked;
+    const reader = $("reader");
+    reader.textContent = "";
+    const paras = text.replace(/\r/g, "").split(/\n\s*\n|\n(?=\s*[-•*\d]+[.)]?\s)/).map((p) => p.replace(/\s*\n\s*/g, " ").trim()).filter(Boolean);
+    if (!paras.length) {
+      const p = document.createElement("p");
+      p.className = "hint";
+      p.textContent = "No text yet. Add a screenshot, a PDF, or paste some text.";
+      reader.append(p);
+    }
+    let inRefs = false;
+    for (const para of paras) {
+      if (skipCites && REF_HEAD.test(para)) inRefs = true;
+      const p = document.createElement("p");
+      for (const raw of splitSentences(para)) {
+        const sText = raw.trim();
+        const ranges = skipCites ? citeRanges(sText) : [];
+        let spoken = "";
+        const map = [];
+        for (let k = 0; k < sText.length; k++) {
+          if (inRanges(k, ranges)) continue;
+          spoken += sText[k]; map.push(k);
+        }
+        const skip = inRefs || !/[\p{L}\p{N}]/u.test(spoken);
+        const idx = sentences.length;
+        const sEl = document.createElement("span");
+        sEl.className = skip ? "s skip" : "s";
+        sEl.dataset.i = idx;
+        if (inRefs) sEl.title = "Reference list: skipped";
+        const words = [];
+        const re = /\S+/g;
+        let m, last = 0;
+        while ((m = re.exec(sText))) {
+          if (m.index > last) sEl.append(sText.slice(last, m.index));
+          const w = document.createElement("span");
+          w.className = !inRefs && inRanges(m.index, ranges) ? "w cite" : "w";
+          w.textContent = m[0];
+          sEl.append(w);
+          words.push({ start: m.index, el: w });
+          last = m.index + m[0].length;
+        }
+        p.append(sEl, " ");
+        sentences.push({ text: sText, spoken, map, el: sEl, words, skip });
+      }
+      reader.append(p);
+    }
+    cur = 0;
+    $("exampleTag").hidden = !isExample;
+    store.set("ran:text", text);
+    store.set("ran:example", isExample ? "1" : "0");
+  }
+
+  // The last extraction, with and without tables and figures, so the toggle can switch instantly.
+  let source = null;
+  function showSource(src) {
+    source = src;
+    try { store.set("ran:source", JSON.stringify(src)); } catch {}
+    render($("proseOnly").checked ? src.prose : src.full);
+  }
+  $("proseOnly").checked = store.get("ran:proseOnly") !== "0";
+  $("proseOnly").addEventListener("change", (e) => {
+    store.set("ran:proseOnly", e.target.checked ? "1" : "0");
+    if (source && source.full !== source.prose) render(e.target.checked ? source.prose : source.full);
+  });
+
+  $("skipCites").checked = store.get("ran:skipCites") !== "0";
+  $("skipCites").addEventListener("change", (e) => {
+    store.set("ran:skipCites", e.target.checked ? "1" : "0");
+    const at = cur;
+    render(rawText);
+    cur = Math.min(at, Math.max(0, sentences.length - 1));
+  });
+
+  $("reader").addEventListener("click", (e) => {
+    const s = e.target.closest(".s");
+    if (!s) return;
+    speakFrom(Number(s.dataset.i));
+  });
+
+  // ---------- Speech ----------
+  const synth = window.speechSynthesis;
+  let voices = [];
+  let cur = 0;
+  let playing = false;
+  let currentUtt = null;
+
+  function voiceScore(v) {
+    const n = v.name.toLowerCase();
+    let s = 0;
+    if (/natural|neural|online|premium|enhanced|siri/.test(n)) s += 50;
+    if (/google/.test(n)) s += 30;
+    if (/samantha|daniel|serena|karen|moira|aria|jenny|libby|sonia|ryan/.test(n)) s += 15;
+    const lang = (navigator.language || "en").toLowerCase();
+    const vl = v.lang.toLowerCase();
+    if (vl === lang) s += 20; else if (vl.slice(0, 2) === lang.slice(0, 2)) s += 12;
+    if (vl.startsWith("en")) s += 5;
+    if (/compact|espeak/.test(n)) s -= 30;
+    return s;
+  }
+
+  function loadVoices() {
+    if (!synth) return;
+    const list = synth.getVoices();
+    if (!list.length) return;
+    voices = list.slice().sort((a, b) => voiceScore(b) - voiceScore(a) || a.name.localeCompare(b.name));
+    const sel = $("voiceSel");
+    const saved = store.get("ran:voice");
+    sel.textContent = "";
+    voices.forEach((v, i) => {
+      const o = document.createElement("option");
+      o.value = v.voiceURI;
+      o.textContent = `${v.name} (${v.lang})${i === 0 ? " · best match" : ""}`;
+      sel.append(o);
+    });
+    if (saved && voices.some((v) => v.voiceURI === saved)) sel.value = saved;
+  }
+
+  if (!synth) {
+    $("status").textContent = "This browser can't speak text aloud. Try Chrome, Edge or Safari.";
+    $("status").classList.add("error");
+  } else {
+    loadVoices();
+    synth.addEventListener?.("voiceschanged", loadVoices);
+    setTimeout(loadVoices, 600);
+  }
+  $("voiceSel").addEventListener("change", (e) => {
+    store.set("ran:voice", e.target.value);
+    if (playing) speakFrom(cur);
+  });
+
+  function clearHighlights() {
+    document.querySelectorAll(".reader .on").forEach((el) => el.classList.remove("on"));
+  }
+  function markSentence(i) {
+    clearHighlights();
+    const s = sentences[i];
+    if (!s) return;
+    s.el.classList.add("on");
+    const r = s.el.getBoundingClientRect();
+    if (r.top < 80 || r.bottom > window.innerHeight - 200) {
+      s.el.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    }
+  }
+  function markWord(i, charIndex) {
+    const s = sentences[i];
+    if (!s) return;
+    let w = null;
+    for (const word of s.words) { if (word.start <= charIndex) w = word; else break; }
+    s.words.forEach((x) => x.el.classList.remove("on"));
+    if (w) w.el.classList.add("on");
+  }
+
+  function setPlayUI() {
+    $("playLabel").textContent = playing ? "Pause" : (cur > 0 && cur < sentences.length ? "Resume" : "Play");
+    $("playBtn").setAttribute("aria-label", $("playLabel").textContent);
+    $("playIcon").innerHTML = playing
+      ? '<rect x="6" y="4.5" width="4" height="15" rx="1"/><rect x="14" y="4.5" width="4" height="15" rx="1"/>'
+      : '<path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5Z"/>';
+  }
+
+  function speakNext() {
+    if (!playing) return;
+    while (cur < sentences.length && sentences[cur].skip) cur++;
+    if (cur >= sentences.length) { playing = false; cur = 0; clearHighlights(); setPlayUI(); return; }
+    const i = cur;
+    const u = new SpeechSynthesisUtterance(sentences[i].spoken);
+    const v = voices.find((x) => x.voiceURI === $("voiceSel").value);
+    if (v) { u.voice = v; u.lang = v.lang; }
+    u.rate = Number($("rate").value);
+    u.onboundary = (e) => { if (u === currentUtt && (!e.name || e.name === "word")) markWord(i, sentences[i].map[e.charIndex] ?? e.charIndex); };
+    u.onend = () => { if (u !== currentUtt || !playing) return; cur = i + 1; speakNext(); };
+    u.onerror = (e) => {
+      if (u !== currentUtt) return;
+      if (e.error === "interrupted" || e.error === "canceled") return;
+      playing = false; setPlayUI();
+      $("status").textContent = "The voice stopped unexpectedly. Press Play to try again, or pick another voice.";
+    };
+    currentUtt = u;
+    markSentence(i);
+    synth.speak(u);
+  }
+
+  function speakFrom(i) {
+    if (!synth || !sentences.length) return;
+    currentUtt = null;
+    synth.cancel();
+    cur = Math.max(0, Math.min(i, sentences.length - 1));
+    playing = true;
+    setPlayUI();
+    setTimeout(speakNext, 60);
+  }
+  function pauseReading() {
+    if (!playing) return;
+    playing = false;
+    currentUtt = null;
+    synth && synth.cancel();
+    setPlayUI();
+  }
+  function stopReading() {
+    playing = false; currentUtt = null; synth && synth.cancel(); clearHighlights(); setPlayUI();
+  }
+
+  $("playBtn").addEventListener("click", () => playing ? pauseReading() : speakFrom(cur));
+  $("backBtn").addEventListener("click", () => { const t = cur - 1; playing ? speakFrom(t) : (cur = Math.max(0, t), markSentence(cur), setPlayUI()); });
+  $("fwdBtn").addEventListener("click", () => { const t = cur + 1; if (t >= sentences.length) return; playing ? speakFrom(t) : (cur = t, markSentence(cur), setPlayUI()); });
+  // Chrome stops long speech in background tabs; keep things tidy if the page hides.
+  document.addEventListener("visibilitychange", () => { if (document.hidden) pauseReading(); });
+
+  // ---------- Reading settings ----------
+  function bindRange(id, valId, fmt, apply) {
+    const el = $(id);
+    const saved = store.get("ran:" + id);
+    if (saved) el.value = saved;
+    const update = () => { $(valId).textContent = fmt(el.value); apply(el.value); store.set("ran:" + id, el.value); };
+    el.addEventListener("input", update);
+    update();
+  }
+  bindRange("rate", "rateVal", (v) => Number(v).toFixed(2) + "×", () => {});
+  $("rate").addEventListener("change", () => { if (playing) speakFrom(cur); });
+  bindRange("size", "sizeVal", (v) => v + "px", (v) => document.documentElement.style.setProperty("--read-size", v + "px"));
+  bindRange("leading", "leadingVal", (v) => Number(v).toFixed(1), (v) => document.documentElement.style.setProperty("--read-leading", v));
+
+  // ---------- Edit text ----------
+  function currentText() { return sentences.length ? Array.from($("reader").querySelectorAll("p")).map((p) => p.textContent.trim()).join("\n\n") : ""; }
+  $("editBtn").addEventListener("click", () => {
+    pauseReading();
+    $("editBox").value = isExample ? "" : currentText();
+    $("editBox").placeholder = "Paste or type text here…";
+    $("reader").hidden = true; $("tapHint").hidden = true; $("editWrap").hidden = false; $("editBtn").hidden = true;
+    $("editBox").focus();
+  });
+  function closeEdit() { $("reader").hidden = false; $("tapHint").hidden = false; $("editWrap").hidden = true; $("editBtn").hidden = false; }
+  $("cancelEdit").addEventListener("click", closeEdit);
+  $("saveEdit").addEventListener("click", () => {
+    const t = $("editBox").value.trim();
+    if (t) { isExample = false; showSource({ full: t, prose: t }); }
+    closeEdit();
+  });
+
+  // ---------- Screenshot → text ----------
+  // First choice: Claude reads the image (most accurate). If that isn't available
+  // in this view, an OCR engine runs right here in the browser instead.
+  const samplePromise = window.claude ? window.claude.use("sample").catch(() => null) : Promise.resolve(null);
+  let ocrAbort = null;
+  let busy = false;
+
+  const PROMPT = "Transcribe the text in this screenshot so it can be read aloud to someone with dyslexia.\n" +
+    "Rules:\n- Copy the words exactly, in natural reading order (top to bottom, columns left to right).\n" +
+    "- Keep paragraph breaks as a blank line. Put each list item on its own line.\n" +
+    "- Leave out interface clutter such as menu labels, buttons, page numbers, timestamps and ads, unless they are part of the main content.\n" +
+    "- PARAGRAPHS_RULE\n" +
+    "- Join words that were hyphenated across lines.\n" +
+    "- Output only the transcribed text. No introduction, no comments. If there is no readable text, output exactly: NO_TEXT";
+
+  async function readWithClaude(file) {
+    const sample = await samplePromise;
+    if (!sample) return null;
+    const caps = await sample.limits().catch(() => null);
+    if (!caps?.images) return null;
+    if (caps.images.mediaTypes && !caps.images.mediaTypes.includes(file.type)) return null;
+    if (caps.images.maxInputBytes && file.size > caps.images.maxInputBytes) return null;
+    ocrAbort?.abort();
+    ocrAbort = new AbortController();
+    setStatus("Reading the words in your screenshot… this usually takes 10–30 seconds.");
+    try {
+      const rule = $("proseOnly").checked
+        ? "Only transcribe paragraphs of running text and their headings. Skip tables, charts, graphs, diagrams, figure labels, figure and table captions, footnotes and reference lists. Skip publishing small print such as copyright and licence notices, DOIs, author affiliations and addresses, email addresses, and received/accepted dates. If the screenshot shows an article's title, authors or publication date, put them first as: the title on one line, then 'By <authors>. Published <date>.' on the next."
+        : "Include everything readable, including tables and captions.";
+      const res = await sample(PROMPT.replace("PARAGRAPHS_RULE", rule), { images: file, signal: ocrAbort.signal });
+      return (res.text || "").trim();
+    } catch (e) {
+      if (e?.code === "cancelled") throw e;
+      if (e?.code === "rate_limited") setStatus("Claude is busy, so reading on this device instead…");
+      return null; // fall back to on-device reading
+    }
+  }
+
+  function loadScript(src) {
+    return new Promise((res, rej) => {
+      const s = document.createElement("script");
+      s.src = src; s.onload = res; s.onerror = rej;
+      document.head.append(s);
+    });
+  }
+  let workerPromise = null;
+  function getOcrWorker() {
+    if (workerPromise) return workerPromise;
+    workerPromise = (async () => {
+      if (!window.Tesseract) {
+        await loadScript("ocr/tesseract.min.js").catch(() => loadScript("https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"));
+      }
+      const base = new URL("ocr/", location.href).href;
+      return Tesseract.createWorker("eng", 1, {
+        workerPath: base + "boot-worker.js",
+        corePath: base,
+        langPath: base,
+        workerBlobURL: false,
+        logger: (m) => {
+          if (m.status === "recognizing text") setStatus(`Reading the words on this device… ${Math.round(m.progress * 100)}%`);
+          else if (/load/.test(m.status || "")) setStatus("Getting the reader ready (first time only)…");
+        },
+      });
+    })();
+    workerPromise.catch(() => { workerPromise = null; });
+    return workerPromise;
+  }
+
+  // Screenshots work best for OCR when they are large, grey and dark-on-light.
+  async function prepareImage(file) {
+    const bmp = await createImageBitmap(file);
+    const scale = Math.min(3, Math.max(1, 1800 / Math.max(bmp.width, 1)));
+    const c = document.createElement("canvas");
+    c.width = Math.round(bmp.width * scale); c.height = Math.round(bmp.height * scale);
+    const ctx = c.getContext("2d", { willReadFrequently: true });
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(bmp, 0, 0, c.width, c.height);
+    const img = ctx.getImageData(0, 0, c.width, c.height);
+    const d = img.data;
+    let sum = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      const g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+      d[i] = d[i + 1] = d[i + 2] = g; sum += g;
+    }
+    if (sum / (d.length / 4) < 110) { // dark mode screenshot: flip to dark text on light
+      for (let i = 0; i < d.length; i += 4) d[i] = d[i + 1] = d[i + 2] = 255 - d[i];
+    }
+    ctx.putImageData(img, 0, 0);
+    return c;
+  }
+
+  function tidyOcr(text) {
+    return text
+      .replace(/(\w)-\n(\w)/g, "$1$2")      // re-join words split across lines
+      .replace(/[ \t]+\n/g, "\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .replace(/[|¦]/g, "I")
+      .trim();
+  }
+
+  async function readOnDevice(file, label) {
+    setStatus("Getting the reader ready (first time only, about 10 seconds)…");
+    const worker = await Promise.race([
+      getOcrWorker(),
+      new Promise((_, rej) => setTimeout(() => rej(new Error("OCR start timed out")), 60000)),
+    ]);
+    const canvas = await prepareImage(file);
+    setStatus(label || "Reading the words on this device…");
+    const { data } = await worker.recognize(canvas);
+    return tidyOcr(data.text || "");
+  }
+
+  // ---------- PDF → text ----------
+  let pdfjsPromise = null;
+  function getPdfjs() {
+    if (pdfjsPromise) return pdfjsPromise;
+    pdfjsPromise = (async () => {
+      if (!window.pdfjsLib) {
+        await loadScript("pdf/pdf.min.js").catch(() => loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"));
+      }
+      pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdf/pdf.worker.min.js", location.href).href;
+      return pdfjsLib;
+    })();
+    pdfjsPromise.catch(() => { pdfjsPromise = null; });
+    return pdfjsPromise;
+  }
+
+  // Turn one page's text pieces into lines with their positions.
+  // Small raised numbers (superscript citations like ²⁷) stay on their line as "[27]".
+  const SUP_TEXT = /^[\d,\s–\-*†‡]+$/;
+  function pageLines(items) {
+    const lines = [];
+    let cur = null;
+    const push = () => { if (cur) lines.push(cur); cur = null; };
+    for (const it of items) {
+      const y = it.transform[5], x = it.transform[4], h = Math.abs(it.height || it.transform[3]) || 10;
+      let sup = false;
+      // A raised number that lands just after a line break belongs to the line before it.
+      const prev = lines[lines.length - 1];
+      if (!cur && prev && it.str && SUP_TEXT.test(it.str) && h < prev.h * 0.85 && y - prev.y > prev.h * 0.1 && y - prev.y < prev.h * 0.9) {
+        cur = lines.pop();
+      }
+      if (cur && it.str) {
+        const dy = y - cur.y;
+        sup = h < cur.h * 0.85 && dy > cur.h * 0.1 && dy < cur.h * 0.9 && SUP_TEXT.test(it.str);
+        if (!sup && Math.abs(dy) > Math.max(cur.h, h) * 0.6) push();
+      }
+      if (!cur) cur = { text: "", y, x, h, endX: x, gaps: 0, cells: [] };
+      if (it.str) {
+        if (sup) {
+          const t = it.str.replace(/\s+/g, "");
+          if (t) cur.text = cur.lastSup ? cur.text.replace(/\]$/, t + "]") : cur.text.replace(/\s+$/, "") + " [" + t + "]";
+          cur.lastSup = true;
+        } else {
+          if (cur.text.trim() && x - cur.endX > Math.max(h * 1.5, 8)) cur.gaps++;
+          if (cur.text && !/\s$/.test(cur.text) && !/^\s/.test(it.str) && (cur.lastSup || x - cur.endX > h * 0.15)) cur.text += " ";
+          cur.text += it.str;
+          cur.lastSup = false;
+          if (h > cur.h * 1.15 || !cur.text.trim()) { cur.h = h; cur.y = y; }
+        }
+        // A blank piece can stretch across a gap between table cells: don't let it hide the gap.
+        if (it.str.trim()) cur.endX = x + (it.width || 0);
+      }
+      if (it.hasEOL) push();
+    }
+    push();
+    return lines.map((l) => ({ ...l, text: l.text.replace(/\s+/g, " ").replace(/\[([\d,–\-]+?)[,]?\]/g, "[$1]").replace(/\]\s+([;,:.)])/g, "]$1").trim() })).filter((l) => l.text);
+  }
+
+  // ---------- Keeping only the paragraphs ----------
+  const CAPTION = /^(?:fig(?:ure)?|table|tab|chart|graph|diagram|plate|box|scheme|exhibit|appendix)s?\.?\s*(?:\d+|[IVX]+|[A-Z]\d*)\b|^(?:source|sources|note|notes|key|legend)\s*:/i;
+  function numericShare(t) { return (t.match(/[\d%±<>=]/g) || []).length / Math.max(t.length, 1); }
+  function wordCount(t) { return (t.match(/[A-Za-zÀ-ɏ]{2,}/g) || []).length; }
+  function endsSentence(t) { return /[.!?…]["'”’)\]]*$/.test(t) || /[.!?]["'”’)\]]*\s+\[[\d,–-]+\]$/.test(t); }
+
+  // Given blocks of text (paragraph candidates), keep real paragraphs and the headings above them.
+  // Rejoin pieces of one sentence that ended up in separate blocks (narrow columns, page or
+  // column breaks): a block that stops mid-sentence continues into the next one when that
+  // starts in lower case, or when the first stops on a joining word or comma.
+  const JOINING = /(?:^|\s)(?:and|or|but|nor|of|the|a|an|with|without|to|in|into|on|onto|by|for|from|as|at|than|that|which|who|whose|whom|between|among|within|through|across|such|their|its|this|these|those|is|are|was|were|be|been|not|very|more|most|less|both|either|neither|via|per|versus|vs\.)$/i;
+  function mergeFragments(blocks) {
+    const out = [];
+    for (const b of blocks) {
+      const last = out[out.length - 1];
+      if (last && !endsSentence(last.text) && !CAPTION.test(b.text) &&
+          (/^[a-z(‘'“"]/.test(b.text) || /[,\-–—(]$/.test(last.text) || JOINING.test(last.text))) {
+        last.text = /[A-Za-z]-$/.test(last.text) && /^[a-z]/.test(b.text) ? last.text.slice(0, -1) + b.text : last.text + " " + b.text;
+        last.h = Math.max(last.h || 0, b.h || 0);
+        last.gaps = (last.gaps || 0) + (b.gaps || 0);
+      } else out.push({ ...b });
+    }
+    return out;
+  }
+
+  // Blocks are strings, or {text, h, gaps} when the text size is known (PDFs).
+  function keepParagraphs(blocks, bodyH) {
+    const meta = mergeFragments(blocks.map((b) => typeof b === "string" ? { text: b } : b));
+    blocks = meta.map((m) => m.text);
+    const isProse = (b) => wordCount(b) >= 6 && numericShare(b) < 0.25 && (endsSentence(b) || wordCount(b) >= 18) && !CAPTION.test(b);
+    const prose = blocks.map(isProse);
+    return blocks.filter((b, i) => {
+      if (prose[i]) return true;
+      // A short heading is kept only when a paragraph follows it.
+      const m = meta[i];
+      if (m.gaps) return false;                                  // spread across the page like labels
+      if (bodyH && m.h && m.h < bodyH * 0.97) return false;      // smaller than the body text: a label, not a heading
+      const heading = /^[A-Z0-9\u00C0-\u00DE]/.test(b) && !JOINING.test(b) && !/,\s/.test(b) && wordCount(b) >= 1 && wordCount(b) <= 14 && b.length < 120 && numericShare(b) < 0.2 && !CAPTION.test(b) && !/[,;:]$/.test(b);
+      return heading && prose[i + 1];
+    }).map((b) => b);
+  }
+
+  function bodyHeight(pages) {
+    const sizes = new Map();
+    for (const l of pages.flat()) if (!l.ocr) { const k = Math.round(l.h * 2) / 2; sizes.set(k, (sizes.get(k) || 0) + l.text.length); }
+    return [...sizes.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || 10;
+  }
+
+  // Where the article proper begins, and publishing small print to leave out.
+  const BODY_START = /^(?:abstract|summary|introduction|background|(?:1|I)\.?\s+introduction)\b/i;
+  const JUNK = /©|\bdoi\b|doi\.org|downloaded from|creative ?commons|all rights reserved|open access article|this is an open access|licen[cs]ed? under|correspondence (?:address|to)|corresponding author|e-?mail\s*:|\breceived\s*:?\s*\d|\baccepted\s*:?\s*\d|\bpublished online\b|issn\b|^keywords?\b|^key ?words\b|for (?:commercial re-use|permissions)/i;
+
+  // Title, author and date from the first page (or the PDF's own details when they look right).
+  function buildHeader(pages, info, bodyH) {
+    const first = (pages[0] || []).filter((l) => !l.ocr && !JUNK.test(l.text));
+    const clean = (t) => t.replace(/\[[^\]]*\]|[*†‡§¶]|\d+(?=,|$)/g, "").replace(/\s+/g, " ").replace(/\s+,/g, ",").trim();
+    // Title: the biggest text on page 1, across consecutive lines.
+    let title = "";
+    const big = first.filter((l) => wordCount(l.text) >= 2);
+    const maxH = Math.max(0, ...big.map((l) => l.h));
+    let titleEnd = -1;
+    if (maxH >= bodyH * 1.25) {
+      const i0 = first.findIndex((l) => l.h >= maxH * 0.95 && wordCount(l.text) >= 2);
+      let i = i0;
+      const parts = [];
+      while (i < first.length && first[i].h >= maxH * 0.9) { parts.push(first[i].text); i++; }
+      title = parts.join(" ").replace(/\s+/g, " ").trim();
+      titleEnd = i;
+    }
+    const metaTitle = (info?.Title || "").trim();
+    if ((!title || wordCount(title) < 2) && metaTitle.length > 12 && wordCount(metaTitle) >= 3 && !/\.(?:pdf|docx?)$|^microsoft|^untitled/i.test(metaTitle)) title = metaTitle;
+    // Author: a short line of names near the title.
+    const NOT_NAMES = /universit|department|faculty|school|institut|college|hospital|centre|center|journal|abstract|press|access|article|review|research|original|volume|issue|vol\.|licen|copyright|keywords|editor|introduction|background|@|http/i;
+    const looksLikeNames = (t) => {
+      const c = clean(t).replace(/\band\b|&/g, ",");
+      if (!c || /\d/.test(c) || NOT_NAMES.test(t) || c.length > 200) return false;
+      const names = c.split(/\s*,\s*/).filter(Boolean);
+      return names.length >= 1 && names.every((n) => /^(?:[A-Z][\p{L}'’\-]*\.?\s+){1,3}[A-Z][\p{L}'’\-]+$/u.test(n));
+    };
+    let author = "";
+    const order = titleEnd >= 0 ? [...first.slice(titleEnd), ...first.slice(0, titleEnd)] : first;
+    for (const l of order) { if (BODY_START.test(l.text)) break; if (looksLikeNames(l.text)) { author = clean(l.text); break; } }
+    const metaAuthor = (info?.Author || "").trim();
+    if (!author && metaAuthor.length > 3 && metaAuthor.length < 200 && /[A-Z][a-z]+\s+[A-Z]/.test(metaAuthor)) author = metaAuthor;
+    // Date: published, then accepted, then the copyright year.
+    const frontText = (pages[0] || []).map((l) => l.text).join(" ");
+    const DATE = "(\\d{1,2}\\s+[A-Z][a-z]+\\.?\\s+(?:19|20)\\d{2}|[A-Z][a-z]+\\.?\\s+\\d{1,2},?\\s+(?:19|20)\\d{2}|[A-Z][a-z]+\\s+(?:19|20)\\d{2})";
+    let date = "";
+    for (const word of ["published(?: online)?", "accepted", "available online"]) {
+      const m = frontText.match(new RegExp(word + "\\s*:?\\s*(?:on\\s+)?" + DATE, "i"));
+      if (m) { date = m[1]; break; }
+    }
+    if (!date) { const m = frontText.match(/©\s*(?:the authors?\(?s?\)?\s*)?((?:19|20)\d{2})/i); if (m) date = m[1]; }
+    const out = [];
+    if (title) out.push(title);
+    const line = [author && `By ${author}.`, date && `Published ${date}.`].filter(Boolean).join(" ");
+    if (line) out.push(line);
+    return out;
+  }
+
+  function linesToText(pages, proseOnly, header) {
+    // Running headers and footers repeat on most pages: drop them, and bare page numbers.
+    const key = (t) => t.toLowerCase().replace(/\d+/g, "#");
+    const counts = new Map();
+    for (const lines of pages) for (const k of new Set(lines.map((l) => key(l.text)))) counts.set(k, (counts.get(k) || 0) + 1);
+    const repeated = (t) => pages.length >= 3 && t.length < 90 && counts.get(key(t)) >= Math.max(3, pages.length * 0.5);
+    const lens = pages.flat().map((l) => l.text.length).sort((a, b) => a - b);
+    const typical = lens[Math.floor(lens.length * 0.75)] || 60;
+    // The body text size is the size most of the words are set in.
+    const bodyH = bodyHeight(pages);
+
+    // Body paragraphs start at a few shared left edges (one per text column).
+    // Table cells and diagram labels start somewhere else.
+    const edgeChars = new Map();
+    let allChars = 0;
+    for (const l of pages.flat()) if (!l.ocr) { const k = Math.round(l.x / 3); edgeChars.set(k, (edgeChars.get(k) || 0) + l.text.length); allChars += l.text.length; }
+    const edges = [...edgeChars.entries()].filter(([, c]) => c >= allChars * 0.08).map(([k]) => k * 3);
+    const offEdge = (l) => edges.length > 0 && allChars > 1500 && l.h <= bodyH * 1.1 &&
+      Math.min(...edges.map((e) => Math.abs(l.x - e))) > Math.max(l.h * 2.5, 15);
+
+    const lineIsFurniture = (l) => {
+      if (l.ocr) return false;
+      const t = l.text;
+      if (l.gaps >= 1) return true;                                                    // table row: cells side by side
+      if (offEdge(l)) return true;                                                     // table column or label
+      if (numericShare(t) > 0.3) return true;                                          // numbers, axes
+      if (l.h < bodyH * 0.87) return true;                                             // captions, labels, footnotes, table text
+      return false;
+    };
+
+    const blocks = [];
+    for (const [pageNo, lines] of pages.entries()) {
+      const keep = lines.filter((l) => !/^(?:page\s*)?\d{1,4}(?:\s*(?:of|\/)\s*\d+)?$/i.test(l.text) && !repeated(l.text));
+      let prev = null, inCaption = false, block = null;
+      let bh = 0, bg = 0;
+      const close = () => { if (block) blocks.push({ text: block, h: bh, gaps: bg, page: pageNo }); block = null; };
+      for (const l of keep) {
+        // A paragraph that carries on from the previous page joins back up.
+        if (!prev && !block && blocks.length && !endsSentence(blocks[blocks.length - 1].text) && /^[a-z]/.test(l.text)) {
+          const last = blocks.pop();
+          block = last.text + " " + l.text; bh = last.h; bg = last.gaps; prev = l; continue;
+        }
+        const gap = prev ? prev.y - l.y : 0;
+        const prevShort = prev && block === prev.text && /^[A-Z0-9]/.test(prev.text) && wordCount(prev.text) <= 12 &&
+          prev.text.length < Math.min(l.text.length, typical) * 0.6 && !/[.,;:]$/.test(prev.text) && !JOINING.test(prev.text);
+        const newPara = !prev || gap < -2 || gap > Math.max(prev.h, l.h) * 1.9 || prevShort || l.h > prev.h * 1.25 || prev.h > l.h * 1.25;
+        prev = l;
+        if (proseOnly) {
+          if (newPara) inCaption = CAPTION.test(l.text);
+          if (inCaption || lineIsFurniture(l)) { close(); continue; }
+        }
+        if (newPara || !block) { close(); block = l.text; bh = l.h; bg = l.gaps || 0; }
+        else if (/[A-Za-z]-$/.test(block) && /^[a-z]/.test(l.text)) block = block.slice(0, -1) + l.text;
+        else block += " " + l.text;
+        if (block && !(newPara)) { bh = Math.max(bh, l.h); bg += l.gaps || 0; }
+      }
+      close();
+    }
+    if (!proseOnly) return mergeFragments(blocks).map((b) => b.text).join("\n\n");
+    // Front matter (licence, affiliations, dates) gives way to a short title / author / date line.
+    let body = blocks;
+    const start = blocks.findIndex((b) => b.page <= 1 && BODY_START.test(b.text));
+    if (start > 0) body = blocks.slice(start);
+    body = body.filter((b) => !(b.text.length < 900 && JUNK.test(b.text)));
+    const norm = (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, "");
+    const kept = keepParagraphs(body, bodyH).filter((t) => !header?.length || norm(t) !== norm(header[0]));
+    return [...(header || []), ...kept].join("\n\n");
+  }
+
+  async function readPdf(file) {
+    setStatus("Opening your PDF…");
+    const lib = await getPdfjs();
+    const doc = await lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()), isEvalSupported: false }).promise;
+    const pages = [];
+    let scanned = 0;
+    for (let n = 1; n <= doc.numPages; n++) {
+      setStatus(`Reading page ${n} of ${doc.numPages}…`);
+      const page = await doc.getPage(n);
+      const content = await page.getTextContent();
+      let lines = pageLines(content.items);
+      if (lines.map((l) => l.text).join("").replace(/\s/g, "").length < 25) {
+        // A scanned page has no text inside it: draw it and read the picture instead.
+        scanned++;
+        const vp = page.getViewport({ scale: 2 });
+        const c = document.createElement("canvas");
+        c.width = Math.ceil(vp.width); c.height = Math.ceil(vp.height);
+        await page.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
+        const t = await readOnDevice(c, `Page ${n} of ${doc.numPages} is a scanned image. Reading it on this device…`);
+        lines = t.split(/\n\s*\n/).map((para, k) => ({ text: para.replace(/\s*\n\s*/g, " ").trim(), y: -k * 1000, h: 10, gaps: 0, ocr: true })).filter((l) => l.text);
+      }
+      pages.push(lines);
+      page.cleanup();
+    }
+    const info = (await doc.getMetadata().catch(() => null))?.info || null;
+    doc.destroy();
+    let header = [];
+    try { header = buildHeader(pages, info, bodyHeight(pages)); } catch (e) { console.warn(e); }
+    return { full: linesToText(pages, false), prose: linesToText(pages, true, header), pages: pages.length, scanned };
+  }
+
+  function isPdf(file) { return file && (file.type === "application/pdf" || /\.pdf$/i.test(file.name || "")); }
+  async function handlePdf(file) {
+    if (busy) return;
+    busy = true;
+    pauseReading();
+    $("thumb").hidden = true;
+    $("pickBtn").disabled = true;
+    try {
+      const { full, prose, pages, scanned } = await readPdf(file);
+      if (!full.replace(/\W/g, "")) { setStatus("I couldn't find any text in that PDF.", true); return; }
+      isExample = false;
+      showSource({ full, prose: prose.trim() ? prose : full });
+      const what = pages === 1 ? "1 page" : `${pages} pages`;
+      setStatus(`Done: ${what} from “${file.name}”. Press Play to listen.` + (scanned ? ` ${scanned === 1 ? "One page was" : scanned + " pages were"} scanned images, so check those for odd words.` : ""));
+    } catch (e) {
+      console.error(e);
+      const pw = e?.name === "PasswordException";
+      setStatus(pw ? "That PDF is password-protected. Open it, save a copy without a password, then try again." : "Something went wrong opening that PDF. Try again, or copy the text from it and use “Fix or paste text”.", true);
+    } finally {
+      busy = false;
+      $("pickBtn").disabled = false;
+    }
+  }
+  function handleFile(file) { if (isPdf(file)) handlePdf(file); else handleImage(file); }
+
+  async function handleImage(file) {
+    if (!file || !file.type.startsWith("image/")) {
+      setStatus("That file type can't be read. Choose a PDF, or a PNG, JPG or WebP screenshot.", true);
+      return;
+    }
+    if (busy) return;
+    busy = true;
+    $("thumb").src = URL.createObjectURL(file); $("thumb").hidden = false;
+    pauseReading();
+    $("pickBtn").disabled = true;
+    setStatus("Getting ready…");
+    let how = "Claude";
+    try {
+      let text = await readWithClaude(file);
+      if (text === null) { how = "device"; text = await readOnDevice(file); }
+      if (!text || text === "NO_TEXT" || text.replace(/\W/g, "").length < 2) {
+        setStatus("I couldn't find any readable text in that image. Try a sharper or closer screenshot.", true);
+        return;
+      }
+      isExample = false;
+      if (how === "device") {
+        const blocks = text.split(/\n\s*\n/).map((b) => b.replace(/\s*\n\s*/g, " ").trim()).filter(Boolean);
+        const prose = keepParagraphs(blocks).join("\n\n");
+        showSource({ full: text, prose: prose || text });
+      } else showSource({ full: text, prose: text });
+      setStatus(how === "device"
+        ? "Done. Press Play to listen. This was read on your device, so check for odd words and use “Fix or paste text” if needed."
+        : "Done. Press Play to listen. If a word looks wrong, use “Fix or paste text”.");
+    } catch (e) {
+      if (e?.code === "cancelled") { setStatus("Stopped."); return; }
+      console.error(e);
+      setStatus("Something went wrong reading the screenshot. Try again, or use “Fix or paste text” to paste the words.", true);
+    } finally {
+      busy = false;
+      $("pickBtn").disabled = false;
+    }
+  }
+  function setStatus(t, err) { $("status").textContent = t; $("status").classList.toggle("error", !!err); }
+
+  $("pickBtn").addEventListener("click", () => $("fileIn").click());
+  $("fileIn").addEventListener("change", (e) => { handleFile(e.target.files[0]); e.target.value = ""; });
+  const drop = $("drop");
+  ["dragenter", "dragover"].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", (e) => handleFile(e.dataTransfer.files[0]));
+  document.addEventListener("paste", (e) => {
+    const item = Array.from(e.clipboardData?.items || []).find((i) => i.type.startsWith("image/"));
+    if (item) { e.preventDefault(); handleImage(item.getAsFile()); }
+  });
+
+  // ---------- Notes ----------
+  let notes = [];          // {id, text, quote, createdAt}
+  let notesBackend = null; // {add, remove} — db when available, otherwise this browser
+  let pendingQuote = "";
+
+  function renderNotes() {
+    const list = $("noteList");
+    list.textContent = "";
+    if (!notes.length) {
+      const li = document.createElement("li");
+      li.className = "empty";
+      li.textContent = "No notes yet. Press “Pause & note” while listening, then write here.";
+      list.append(li);
+    }
+    for (const n of notes) {
+      const li = document.createElement("li");
+      li.className = "note";
+      if (n.quote) {
+        const q = document.createElement("blockquote");
+        q.className = "quote"; q.textContent = n.quote;
+        li.append(q);
+      }
+      const b = document.createElement("div");
+      b.className = "body"; b.textContent = n.text;
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      const when = document.createElement("span");
+      when.textContent = new Date(n.createdAt).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+      if (n.spoken) {
+        const sp = document.createElement("span");
+        sp.className = "spoken";
+        sp.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v4"/></svg>';
+        sp.append(" Spoken · ");
+        when.prepend(sp);
+      }
+      const actions = document.createElement("span");
+      const speak = document.createElement("button");
+      speak.type = "button"; speak.className = "link"; speak.textContent = "Read aloud";
+      speak.addEventListener("click", () => { pauseReading(); synth?.cancel(); const u = new SpeechSynthesisUtterance(n.text); const v = voices.find((x) => x.voiceURI === $("voiceSel").value); if (v) u.voice = v; u.rate = Number($("rate").value); synth?.speak(u); });
+      const del = document.createElement("button");
+      del.type = "button"; del.className = "link danger"; del.textContent = "Delete";
+      del.addEventListener("click", () => {
+        if (del.dataset.armed) { notesBackend.remove(n.id); return; }
+        del.dataset.armed = "1"; del.textContent = "Tap again to delete";
+        setTimeout(() => { delete del.dataset.armed; del.textContent = "Delete"; }, 3000);
+      });
+      actions.append(speak, del);
+      meta.append(when, actions);
+      li.append(b, meta);
+      list.append(li);
+    }
+    $("noteTools").hidden = !notes.length;
+  }
+
+  const localBackend = {
+    load() { try { notes = JSON.parse(store.get("ran:notes") || "[]"); } catch { notes = []; } renderNotes(); },
+    save() { store.set("ran:notes", JSON.stringify(notes)); renderNotes(); },
+    add(n) { notes.unshift({ id: String(Date.now()), ...n }); this.save(); },
+    remove(id) { notes = notes.filter((x) => x.id !== id); this.save(); },
+  };
+  notesBackend = localBackend;
+  localBackend.load();
+  $("saveWhere").textContent = "Saved in this browser";
+
+  (async () => {
+    if (!window.claude) return;
+    const [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+    if (!db || !user) return;
+    const uid = await user.id().catch(() => null);
+    if (!uid) return;
+    // Someone the page is shared with may not be allowed to save here: keep their notes in their browser.
+    if ((await user.can("data.write").catch(() => null)) === false) return;
+    const col = db.collection(`data/users/${uid}/notes`);
+    // Move any notes written in this browser into the private store, keeping any that fail.
+    const local = notes.slice();
+    const left = [];
+    for (const n of local) {
+      try { await col.add({ text: n.text, quote: n.quote || "", createdAt: n.createdAt, spoken: !!n.spoken }); }
+      catch { left.push(n); }
+    }
+    if (left.length === local.length && local.length) return; // nothing saved: stay in this browser
+    store.set("ran:notes", JSON.stringify(left));
+    notesBackend = {
+      add(n) {
+        col.add(n).catch(() => {
+          // Saving to the account failed: keep the note in this browser instead.
+          notesBackend = localBackend;
+          localBackend.load();
+          localBackend.add(n);
+          $("saveWhere").textContent = "Saved in this browser";
+        });
+      },
+      remove(id) { col.doc(id).delete().catch(() => {}); },
+    };
+    col.orderBy("createdAt", "desc").onSnapshot((snap) => {
+      notes = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      renderNotes();
+    });
+    $("saveWhere").textContent = "Private to you";
+  })();
+
+  function openNote() {
+    const wasPlaying = playing;
+    pauseReading();
+    const s = sentences[cur];
+    pendingQuote = s ? s.text : "";
+    $("noteQuote").textContent = pendingQuote;
+    $("noteQuote").hidden = !pendingQuote;
+    if (s && !wasPlaying) markSentence(cur);
+    $("noteText").focus();
+    $("noteText").scrollIntoView({ block: "nearest" });
+  }
+  $("noteBtn").addEventListener("click", openNote);
+  $("noteText").addEventListener("focus", () => {
+    if (playing) openNote();
+    else if (!pendingQuote && sentences[cur] && cur > 0) { pendingQuote = sentences[cur].text; $("noteQuote").textContent = pendingQuote; $("noteQuote").hidden = false; }
+  });
+
+  // ---- Spoken notes ----
+  // Live transcription in the page when the browser allows it; otherwise the keyboard's
+  // own dictation (the microphone key) types the words into the box.
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let rec = null, spokenUsed = false;
+  function showDictateTip() {
+    $("dictateTip").hidden = false;
+    $("noteText").focus();
+  }
+  function stopListening() {
+    if (rec) { try { rec.stop(); } catch {} }
+  }
+  $("speakNote").addEventListener("click", () => {
+    if (rec) { stopListening(); return; }
+    openNote();
+    if (!SR) { showDictateTip(); return; }
+    let base = $("noteText").value.replace(/\s*$/, "");
+    let gotAny = false;
+    try {
+      rec = new SR();
+      rec.lang = navigator.language || "en-GB";
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.onresult = (e) => {
+        gotAny = true; spokenUsed = true;
+        let finalText = "", interim = "";
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          if (e.results[i].isFinal) finalText += e.results[i][0].transcript;
+          else interim += e.results[i][0].transcript;
+        }
+        if (finalText) base = (base ? base + " " : "") + finalText.trim();
+        $("noteText").value = base + (interim ? (base ? " " : "") + interim : "");
+        store.set("ran:draft", $("noteText").value);
+      };
+      rec.onerror = (e) => {
+        if (!gotAny && /not-allowed|service-not-allowed|audio-capture|network/.test(e.error)) { showDictateTip(); resetSpeak(); }
+      };
+      rec.onend = resetSpeak;
+      function resetSpeak() {
+        rec = null;
+        $("speakNote").classList.remove("listening");
+        $("speakLabel").textContent = "Speak a note";
+      }
+      // If the microphone never actually starts (blocked without telling us), fall back.
+      const thisRec = rec;
+      let started = false;
+      rec.onstart = () => { started = true; if (rec === thisRec) $("speakLabel").textContent = "Listening… tap to stop"; };
+      setTimeout(() => {
+        if (!started && rec === thisRec) { try { thisRec.abort(); } catch {} resetSpeak(); showDictateTip(); }
+      }, 3000);
+      $("speakNote").classList.add("listening");
+      $("speakLabel").textContent = "Starting microphone…";
+      rec.start();
+    } catch {
+      rec = null;
+      $("speakNote").classList.remove("listening");
+      $("speakLabel").textContent = "Speak a note";
+      showDictateTip();
+    }
+  });
+
+  function saveNote() {
+    stopListening();
+    const text = $("noteText").value.trim();
+    if (!text) { $("noteText").focus(); return false; }
+    notesBackend.add({ text, quote: isExample ? "" : pendingQuote, createdAt: Date.now(), spoken: spokenUsed });
+    spokenUsed = false;
+    $("dictateTip").hidden = true;
+    $("noteText").value = "";
+    pendingQuote = ""; $("noteQuote").hidden = true;
+    store.set("ran:draft", "");
+    return true;
+  }
+  $("noteForm").addEventListener("submit", (e) => { e.preventDefault(); saveNote(); });
+  $("saveResume").addEventListener("click", () => { if (saveNote()) speakFrom(cur); });
+  $("noteText").addEventListener("input", (e) => store.set("ran:draft", e.target.value));
+  $("noteText").value = store.get("ran:draft") || "";
+
+  function notesAsText() {
+    return notes.slice().reverse().map((n) => {
+      const when = new Date(n.createdAt).toLocaleString();
+      return `${when}\n${n.quote ? `“${n.quote}”\n` : ""}${n.text}`;
+    }).join("\n\n---\n\n");
+  }
+  $("copyNotes").addEventListener("click", async () => {
+    const btn = $("copyNotes");
+    try { await navigator.clipboard.writeText(notesAsText()); btn.textContent = "Copied"; }
+    catch { btn.textContent = "Couldn't copy"; }
+    setTimeout(() => (btn.textContent = "Copy all notes"), 2000);
+  });
+  (async () => {
+    const dl = window.claude ? await window.claude.use("downloads") : null;
+    if (!dl) {
+      if (window.claude) return;
+      // Outside Claude (the website version): an ordinary file download.
+      $("dlNotes").hidden = false;
+      $("dlNotes").addEventListener("click", () => {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([notesAsText()], { type: "text/plain" }));
+        a.download = "my-reading-notes.txt";
+        document.body.append(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      });
+      return;
+    }
+    $("dlNotes").hidden = false;
+    $("dlNotes").addEventListener("click", () => dl.save({ filename: "my-reading-notes.txt", data: notesAsText() }).catch(() => {}));
+  })();
+
+  // ---------- Start ----------
+  const savedText = store.get("ran:text");
+  isExample = !savedText || store.get("ran:example") === "1";
+  let savedSource = null;
+  try { savedSource = JSON.parse(store.get("ran:source") || "null"); } catch {}
+  if (!isExample && savedSource?.full) showSource(savedSource);
+  else render(isExample ? EXAMPLE : savedText);
+  setPlayUI();
+})();
+</script>
+
+</body>
+</html>
