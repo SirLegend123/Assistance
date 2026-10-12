@@ -1,6 +1,6 @@
 // Keeps My Talker working without Wi-Fi once it has been opened.
 // The page and fonts come from the cache first; board.json is fetched fresh when online.
-var CACHE = 'my-talker-v4';
+var CACHE = 'my-talker-v5';
 var SHELL = ['./', 'index.html', 'board.json', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'symbols/beaker.svg', 'symbols/crisps.svg'];
 
 self.addEventListener('install', function (e) {
@@ -16,7 +16,8 @@ self.addEventListener('activate', function (e) {
 function networkFirst(req) {
   // Store under the address without ?v=… so there is only ever one cached copy.
   var key = req.url.split('?')[0];
-  return fetch(req).then(function (res) {
+  // no-cache: always ask GitHub whether there is a newer copy, so updates show straight away.
+  return fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }).then(function (res) {
     if (res && res.ok) { var copy = res.clone(); caches.open(CACHE).then(function (c) { c.put(key, copy); }); }
     return res;
   }).catch(function () { return caches.match(key); });
