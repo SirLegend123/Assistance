@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="A picture talking board: tap a symbol and the tablet says it aloud.">
+<meta name="theme-color" content="#2B59C3">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>My Talker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Fredoka:wght@500;600&display=swap">
+<style>
+/* Layout: one full-screen board. Sentence strip on top, big picture grid fills the rest.
+   Tile colours follow the Fitzgerald Key used in AAC (people yellow, actions green, describing blue,
+   things orange, social/feelings pink, stop red, folders tan). One deliberate light theme so the
+   colour coding never changes. */
+:root {
+  color-scheme: light;
+  --bg: #F6F4EF;
+  --surface: #FFFFFF;
+  --ink: #1F2430;
+  --ink-soft: #5C6270;
+  --line: #DDD8CE;
+  --accent: #2B59C3;
+  --accent-ink: #FFFFFF;
+  --danger: #C62F25;
+
+  --people-bg: #FFE27A;   --people-bd: #B58F00;
+  --action-bg: #BDEBB0;   --action-bd: #3C8A2E;
+  --describe-bg: #C4DCFF; --describe-bd: #2F6FCC;
+  --thing-bg: #FFD3A6;    --thing-bd: #C96B00;
+  --social-bg: #FFC8DD;   --social-bd: #B8386F;
+  --question-bg: #DCC9FF; --question-bd: #6B44C2;
+  --stop-bg: #FFB3AE;     --stop-bd: #C62F25;
+  --folder-bg: #EADFC8;   --folder-bd: #8A7550;
+
+  --f-tile: "Atkinson Hyperlegible", "Verdana", "Segoe UI", system-ui, sans-serif;
+  --f-ui: "Fredoka", "Atkinson Hyperlegible", "Trebuchet MS", system-ui, sans-serif;
+  --gap: clamp(6px, 1.2vmin, 12px);
+  --radius: 18px;
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--f-tile); font-size: 16px;
+  overflow: hidden;
+  -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulation; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.app { height: 100%; display: flex; flex-direction: column; gap: var(--gap); padding: var(--gap) max(var(--gap), 16px); box-sizing: border-box; }
+
+/* ---------- top bar ---------- */
+.top { display: flex; gap: var(--gap); align-items: stretch; min-height: 72px; }
+.nav-btn {
+  flex: none; border: 3px solid var(--folder-bd); background: var(--folder-bg);
+  border-radius: var(--radius); padding: 0 14px; display: flex; align-items: center; gap: 8px;
+  font-family: var(--f-ui); font-weight: 600; font-size: 1.25rem;
+}
+.nav-btn .ico { font-size: 1.8rem; line-height: 1; }
+.strip {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px;
+  background: var(--surface); border: 3px solid var(--line); border-radius: var(--radius);
+  padding: 6px 10px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
+}
+.strip::-webkit-scrollbar { display: none; }
+.strip-empty { color: var(--ink-soft); font-family: var(--f-ui); font-size: 1.05rem; white-space: nowrap; }
+.chip { flex: none; display: flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 12px; border: 2px solid; font-weight: 700; font-size: 1.15rem; white-space: nowrap; }
+.chip img { width: 34px; height: 34px; object-fit: cover; border-radius: 6px; }
+.chip .e { font-size: 1.6rem; line-height: 1; }
+.strip-btn {
+  flex: none; width: 72px; border-radius: var(--radius); border: 3px solid var(--line); background: var(--surface);
+  display: grid; place-items: center; font-size: 1.9rem; line-height: 1;
+}
+.strip-btn.speak { width: 96px; background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.strip-btn.speak span { display: block; font-family: var(--f-ui); font-size: .85rem; font-weight: 600; margin-top: 2px; }
+.lock {
+  flex: none; width: 52px; position: relative; border: 2px dashed var(--line); background: transparent;
+  border-radius: 14px; font-size: 1.3rem; color: var(--ink-soft);
+}
+.lock svg { position: absolute; inset: 3px; width: calc(100% - 6px); height: calc(100% - 6px); pointer-events: none; }
+.lock circle { fill: none; stroke: var(--accent); stroke-width: 4; stroke-dasharray: 126; stroke-dashoffset: 126; transform: rotate(-90deg); transform-origin: 50% 50%; }
+.lock.holding circle { transition: stroke-dashoffset 1.6s linear; stroke-dashoffset: 0; }
+
+/* ---------- grid ---------- */
+.board { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.grid {
+  display: grid; gap: var(--gap); min-height: 100%;
+  grid-template-columns: repeat(var(--cols, 5), minmax(0, 1fr));
+  grid-auto-rows: minmax(104px, 1fr);
+}
+.tile {
+  position: relative; border: 4px solid; border-radius: var(--radius);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  padding: 6px 4px 8px; min-width: 0; overflow: hidden;
+  container-type: size;
+  transition: transform .08s ease;
+}
+.tile:active { transform: scale(.96); }
+.tile .pic { flex: 1; min-height: 0; width: 100%; display: grid; place-items: center; }
+.tile .pic img { max-width: 100%; max-height: 100%; width: auto; height: 100%; object-fit: contain; border-radius: 10px; }
+.tile .pic .e { font-size: 3rem; font-size: min(52cqh, 60cqw); line-height: 1; }
+.tile .lbl {
+  font-weight: 700; font-size: 1.2rem; font-size: clamp(.95rem, 13cqmin, 1.9rem); line-height: 1.1;
+  text-align: center; max-width: 100%; overflow-wrap: anywhere;
+}
+.hide-labels .tile .lbl { display: none; }
+.tile.flash { animation: flash .5s ease; }
+@keyframes flash { 0% { box-shadow: 0 0 0 0 var(--accent); } 40% { box-shadow: 0 0 0 8px var(--accent); } 100% { box-shadow: 0 0 0 0 transparent; } }
+
+.c-people { background: var(--people-bg); border-color: var(--people-bd); }
+.c-action { background: var(--action-bg); border-color: var(--action-bd); }
+.c-describe { background: var(--describe-bg); border-color: var(--describe-bd); }
+.c-thing { background: var(--thing-bg); border-color: var(--thing-bd); }
+.c-social { background: var(--social-bg); border-color: var(--social-bd); }
+.c-question { background: var(--question-bg); border-color: var(--question-bd); }
+.c-stop { background: var(--stop-bg); border-color: var(--stop-bd); }
+.c-folder { background: var(--folder-bg); border-color: var(--folder-bd); }
+.tile.folder { border-top-left-radius: 4px; }
+.tile.folder::before {
+  content: ""; position: absolute; top: 0; left: 0; width: 42%; height: 12px;
+  background: var(--folder-bd); border-bottom-right-radius: 10px; opacity: .55;
+}
+
+/* ---------- grown-up mode ---------- */
+.adult-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: #1F2430; color: #fff; border-radius: 14px; padding: 8px 12px; }
+.adult-bar strong { font-family: var(--f-ui); font-weight: 600; font-size: 1.05rem; margin-right: auto; }
+.adult-bar .sync { font-size: .85rem; opacity: .8; width: 100%; order: 9; }
+.pill { border: 0; border-radius: 999px; padding: 9px 16px; background: #fff; color: var(--ink); font-family: var(--f-ui); font-weight: 600; }
+.pill.primary { background: var(--accent); color: var(--accent-ink); }
+.editing .tile { outline: 3px dashed rgba(31,36,48,.35); outline-offset: -9px; }
+.editing .tile::after { content: "✎"; position: absolute; top: 6px; right: 8px; font-size: 1.1rem; background: #fff; border-radius: 50%; width: 28px; height: 28px; display: grid; place-items: center; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+.tile.add { background: var(--surface); border: 4px dashed var(--line); color: var(--ink-soft); font-family: var(--f-ui); font-weight: 600; }
+.tile.add::after { display: none; }
+.tile.add .e { font-size: 2.6rem; }
+
+/* ---------- sheets ---------- */
+.scrim { position: fixed; inset: 0; background: rgba(20,22,30,.45); display: grid; place-items: center; padding: 16px; z-index: 10; }
+.sheet {
+  background: var(--surface); color: var(--ink); border-radius: 20px; width: min(560px, 100%);
+  max-height: calc(100% - 8px); overflow-y: auto; padding: 20px; box-sizing: border-box;
+  display: flex; flex-direction: column; gap: 14px; -webkit-user-select: text; user-select: text;
+  box-shadow: 0 12px 40px rgba(0,0,0,.25);
+}
+.sheet h2 { margin: 0; font-family: var(--f-ui); font-weight: 600; font-size: 1.4rem; text-wrap: balance; }
+.sheet p.note { margin: 0; color: var(--ink-soft); font-size: .92rem; line-height: 1.45; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field > label, .field > .lab { font-weight: 700; font-size: .95rem; }
+.field input[type=text], .field select {
+  font: inherit; font-size: 1.1rem; padding: 10px 12px; border-radius: 10px; border: 2px solid var(--line); background: var(--surface); color: var(--ink); min-width: 0;
+}
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn { border: 2px solid var(--line); background: var(--surface); border-radius: 10px; padding: 9px 14px; font-weight: 700; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.danger { color: var(--danger); border-color: var(--danger); }
+.btn.danger.sure { background: var(--danger); color: #fff; }
+.preview { display: flex; gap: 12px; align-items: center; }
+.preview .tile { width: 120px; height: 120px; flex: none; cursor: default; }
+.swatches { display: flex; flex-wrap: wrap; gap: 6px; }
+.swatch { border: 3px solid; border-radius: 10px; padding: 6px 10px; font-size: .9rem; font-weight: 700; }
+.swatch[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--ink); }
+.emoji-pick { display: flex; flex-wrap: wrap; gap: 4px; max-height: 132px; overflow-y: auto; }
+.emoji-pick button { border: 0; background: transparent; font-size: 1.7rem; width: 44px; height: 44px; border-radius: 8px; }
+.emoji-pick button:hover { background: var(--bg); }
+.sheet-foot { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; border-top: 1px solid var(--line); padding-top: 14px; }
+.toggle { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+.toggle input { width: 24px; height: 24px; }
+input[type=range] { width: 100%; }
+
+.toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 20;
+  background: #1F2430; color: #fff; padding: 10px 18px; border-radius: 999px; font-family: var(--f-ui); font-size: 1rem;
+  max-width: calc(100% - 32px); text-align: center;
+}
+@media (max-width: 640px) {
+  .nav-btn .txt { display: none; }
+  .strip-btn { width: 56px; }
+  .strip-btn.speak { width: 72px; }
+  .top { min-height: 60px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tile, .tile.flash { transition: none; animation: none; }
+  .lock.holding circle { transition-duration: .01s; }
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="adult-bar" id="adultBar" hidden>
+    <strong>Grown-up mode · tap a button to change it</strong>
+    <button class="pill" id="addWordBtn">+ Add word</button>
+    <button class="pill" id="addFolderBtn">+ Add folder</button>
+    <button class="pill" id="settingsBtn">Settings</button>
+    <button class="pill primary" id="saveAllBtn" hidden>Save for everyone</button>
+    <button class="pill" id="doneBtn">Done</button>
+    <span class="sync" id="syncNote"></span>
+  </div>
+  <div class="top">
+    <button class="nav-btn" id="homeBtn" hidden aria-label="Back to home"><span class="ico">🏠</span><span class="txt">Home</span></button>
+    <div class="strip" id="strip" role="button" tabindex="0" aria-label="Sentence. Tap to say it."></div>
+    <button class="strip-btn speak" id="speakBtn" aria-label="Say sentence">🔊<span>Say it</span></button>
+    <button class="strip-btn" id="backBtn" aria-label="Remove last word">⌫</button>
+    <button class="strip-btn" id="clearBtn" aria-label="Clear sentence">✕</button>
+    <button class="lock" id="lockBtn" aria-label="Grown-up mode: press and hold">🔒<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="20"/></svg></button>
+  </div>
+  <div class="board" id="board"><div class="grid" id="grid"></div></div>
+</div>
+
+<div class="scrim" id="editScrim" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+    <h2 id="editTitle">Change button</h2>
+    <div class="preview">
+      <div class="tile" id="editPreview"></div>
+      <p class="note" style="flex:1;min-width:0">Pick a symbol below. The colour shows the word type, the way speech therapists colour-code AAC boards.</p>
+    </div>
+    <div class="field">
+      <label for="labelInput">Word on the button</label>
+      <input type="text" id="labelInput" autocomplete="off" maxlength="40">
+    </div>
+    <div class="field" id="sayField">
+      <label for="sayInput">What the tablet says</label>
+      <div class="row">
+        <input type="text" id="sayInput" autocomplete="off" maxlength="120" style="flex:1">
+        <button class="btn" id="hearBtn" type="button">🔊 Hear it</button>
+      </div>
+    </div>
+    <div class="field">
+      <span class="lab">Symbol</span>
+      <div class="row">
+        <input type="text" id="emojiInput" autocomplete="off" maxlength="16" style="width:5.5em;font-size:1.6rem;text-align:center" aria-label="Symbol">
+        <span class="note" style="color:var(--ink-soft);font-size:.9rem">or pick one:</span>
+      </div>
+      <div class="emoji-pick" id="emojiPick"></div>
+    </div>
+    <div class="field" id="colourField">
+      <span class="lab">Colour (word type)</span>
+      <div class="swatches" id="swatches"></div>
+    </div>
+    <div class="field" id="moveField">
+      <span class="lab">Position</span>
+      <div class="row">
+        <button class="btn" id="moveFirstBtn" type="button">⇤ First</button>
+        <button class="btn" id="moveUpBtn" type="button">← Earlier</button>
+        <button class="btn" id="moveDownBtn" type="button">Later →</button>
+        <button class="btn" id="openFolderBtn" type="button" hidden>📂 Open this folder</button>
+      </div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn danger" id="deleteBtn" type="button">Delete</button>
+      <div class="row">
+        <button class="btn" id="cancelEditBtn" type="button">Cancel</button>
+        <button class="btn primary" id="saveEditBtn" type="button">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="settingsScrim" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="setTitle">
+    <h2 id="setTitle">Settings</h2>
+    <div class="field">
+      <label for="colsInput">Buttons across: <span id="colsVal"></span></label>
+      <input type="range" id="colsInput" min="2" max="7" step="1">
+      <p class="note">Fewer, bigger buttons are easier when he's starting out.</p>
+    </div>
+    <div class="field">
+      <label for="voiceSelect">Voice</label>
+      <select id="voiceSelect"></select>
+      <p class="note" id="voiceNote"></p>
+    </div>
+    <div class="field">
+      <label for="rateInput">Speed</label>
+      <input type="range" id="rateInput" min="0.5" max="1.4" step="0.05">
+    </div>
+    <div class="field">
+      <label for="pitchInput">Pitch (higher sounds younger)</label>
+      <input type="range" id="pitchInput" min="0.6" max="2" step="0.05">
+      <div class="row"><button class="btn" id="testVoiceBtn" type="button">🔊 Test voice</button></div>
+    </div>
+    <label class="toggle"><input type="checkbox" id="autoHomeInput"> Go back to Home after he picks from a folder</label>
+    <label class="toggle"><input type="checkbox" id="stripInput"> Show sentence strip (for joining words like "I want" + "juice")</label>
+    <label class="toggle"><input type="checkbox" id="labelsInput"> Show words under pictures</label>
+    <div class="field">
+      <span class="lab">Changes on this device</span>
+      <div class="row">
+        <button class="btn" id="copyBoardBtn" type="button">Copy board</button>
+        <button class="btn danger" id="resetBtn" type="button">Undo changes on this device</button>
+      </div>
+      <textarea id="copyArea" rows="3" readonly hidden style="font:inherit;font-size:.8rem;width:100%;box-sizing:border-box" aria-label="Board text to copy"></textarea>
+      <p class="note">“Copy board” copies this board as text. Paste it to Claude to update the board for everyone. “Undo” puts back the shared board.</p>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn" id="fullscreenBtn" type="button">⛶ Full screen</button>
+      <button class="btn primary" id="closeSettingsBtn" type="button">Done</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script type="application/json" id="board-data">{"updated": "2026-10-12T15:30:00.000Z", "items": [{"id": "body-head", "parent": "body", "kind": "word", "label": "head", "say": "my head hurts", "emoji": "👦", "colour": "thing", "order": 10}, {"id": "body-tummy", "parent": "body", "kind": "word", "label": "tummy", "say": "my tummy hurts", "emoji": "🤢", "colour": "thing", "order": 20}, {"id": "body-ear", "parent": "body", "kind": "word", "label": "ear", "say": "my ear hurts", "emoji": "👂", "colour": "thing", "order": 30}, {"id": "body-teeth", "parent": "body", "kind": "word", "label": "teeth", "say": "my teeth hurt", "emoji": "🦷", "colour": "thing", "order": 40}, {"id": "body-hand", "parent": "body", "kind": "word", "label": "hand", "say": "my hand hurts", "emoji": "✋", "colour": "thing", "order": 50}, {"id": "body-leg", "parent": "body", "kind": "word", "label": "leg", "say": "my leg hurts", "emoji": "🦵", "colour": "thing", "order": 60}, {"id": "body-foot", "parent": "body", "kind": "word", "label": "foot", "say": "my foot hurts", "emoji": "🦶", "colour": "thing", "order": 70}, {"id": "body-toohot", "parent": "body", "kind": "word", "label": "too hot", "say": "I'm too hot", "emoji": "🥵", "colour": "thing", "order": 80}, {"id": "body-toocold", "parent": "body", "kind": "word", "label": "too cold", "say": "I'm too cold", "emoji": "🥶", "colour": "thing", "order": 90}, {"id": "drink-water", "parent": "drinks", "kind": "word", "label": "water", "say": "water", "emoji": "💧", "colour": "thing", "order": 10}, {"id": "drink-juice", "parent": "drinks", "kind": "word", "label": "juice", "say": "juice", "emoji": "🍊", "colour": "thing", "order": 30}, {"id": "feel-happy", "parent": "feelings", "kind": "word", "label": "happy", "say": "I'm happy", "emoji": "😀", "colour": "social", "order": 10}, {"id": "feel-sad", "parent": "feelings", "kind": "word", "label": "sad", "say": "I'm sad", "emoji": "😢", "colour": "social", "order": 20}, {"id": "feel-cross", "parent": "feelings", "kind": "word", "label": "cross", "say": "I'm cross", "emoji": "😠", "colour": "social", "order": 30}, {"id": "feel-scared", "parent": "feelings", "kind": "word", "label": "scared", "say": "I'm scared", "emoji": "😨", "colour": "social", "order": 40}, {"id": "feel-poorly", "parent": "feelings", "kind": "word", "label": "poorly", "say": "I feel poorly", "emoji": "🤒", "colour": "social", "order": 50}, {"id": "feel-excited", "parent": "feelings", "kind": "word", "label": "excited", "say": "I'm excited", "emoji": "🤩", "colour": "social", "order": 60}, {"id": "feel-tooloud", "parent": "feelings", "kind": "word", "label": "too loud", "say": "it's too loud", "emoji": "🙉", "colour": "social", "order": 70}, {"id": "feel-quiet", "parent": "feelings", "kind": "word", "label": "quiet", "say": "I need quiet", "emoji": "🤫", "colour": "social", "order": 80}, {"id": "food-apple", "parent": "food", "kind": "word", "label": "apple", "say": "apple", "emoji": "🍎", "colour": "thing", "order": 10}, {"id": "food-grapes", "parent": "food", "kind": "word", "label": "grapes", "say": "grapes", "emoji": "🍇", "colour": "thing", "order": 30}, {"id": "food-biscuit", "parent": "food", "kind": "word", "label": "biscuit", "say": "biscuit", "emoji": "🍪", "colour": "thing", "order": 40}, {"id": "food-crisps", "parent": "food", "kind": "word", "label": "crisps", "say": "crisps", "emoji": "🥔", "colour": "thing", "order": 50}, {"id": "food-toast", "parent": "food", "kind": "word", "label": "toast", "say": "toast", "emoji": "🍞", "colour": "thing", "order": 60}, {"id": "food-pizza", "parent": "food", "kind": "word", "label": "pizza", "say": "pizza", "emoji": "🍕", "colour": "thing", "order": 100}, {"id": "food-chocolate", "parent": "food", "kind": "word", "label": "chocolate", "say": "chocolate", "emoji": "🍫", "colour": "thing", "order": 130}, {"id": "imuvoh7m4ge0x", "parent": "food", "kind": "word", "label": "Cake", "say": "Cake", "emoji": "🎂", "colour": "thing", "order": 140}, {"id": "imuvohyz0js2w", "parent": "food", "kind": "word", "label": "Party rings", "say": "Party rings", "emoji": "🍩", "colour": "thing", "order": 150}, {"id": "imuvoiel97f0o", "parent": "food", "kind": "word", "label": "Fig rolls", "say": "Fig rolls", "emoji": "🥮", "colour": "thing", "order": 160}, {"id": "want", "parent": "home", "kind": "word", "label": "I want", "say": "I want", "emoji": "🤲", "colour": "action", "order": 10}, {"id": "more", "parent": "home", "kind": "word", "label": "more", "say": "more please", "emoji": "➕", "colour": "describe", "order": 20}, {"id": "alldone", "parent": "home", "kind": "word", "label": "all done", "say": "all done", "emoji": "✅", "colour": "social", "order": 30}, {"id": "help", "parent": "home", "kind": "word", "label": "help", "say": "help me please", "emoji": "🆘", "colour": "action", "order": 40}, {"id": "yes", "parent": "home", "kind": "word", "label": "yes", "say": "yes", "emoji": "👍", "colour": "social", "order": 50}, {"id": "no", "parent": "home", "kind": "word", "label": "no", "say": "no", "emoji": "👎", "colour": "stop", "order": 60}, {"id": "stop", "parent": "home", "kind": "word", "label": "stop", "say": "stop", "emoji": "🛑", "colour": "stop", "order": 70}, {"id": "toilet", "parent": "home", "kind": "word", "label": "toilet", "say": "Bum bum", "emoji": "🚽", "colour": "thing", "order": 80}, {"id": "hurts", "parent": "home", "kind": "word", "label": "it hurts", "say": "it hurts", "emoji": "🤕", "colour": "social", "order": 90}, {"id": "tired", "parent": "home", "kind": "word", "label": "tired", "say": "tired", "emoji": "😴", "colour": "social", "order": 100}, {"id": "hug", "parent": "home", "kind": "word", "label": "hug", "say": "hug please", "emoji": "🫂", "colour": "social", "order": 110}, {"id": "break", "parent": "home", "kind": "word", "label": "break", "say": "I need a break", "emoji": "🛋️", "colour": "action", "order": 120}, {"id": "go", "parent": "home", "kind": "word", "label": "go", "say": "let's go", "emoji": "🚶", "colour": "action", "order": 130}, {"id": "food", "parent": "home", "kind": "folder", "label": "Food", "say": "Food", "emoji": "🍎", "colour": "folder", "order": 140}, {"id": "drinks", "parent": "home", "kind": "folder", "label": "Drinks", "say": "Drinks", "emoji": "🥤", "colour": "folder", "order": 150}, {"id": "play", "parent": "home", "kind": "folder", "label": "Play", "say": "Play", "emoji": "🧸", "colour": "folder", "order": 160}, {"id": "feelings", "parent": "home", "kind": "folder", "label": "Feelings", "say": "Feelings", "emoji": "😊", "colour": "folder", "order": 170}, {"id": "people", "parent": "home", "kind": "folder", "label": "People", "say": "People", "emoji": "👪", "colour": "folder", "order": 180}, {"id": "places", "parent": "home", "kind": "folder", "label": "Places", "say": "Places", "emoji": "🏠", "colour": "folder", "order": 190}, {"id": "body", "parent": "home", "kind": "folder", "label": "Body", "say": "Body", "emoji": "🧍", "colour": "folder", "order": 200}, {"id": "ppl-mummy", "parent": "people", "kind": "word", "label": "Mummy", "say": "Mummy", "emoji": "👩", "colour": "people", "order": 10}, {"id": "ppl-daddy", "parent": "people", "kind": "word", "label": "Daddy", "say": "Daddy", "emoji": "👨", "colour": "people", "order": 20}, {"id": "ppl-grandma", "parent": "people", "kind": "word", "label": "Grandma", "say": "Grandma", "emoji": "👵", "colour": "people", "order": 30}, {"id": "ppl-grandad", "parent": "people", "kind": "word", "label": "Grandad", "say": "Grandad", "emoji": "👴", "colour": "people", "order": 40}, {"id": "ppl-teacher", "parent": "people", "kind": "word", "label": "teacher", "say": "teacher", "emoji": "🧑‍🏫", "colour": "people", "order": 50}, {"id": "ppl-friend", "parent": "people", "kind": "word", "label": "friend", "say": "friend", "emoji": "🧒", "colour": "people", "order": 60}, {"id": "ppl-me", "parent": "people", "kind": "word", "label": "me", "say": "me", "emoji": "🙋", "colour": "people", "order": 70}, {"id": "place-home", "parent": "places", "kind": "word", "label": "home", "say": "home", "emoji": "🏠", "colour": "thing", "order": 10}, {"id": "place-school", "parent": "places", "kind": "word", "label": "school", "say": "school", "emoji": "🏫", "colour": "thing", "order": 20}, {"id": "place-park", "parent": "places", "kind": "word", "label": "park", "say": "park", "emoji": "🏞️", "colour": "thing", "order": 30}, {"id": "place-shop", "parent": "places", "kind": "word", "label": "shop", "say": "shop", "emoji": "🛒", "colour": "thing", "order": 40}, {"id": "place-car", "parent": "places", "kind": "word", "label": "car", "say": "car", "emoji": "🚙", "colour": "thing", "order": 50}, {"id": "place-bed", "parent": "places", "kind": "word", "label": "bed", "say": "bed", "emoji": "🛏️", "colour": "thing", "order": 60}, {"id": "place-garden", "parent": "places", "kind": "word", "label": "garden", "say": "garden", "emoji": "🌻", "colour": "thing", "order": 70}, {"id": "place-swimming", "parent": "places", "kind": "word", "label": "swimming", "say": "swimming", "emoji": "🏊", "colour": "thing", "order": 80}, {"id": "play-tablet", "parent": "play", "kind": "word", "label": "tablet", "say": "tablet", "emoji": "📱", "colour": "thing", "order": 10}, {"id": "play-tv", "parent": "play", "kind": "word", "label": "TV", "say": "TV", "emoji": "📺", "colour": "thing", "order": 20}, {"id": "play-ball", "parent": "play", "kind": "word", "label": "ball", "say": "ball", "emoji": "⚽", "colour": "thing", "order": 30}, {"id": "play-bubbles", "parent": "play", "kind": "word", "label": "bubbles", "say": "bubbles", "emoji": "🧼", "colour": "thing", "order": 40}, {"id": "play-cars", "parent": "play", "kind": "word", "label": "cars", "say": "cars", "emoji": "🚗", "colour": "thing", "order": 50}, {"id": "play-book", "parent": "play", "kind": "word", "label": "book", "say": "book", "emoji": "📖", "colour": "thing", "order": 80}, {"id": "play-outside", "parent": "play", "kind": "word", "label": "outside", "say": "outside", "emoji": "🌳", "colour": "thing", "order": 120}, {"id": "play-bath", "parent": "play", "kind": "word", "label": "bath", "say": "bath", "emoji": "🛁", "colour": "thing", "order": 130}, {"id": "play-tickles", "parent": "play", "kind": "word", "label": "tickles", "say": "tickles", "emoji": "🤭", "colour": "thing", "order": 140}, {"id": "imuvokdaa582j", "parent": "play", "kind": "word", "label": "Spin", "say": "Spin", "emoji": "🌀", "colour": "thing", "order": 150}]}</script>
+<script>
+(function () {
+'use strict';
+
+/* ---------------- symbols and colours ---------------- */
+var COLOURS = [
+  ['people', 'People'], ['action', 'Doing'], ['describe', 'Describing'], ['thing', 'Things'],
+  ['social', 'Feelings & social'], ['question', 'Questions'], ['stop', 'Stop / no'], ['folder', 'Folder']
+];
+var EMOJI = '🙂 😀 😢 😠 😨 😴 🤒 🤕 🥵 🥶 🤗 🤩 🤫 👍 👎 ✋ 🛑 ➕ ✅ 🆘 🙋 🤲 🫂 👩 👨 👵 👴 🧒 👶 🧑‍🏫 🐶 🐱 🍎 🍌 🍇 🍓 🍪 🍫 🍞 🍝 🍕 🥪 🍗 🥣 🍨 🥔 🧀 🥕 💧 🥛 🧃 🍊 🚽 🛁 🪥 🛏️ 🛋️ 📺 📱 ⚽ 🧸 🚗 🚂 🧱 📖 🎵 🖍️ 🎠 🌳 🏠 🏫 🏞️ 🛒 🚙 🌻 🏊 🚶 👂 🦷 ✋ 🦵 🦶 👕 👟 🧥 🎒 ❓ ⭐ ❤️'.split(' ');
+
+/* ---------------- storage ----------------
+   The board everyone sees is published with the page (board.json, with a copy built in below).
+   Grown-up changes are kept on this device until "Save for everyone" publishes them. */
+var LS_LOCAL = 'talker.local.v1', LS_SET = 'talker.settings.v1';
+function lsGet(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
+function clone(x) { return JSON.parse(JSON.stringify(x)); }
+
+var published = JSON.parse(document.getElementById('board-data').textContent);
+var local = lsGet(LS_LOCAL);
+var items = [];
+var settings = Object.assign({ cols: 5, voiceURI: '', rate: 0.9, pitch: 1.15, autoHome: true, strip: true, labels: true }, lsGet(LS_SET) || {});
+function saveSettings() { lsSet(LS_SET, settings); }
+
+function adopt(pub) {
+  published = pub;
+  if (local && local.items && local.base >= pub.updated) items = local.items;
+  else { if (local) { local = null; lsDel(LS_LOCAL); } items = clone(pub.items); }
+}
+adopt(published);
+fetch('board.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (b) {
+  if (b && Array.isArray(b.items) && b.updated > published.updated) { adopt(b); if (!editingId) render(); }
+}).catch(function () {});
+
+function markChanged() {
+  if (!local) local = { base: published.updated };
+  local.items = items;
+  lsSet(LS_LOCAL, local);
+  updateSaveUI();
+}
+function updateSaveUI(msg) {
+  var dirty = !!local;
+  document.getElementById('saveAllBtn').hidden = !dirty || !canSave;
+  document.getElementById('syncNote').textContent = msg || (dirty
+    ? (canSave ? 'You have changes on this device only. Tap “Save for everyone” to update the shared link.' : 'Changes are saved on this device only. To update everyone, use Settings › Copy board and paste it to Claude.')
+    : 'This is the shared board everyone sees.');
+}
+
+var artifactApi = null, canSave = true;
+if (window.claude && typeof window.claude.use === 'function') {
+  window.claude.use('artifact').then(function (a) { artifactApi = a; if (!a) canSave = false; updateSaveUI(); }).catch(function () { canSave = false; updateSaveUI(); });
+} else canSave = false;
+
+function saveForEveryone() {
+  if (!artifactApi || !local) return;
+  var btn = document.getElementById('saveAllBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  var next = { updated: new Date().toISOString(), items: clone(items) };
+  artifactApi.publish({ 'board.json': JSON.stringify(next) }).then(function () {
+    published = next; local = null; lsDel(LS_LOCAL);
+    updateSaveUI('Saved. Everyone using the link now gets this board.');
+    toast('Saved for everyone');
+  }).catch(function (e) {
+    var code = e && e.code;
+    if (code === 'conflict') { updateSaveUI('Someone else saved first. The page is reloading with their version.'); return; }
+    if (code === 'rate_limited' || code === 'upstream_error') { updateSaveUI('Couldn’t save just now. Your changes are safe on this device; try again in a minute.'); return; }
+    canSave = false;
+    updateSaveUI('Changes stay on this device. To update everyone, use Settings › Copy board and paste it to Claude.');
+  }).then(function () { btn.disabled = false; btn.textContent = 'Save for everyone'; });
+}
+
+/* ---------------- state ---------------- */
+var hot = window.claude && window.claude.hot;
+var start = (hot && hot.data) || {};
+var path = start.path || 'home';
+var sentence = Array.isArray(start.sentence) ? start.sentence : [];
+var adult = false, editingId = null;
+if (hot && hot.snapshot) hot.snapshot(function () { return { path: path, sentence: sentence }; });
+
+function byId(id) { for (var i = 0; i < items.length; i++) if (items[i].id === id) return items[i]; return null; }
+function childrenOf(p) { return items.filter(function (it) { return it.parent === p; }).sort(function (a, b) { return (a.order || 0) - (b.order || 0); }); }
+function uid() { return 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+/* ---------------- speech ---------------- */
+var synth = window.speechSynthesis || null, voices = [];
+function loadVoices() {
+  if (!synth) return;
+  voices = synth.getVoices().filter(function (v) { return /^en/i.test(v.lang); });
+  if (!voices.length) voices = synth.getVoices();
+  if (!document.getElementById('settingsScrim').hidden) fillVoices();
+}
+if (synth) { loadVoices(); if ('onvoiceschanged' in synth) synth.onvoiceschanged = loadVoices; }
+function pickVoice() {
+  if (!voices.length) return null;
+  var v = voices.filter(function (x) { return x.voiceURI === settings.voiceURI; })[0];
+  return v || voices.filter(function (x) { return /en[-_]GB/i.test(x.lang); })[0] || voices[0];
+}
+function speak(text) {
+  if (!text) return;
+  if (!synth) { toast(text); return; }
+  try {
+    synth.cancel();
+    var u = new SpeechSynthesisUtterance(text);
+    var v = pickVoice(); if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'en-GB';
+    u.rate = settings.rate; u.pitch = settings.pitch;
+    synth.speak(u);
+  } catch (e) { toast(text); }
+}
+
+/* ---------------- wake lock: keep the screen on while he's using it ---------------- */
+var wakeLock = null;
+function keepAwake() {
+  if (wakeLock || !navigator.wakeLock) return;
+  navigator.wakeLock.request('screen').then(function (l) { wakeLock = l; l.addEventListener('release', function () { wakeLock = null; }); }).catch(function () {});
+}
+document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') keepAwake(); });
+
+/* ---------------- render ---------------- */
+var grid = document.getElementById('grid');
+function picHTML(it, cls) {
+  var d = document.createElement('span'); d.className = cls || 'pic';
+  var e = document.createElement('span'); e.className = 'e'; e.textContent = it.emoji || '⭐'; d.appendChild(e);
+  return d;
+}
+function fillTile(el, it) {
+  el.textContent = '';
+  el.className = 'tile c-' + (it.colour || 'thing') + (it.kind === 'folder' ? ' folder' : '');
+  el.appendChild(picHTML(it));
+  var l = document.createElement('span'); l.className = 'lbl'; l.textContent = it.label || ''; el.appendChild(l);
+}
+function render() {
+  if (path !== 'home' && !byId(path)) path = 'home';
+  document.getElementById('app').classList.toggle('editing', adult);
+  document.getElementById('app').classList.toggle('hide-labels', !settings.labels);
+  document.getElementById('adultBar').hidden = !adult;
+  if (adult) updateSaveUI();
+  document.getElementById('homeBtn').hidden = path === 'home';
+  grid.style.setProperty('--cols', settings.cols);
+  grid.textContent = '';
+  var list = childrenOf(path);
+  list.forEach(function (it) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.dataset.id = it.id;
+    fillTile(b, it);
+    b.setAttribute('aria-label', it.kind === 'folder' ? it.label + ' folder' : it.label);
+    grid.appendChild(b);
+  });
+  if (adult) {
+    var add = document.createElement('button');
+    add.type = 'button'; add.className = 'tile add'; add.dataset.add = '1';
+    add.innerHTML = '<span class="pic"><span class="e">+</span></span><span class="lbl">Add word</span>';
+    grid.appendChild(add);
+  }
+  var rows = Math.max(3, Math.ceil((list.length + (adult ? 1 : 0)) / settings.cols));
+  grid.style.gridTemplateRows = 'repeat(' + rows + ', minmax(104px, 1fr))';
+  renderStrip();
+}
+function renderStrip() {
+  var strip = document.getElementById('strip');
+  var show = settings.strip;
+  ['strip', 'speakBtn', 'backBtn', 'clearBtn'].forEach(function (id) { document.getElementById(id).hidden = !show; });
+  if (!show) return;
+  strip.textContent = '';
+  if (!sentence.length) {
+    var s = document.createElement('span'); s.className = 'strip-empty'; s.textContent = 'Tap pictures to talk'; strip.appendChild(s); return;
+  }
+  sentence.forEach(function (it) {
+    var c = document.createElement('span'); c.className = 'chip c-' + (it.colour || 'thing');
+    var e = document.createElement('span'); e.className = 'e'; e.textContent = it.emoji || ''; c.appendChild(e);
+    var t = document.createElement('span'); t.textContent = it.label; c.appendChild(t);
+    strip.appendChild(c);
+  });
+  strip.scrollLeft = strip.scrollWidth;
+}
+function sentenceText() { return sentence.map(function (s) { return s.say; }).join(' '); }
+
+/* ---------------- child interactions ---------------- */
+var lastTap = { id: null, t: 0 };
+grid.addEventListener('click', function (ev) {
+  var b = ev.target.closest('.tile'); if (!b) return;
+  keepAwake();
+  if (b.dataset.add) { openEditor(null, 'word'); return; }
+  var it = byId(b.dataset.id); if (!it) return;
+  if (adult) { openEditor(it.id); return; }
+  var now = Date.now();
+  if (lastTap.id === it.id && now - lastTap.t < 600) return; // ignore accidental double taps
+  lastTap = { id: it.id, t: now };
+  b.classList.remove('flash'); void b.offsetWidth; b.classList.add('flash');
+  if (it.kind === 'folder') { speak(it.say || it.label); path = it.id; render(); document.getElementById('board').scrollTop = 0; return; }
+  speak(it.say || it.label);
+  if (settings.strip) { sentence.push({ label: it.label, say: it.say || it.label, emoji: it.emoji, colour: it.colour }); if (sentence.length > 12) sentence.shift(); renderStrip(); }
+  if (settings.autoHome && path !== 'home') setTimeout(function () { path = 'home'; render(); }, 700);
+});
+document.getElementById('homeBtn').addEventListener('click', function () { path = 'home'; render(); });
+document.getElementById('speakBtn').addEventListener('click', function () { keepAwake(); if (sentence.length) speak(sentenceText()); });
+document.getElementById('strip').addEventListener('click', function () { if (sentence.length) speak(sentenceText()); });
+document.getElementById('backBtn').addEventListener('click', function () { sentence.pop(); renderStrip(); });
+document.getElementById('clearBtn').addEventListener('click', function () { sentence = []; renderStrip(); });
+document.addEventListener('contextmenu', function (e) { if (!e.target.closest('input, .sheet')) e.preventDefault(); });
+
+/* ---------------- grown-up lock: press and hold ---------------- */
+var lockBtn = document.getElementById('lockBtn'), holdTimer = null;
+function holdStart(e) {
+  e.preventDefault();
+  if (adult) return;
+  lockBtn.classList.add('holding');
+  holdTimer = setTimeout(function () { holdTimer = null; lockBtn.classList.remove('holding'); adult = true; render(); }, 1600);
+}
+function holdEnd() {
+  if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; toast('Grown-ups: press and hold the lock to make changes'); }
+  lockBtn.classList.remove('holding');
+}
+lockBtn.addEventListener('pointerdown', holdStart);
+lockBtn.addEventListener('pointerup', holdEnd);
+lockBtn.addEventListener('pointerleave', holdEnd);
+lockBtn.addEventListener('pointercancel', holdEnd);
+lockBtn.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); adult = true; render(); } });
+document.getElementById('doneBtn').addEventListener('click', function () { adult = false; render(); });
+document.getElementById('saveAllBtn').addEventListener('click', saveForEveryone);
+document.getElementById('addWordBtn').addEventListener('click', function () { openEditor(null, 'word'); });
+document.getElementById('addFolderBtn').addEventListener('click', function () {
+  if (path !== 'home') { path = 'home'; render(); }
+  openEditor(null, 'folder');
+});
+
+/* ---------------- editor ---------------- */
+var draft = null, isNew = false;
+var $ = function (id) { return document.getElementById(id); };
+(function buildPickers() {
+  var ep = $('emojiPick');
+  EMOJI.forEach(function (e) { var b = document.createElement('button'); b.type = 'button'; b.textContent = e; b.setAttribute('aria-label', 'Use ' + e); ep.appendChild(b); });
+  ep.addEventListener('click', function (ev) { var b = ev.target.closest('button'); if (!b) return; draft.emoji = b.textContent; $('emojiInput').value = draft.emoji; updatePreview(); });
+  var sw = $('swatches');
+  COLOURS.forEach(function (c) { var b = document.createElement('button'); b.type = 'button'; b.className = 'swatch c-' + c[0]; b.dataset.c = c[0]; b.textContent = c[1]; sw.appendChild(b); });
+  sw.addEventListener('click', function (ev) { var b = ev.target.closest('.swatch'); if (!b) return; draft.colour = b.dataset.c; updatePreview(); });
+})();
+function updatePreview() {
+  fillTile($('editPreview'), draft);
+  Array.prototype.forEach.call($('swatches').children, function (b) { b.setAttribute('aria-pressed', String(b.dataset.c === draft.colour)); });
+}
+function openEditor(id, kind) {
+  isNew = !id;
+  if (isNew) {
+    var sibs = childrenOf(kind === 'folder' ? 'home' : path);
+    draft = { id: uid(), parent: kind === 'folder' ? 'home' : path, kind: kind, label: '', say: '', emoji: kind === 'folder' ? '📁' : '⭐', colour: kind === 'folder' ? 'folder' : 'thing', order: (sibs.length ? (sibs[sibs.length - 1].order || 0) : 0) + 10 };
+  } else { draft = Object.assign({}, byId(id)); delete draft.photo; }
+  editingId = draft.id;
+  $('editTitle').textContent = isNew ? (kind === 'folder' ? 'New folder' : 'New word') : 'Change “' + draft.label + '”';
+  $('labelInput').value = draft.label;
+  $('sayInput').value = draft.say === draft.label ? '' : (draft.say || '');
+  $('sayInput').placeholder = draft.label || 'Same as the word';
+  $('emojiInput').value = draft.emoji || '';
+  $('moveField').hidden = isNew;
+  $('openFolderBtn').hidden = draft.kind !== 'folder' || isNew;
+  $('deleteBtn').hidden = isNew;
+  $('deleteBtn').classList.remove('sure'); $('deleteBtn').textContent = 'Delete';
+  updatePreview();
+  $('editScrim').hidden = false;
+  setTimeout(function () { if (isNew) $('labelInput').focus(); }, 50);
+}
+function closeEditor() { $('editScrim').hidden = true; editingId = null; draft = null; render(); }
+$('labelInput').addEventListener('input', function () { draft.label = this.value; $('sayInput').placeholder = draft.label || 'Same as the word'; updatePreview(); });
+$('emojiInput').addEventListener('input', function () { draft.emoji = this.value.trim(); updatePreview(); });
+$('hearBtn').addEventListener('click', function () { speak($('sayInput').value.trim() || $('labelInput').value.trim()); });
+$('cancelEditBtn').addEventListener('click', closeEditor);
+$('saveEditBtn').addEventListener('click', function () {
+  draft.label = $('labelInput').value.trim();
+  if (!draft.label) { toast('Give the button a word first.'); $('labelInput').focus(); return; }
+  draft.say = $('sayInput').value.trim() || draft.label;
+  if (!draft.emoji) draft.emoji = '⭐';
+  var i = items.findIndex(function (x) { return x.id === draft.id; });
+  if (i >= 0) items[i] = draft; else items.push(draft);
+  closeEditor(); markChanged();
+  toast('Saved');
+});
+function move(where) {
+  var orig = byId(draft.id); if (!orig) return;
+  var sibs = childrenOf(orig.parent), idx = sibs.indexOf(orig);
+  var target = where === 'first' ? 0 : idx + (where === 'up' ? -1 : 1);
+  if (target < 0 || target >= sibs.length || target === idx) return;
+  sibs.splice(idx, 1); sibs.splice(target, 0, orig);
+  var changed = [];
+  sibs.forEach(function (s, n) { var o = (n + 1) * 10; if (s.order !== o) { s.order = o; changed.push(s); } });
+  draft.order = orig.order;
+  render(); if (changed.length) markChanged();
+  toast('Moved');
+}
+$('moveFirstBtn').addEventListener('click', function () { move('first'); });
+$('moveUpBtn').addEventListener('click', function () { move('up'); });
+$('moveDownBtn').addEventListener('click', function () { move('down'); });
+$('openFolderBtn').addEventListener('click', function () { var id = draft.id; closeEditor(); path = id; render(); });
+$('deleteBtn').addEventListener('click', function () {
+  var b = this;
+  if (!b.classList.contains('sure')) {
+    b.classList.add('sure');
+    b.textContent = draft.kind === 'folder' ? 'Tap again to delete folder and everything in it' : 'Tap again to delete';
+    return;
+  }
+  var gone = items.filter(function (x) { return x.id === draft.id || x.parent === draft.id; }).map(function (x) { return x.id; });
+  items = items.filter(function (x) { return gone.indexOf(x.id) < 0; });
+  closeEditor(); markChanged();
+  toast('Deleted');
+});
+
+/* ---------------- settings ---------------- */
+function fillVoices() {
+  var sel = $('voiceSelect'); sel.textContent = '';
+  if (!synth) { $('voiceNote').textContent = 'This browser can\'t speak aloud. The word will appear on screen instead. Try opening the page in the Silk browser.'; sel.disabled = true; return; }
+  if (!voices.length) { $('voiceNote').textContent = 'No voices found yet. On a Kindle Fire, check Settings › Accessibility › Text-to-speech.'; }
+  else $('voiceNote').textContent = '';
+  var cur = pickVoice();
+  voices.forEach(function (v) {
+    var o = document.createElement('option'); o.value = v.voiceURI; o.textContent = v.name + ' (' + v.lang + ')';
+    if (cur && cur.voiceURI === v.voiceURI) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+function openSettings() {
+  $('colsInput').value = settings.cols; $('colsVal').textContent = settings.cols;
+  $('rateInput').value = settings.rate; $('pitchInput').value = settings.pitch;
+  $('autoHomeInput').checked = settings.autoHome; $('stripInput').checked = settings.strip; $('labelsInput').checked = settings.labels;
+  $('resetBtn').classList.remove('sure'); $('resetBtn').textContent = 'Undo changes on this device'; $('copyArea').hidden = true;
+  fillVoices();
+  $('settingsScrim').hidden = false;
+}
+$('settingsBtn').addEventListener('click', openSettings);
+$('closeSettingsBtn').addEventListener('click', function () { $('settingsScrim').hidden = true; });
+$('colsInput').addEventListener('input', function () { settings.cols = +this.value; $('colsVal').textContent = this.value; saveSettings(); render(); });
+$('voiceSelect').addEventListener('change', function () { settings.voiceURI = this.value; saveSettings(); speak('Hello, this is my voice'); });
+$('rateInput').addEventListener('change', function () { settings.rate = +this.value; saveSettings(); });
+$('pitchInput').addEventListener('change', function () { settings.pitch = +this.value; saveSettings(); });
+$('testVoiceBtn').addEventListener('click', function () { speak('I want juice please'); });
+$('autoHomeInput').addEventListener('change', function () { settings.autoHome = this.checked; saveSettings(); });
+$('stripInput').addEventListener('change', function () { settings.strip = this.checked; saveSettings(); render(); });
+$('labelsInput').addEventListener('change', function () { settings.labels = this.checked; saveSettings(); render(); });
+$('fullscreenBtn').addEventListener('click', function () {
+  var el = document.documentElement;
+  var req = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!req) { toast('Full screen isn\'t available here.'); return; }
+  try { var p = req.call(el); if (p && p.catch) p.catch(function () { toast('Full screen isn\'t available here.'); }); } catch (e) { toast('Full screen isn\'t available here.'); }
+});
+$('resetBtn').addEventListener('click', function () {
+  var b = this;
+  if (!b.classList.contains('sure')) { b.classList.add('sure'); b.textContent = 'Tap again to undo your changes'; return; }
+  local = null; lsDel(LS_LOCAL); items = clone(published.items); path = 'home'; sentence = [];
+  render(); $('settingsScrim').hidden = true;
+  toast('Back to the shared board');
+});
+$('copyBoardBtn').addEventListener('click', function () {
+  var text = JSON.stringify({ updated: published.updated, items: items });
+  var area = $('copyArea');
+  function fallback() { area.hidden = false; area.value = text; area.focus(); area.select(); toast('Select all and copy the text in the box'); }
+  try {
+    navigator.clipboard.writeText(text).then(function () { toast('Board copied. Paste it to Claude.'); }, fallback);
+  } catch (err) { fallback(); }
+});
+
+/* ---------------- toast ---------------- */
+var toastTimer = null;
+function toast(msg) {
+  var t = $('toast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.hidden = true; }, 2200);
+}
+
+render();
+})();
+</script>
+
+<script>
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+}
+</script>
+</body>
+</html>

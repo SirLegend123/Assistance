@@ -30,3 +30,16 @@ If a word is read wrongly, use **Fix or paste text** to correct it, or paste in 
 - Two-column layouts and unusual journal designs may occasionally come out in the wrong order. Untick *Paragraphs only* to see everything the file contains.
 
 See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the open-source libraries this tool includes.
+
+---
+
+# My Talker
+
+A picture talking board (AAC) for a pre-verbal child. Tap a symbol and the tablet says it aloud.
+
+**Open the app:** https://sirlegend123.github.io/assistance/talker/
+
+- Big, colour-coded picture buttons (Fitzgerald Key colours used in AAC), folders, and a sentence strip for joining words.
+- Grown-up mode: press and hold the lock for 2 seconds to change words, symbols, colours and the voice.
+- Works without Wi-Fi once it has been opened, and can be added to the home screen like an app.
+- Symbols only, no photos. The board's words live in `talker/board.json`; changes made in grown-up mode stay on that device until `board.json` is updated.
