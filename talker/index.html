@@ -109,6 +109,8 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
 .tile:active { transform: scale(.96); }
 .tile .pic { flex: 1; min-height: 0; width: 100%; display: grid; place-items: center; }
 .tile .pic img { max-width: 100%; max-height: 100%; width: auto; height: 100%; object-fit: contain; border-radius: 10px; }
+.tile .pic img.sym { height: 70%; height: min(68cqh, 74cqw); border-radius: 0; }
+.chip img.sym { width: 34px; height: 34px; }
 .tile .pic .e { font-size: 3rem; font-size: min(52cqh, 60cqw); line-height: 1; }
 .tile .lbl {
   font-weight: 700; font-size: 1.2rem; font-size: clamp(.95rem, 13cqmin, 1.9rem); line-height: 1.1;
@@ -290,6 +292,7 @@ input[type=range] { width: 100%; }
     <label class="toggle"><input type="checkbox" id="autoHomeInput"> Go back to Home after he picks from a folder</label>
     <label class="toggle"><input type="checkbox" id="stripInput"> Show sentence strip (for joining words like "I want" + "juice")</label>
     <label class="toggle"><input type="checkbox" id="labelsInput"> Show words under pictures</label>
+    <label class="toggle"><input type="checkbox" id="tonesInput"> Play a musical note before each word (each button has its own note)</label>
     <div class="field">
       <span class="lab">Changes on this device</span>
       <div class="row">
@@ -318,7 +321,7 @@ input[type=range] { width: 100%; }
 
 <div class="toast" id="toast" hidden></div>
 
-<script type="application/json" id="board-data">{"updated": "2026-10-12T17:30:00.000Z", "display": {"cols": 3, "strip": false, "labels": true}, "items": [{"id": "food", "parent": "home", "kind": "word", "label": "food", "say": "I want food please", "emoji": "🥪", "colour": "thing", "order": 10}, {"id": "drink", "parent": "home", "kind": "word", "label": "drink", "say": "I want a drink please", "emoji": "🥤", "colour": "thing", "order": 20}, {"id": "nappy", "parent": "home", "kind": "word", "label": "nappy", "say": "change my nappy please", "emoji": "🚼", "colour": "thing", "order": 30}, {"id": "goout", "parent": "home", "kind": "word", "label": "go out", "say": "I want to go out", "emoji": "🌳", "colour": "action", "order": 40}, {"id": "hug", "parent": "home", "kind": "word", "label": "cuddle", "say": "cuddle please", "emoji": "🫂", "colour": "social", "order": 50}, {"id": "help", "parent": "home", "kind": "word", "label": "help", "say": "help me please", "emoji": "🆘", "colour": "action", "order": 60}]}</script>
+<script type="application/json" id="board-data">{"updated": "2026-10-12T18:00:00.000Z", "display": {"cols": 4, "strip": false, "labels": true}, "items": [{"id": "food", "parent": "home", "kind": "word", "label": "food", "say": "food", "emoji": "🍕", "colour": "thing", "order": 10}, {"id": "drink", "parent": "home", "kind": "word", "label": "juice", "say": "juice", "emoji": "🧃", "colour": "thing", "order": 20, "img": "symbols/beaker.svg"}, {"id": "chocolate", "parent": "home", "kind": "word", "label": "chocolate", "say": "chocolate", "emoji": "🍫", "colour": "thing", "order": 30}, {"id": "crisps", "parent": "home", "kind": "word", "label": "crisps", "say": "crisps", "emoji": "🥔", "colour": "thing", "order": 40, "img": "symbols/crisps.svg"}, {"id": "nappy", "parent": "home", "kind": "word", "label": "nappy", "say": "nappy", "emoji": "🚼", "colour": "thing", "order": 50}, {"id": "goout", "parent": "home", "kind": "word", "label": "outside", "say": "outside", "emoji": "🌳", "colour": "action", "order": 60}, {"id": "hug", "parent": "home", "kind": "word", "label": "cuddle", "say": "cuddle", "emoji": "🫂", "colour": "social", "order": 70}, {"id": "help", "parent": "home", "kind": "word", "label": "help", "say": "help", "emoji": "🆘", "colour": "action", "order": 80}]}</script>
 <script>
 (function () {
 'use strict';
@@ -342,7 +345,7 @@ function clone(x) { return JSON.parse(JSON.stringify(x)); }
 var published = JSON.parse(document.getElementById('board-data').textContent);
 var local = lsGet(LS_LOCAL);
 var items = [];
-var settings = Object.assign({ cols: 5, voiceURI: '', rate: 0.9, pitch: 1.15, autoHome: true, strip: true, labels: true }, lsGet(LS_SET) || {});
+var settings = Object.assign({ cols: 5, voiceURI: '', rate: 0.9, pitch: 1.15, autoHome: true, strip: true, labels: true, tones: true }, lsGet(LS_SET) || {});
 function saveSettings() { lsSet(LS_SET, settings); }
 
 function adopt(pub) {
@@ -461,6 +464,39 @@ function pickVoice() {
   var v = voices.filter(function (x) { return x.voiceURI === settings.voiceURI; })[0];
   return v || voices.filter(function (x) { return /en[-_]GB/i.test(x.lang); })[0] || voices[0];
 }
+/* ---------------- musical notes ----------------
+   Each button gets its own note from a pentatonic scale (C D E G A …), so any two notes
+   sound nice together and the same button always plays the same note. */
+var NOTES = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51, 1567.98, 1760.00];
+var audioCtx = null;
+function playTone(n) {
+  try {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return false;
+    if (!audioCtx) audioCtx = new AC();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    var f = NOTES[((n % NOTES.length) + NOTES.length) % NOTES.length], t = audioCtx.currentTime + 0.01;
+    var out = audioCtx.createGain();
+    out.gain.setValueAtTime(0.0001, t);
+    out.gain.exponentialRampToValueAtTime(0.35, t + 0.012);
+    out.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+    out.connect(audioCtx.destination);
+    // A soft bell: the note plus a quieter overtone, like a glockenspiel.
+    [[1, 1], [2, 0.25], [3, 0.08]].forEach(function (h) {
+      var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = 'sine'; o.frequency.value = f * h[0]; g.gain.value = h[1];
+      o.connect(g); g.connect(out); o.start(t); o.stop(t + 0.95);
+    });
+    return true;
+  } catch (e) { return false; }
+}
+function noteFor(it) { return childrenOf(it.parent).indexOf(it); }
+function sayWithTone(it) {
+  var text = it.say || it.label;
+  if (settings.tones && playTone(noteFor(it))) setTimeout(function () { speak(text); }, 320);
+  else speak(text);
+}
+
 function speak(text) {
   if (!text) return;
   if (!synth) { toast(text); return; }
@@ -485,7 +521,8 @@ document.addEventListener('visibilitychange', function () { if (document.visibil
 var grid = document.getElementById('grid');
 function picHTML(it, cls) {
   var d = document.createElement('span'); d.className = cls || 'pic';
-  var e = document.createElement('span'); e.className = 'e'; e.textContent = it.emoji || '⭐'; d.appendChild(e);
+  if (it.img) { var im = document.createElement('img'); im.className = 'sym'; im.src = it.img; im.alt = ''; im.draggable = false; d.appendChild(im); }
+  else { var e = document.createElement('span'); e.className = 'e'; e.textContent = it.emoji || '⭐'; d.appendChild(e); }
   return d;
 }
 function fillTile(el, it) {
@@ -535,7 +572,7 @@ function renderStrip() {
   }
   sentence.forEach(function (it) {
     var c = document.createElement('span'); c.className = 'chip c-' + (it.colour || 'thing');
-    var e = document.createElement('span'); e.className = 'e'; e.textContent = it.emoji || ''; c.appendChild(e);
+    c.appendChild(picHTML(it, 'e'));
     var t = document.createElement('span'); t.textContent = it.label; c.appendChild(t);
     strip.appendChild(c);
   });
@@ -556,8 +593,8 @@ grid.addEventListener('click', function (ev) {
   lastTap = { id: it.id, t: now };
   b.classList.remove('flash'); void b.offsetWidth; b.classList.add('flash');
   if (it.kind === 'folder') { speak(it.say || it.label); path = it.id; render(); document.getElementById('board').scrollTop = 0; return; }
-  speak(it.say || it.label);
-  if (settings.strip) { sentence.push({ label: it.label, say: it.say || it.label, emoji: it.emoji, colour: it.colour }); if (sentence.length > 12) sentence.shift(); renderStrip(); }
+  sayWithTone(it);
+  if (settings.strip) { sentence.push({ label: it.label, say: it.say || it.label, emoji: it.emoji, img: it.img, colour: it.colour }); if (sentence.length > 12) sentence.shift(); renderStrip(); }
   if (settings.autoHome && path !== 'home') setTimeout(function () { path = 'home'; render(); }, 700);
 });
 document.getElementById('homeBtn').addEventListener('click', function () { path = 'home'; render(); });
@@ -598,7 +635,7 @@ var $ = function (id) { return document.getElementById(id); };
 (function buildPickers() {
   var ep = $('emojiPick');
   EMOJI.forEach(function (e) { var b = document.createElement('button'); b.type = 'button'; b.textContent = e; b.setAttribute('aria-label', 'Use ' + e); ep.appendChild(b); });
-  ep.addEventListener('click', function (ev) { var b = ev.target.closest('button'); if (!b) return; draft.emoji = b.textContent; $('emojiInput').value = draft.emoji; updatePreview(); });
+  ep.addEventListener('click', function (ev) { var b = ev.target.closest('button'); if (!b) return; draft.emoji = b.textContent; delete draft.img; $('emojiInput').value = draft.emoji; updatePreview(); });
   var sw = $('swatches');
   COLOURS.forEach(function (c) { var b = document.createElement('button'); b.type = 'button'; b.className = 'swatch c-' + c[0]; b.dataset.c = c[0]; b.textContent = c[1]; sw.appendChild(b); });
   sw.addEventListener('click', function (ev) { var b = ev.target.closest('.swatch'); if (!b) return; draft.colour = b.dataset.c; updatePreview(); });
@@ -629,14 +666,14 @@ function openEditor(id, kind) {
 }
 function closeEditor() { $('editScrim').hidden = true; editingId = null; draft = null; render(); }
 $('labelInput').addEventListener('input', function () { draft.label = this.value; $('sayInput').placeholder = draft.label || 'Same as the word'; updatePreview(); });
-$('emojiInput').addEventListener('input', function () { draft.emoji = this.value.trim(); updatePreview(); });
+$('emojiInput').addEventListener('input', function () { draft.emoji = this.value.trim(); delete draft.img; updatePreview(); });
 $('hearBtn').addEventListener('click', function () { speak($('sayInput').value.trim() || $('labelInput').value.trim()); });
 $('cancelEditBtn').addEventListener('click', closeEditor);
 $('saveEditBtn').addEventListener('click', function () {
   draft.label = $('labelInput').value.trim();
   if (!draft.label) { toast('Give the button a word first.'); $('labelInput').focus(); return; }
   draft.say = $('sayInput').value.trim() || draft.label;
-  if (!draft.emoji) draft.emoji = '⭐';
+  if (!draft.emoji && !draft.img) draft.emoji = '⭐';
   var i = items.findIndex(function (x) { return x.id === draft.id; });
   if (i >= 0) items[i] = draft; else items.push(draft);
   closeEditor(); markChanged();
@@ -687,7 +724,7 @@ function fillVoices() {
 function openSettings() {
   $('colsInput').value = settings.cols; $('colsVal').textContent = settings.cols;
   $('rateInput').value = settings.rate; $('pitchInput').value = settings.pitch;
-  $('autoHomeInput').checked = settings.autoHome; $('stripInput').checked = settings.strip; $('labelsInput').checked = settings.labels;
+  $('autoHomeInput').checked = settings.autoHome; $('stripInput').checked = settings.strip; $('labelsInput').checked = settings.labels; $('tonesInput').checked = settings.tones;
   $('resetBtn').classList.remove('sure'); $('resetBtn').textContent = 'Undo changes on this device'; $('copyArea').hidden = true;
   fillVoices();
   $('settingsScrim').hidden = false;
@@ -724,6 +761,7 @@ $('testVoiceBtn').addEventListener('click', function () { speak('I want juice pl
 $('autoHomeInput').addEventListener('change', function () { settings.autoHome = this.checked; saveSettings(); });
 $('stripInput').addEventListener('change', function () { settings.strip = this.checked; saveSettings(); render(); });
 $('labelsInput').addEventListener('change', function () { settings.labels = this.checked; saveSettings(); render(); });
+$('tonesInput').addEventListener('change', function () { settings.tones = this.checked; saveSettings(); if (this.checked) playTone(2); });
 $('fullscreenBtn').addEventListener('click', function () {
   var el = document.documentElement;
   var req = el.requestFullscreen || el.webkitRequestFullscreen;

@@ -1,8 +1,10 @@
-{"updated": "2026-10-12T17:30:00.000Z", "display": {"cols": 3, "strip": false, "labels": true}, "items": [
-  {"id": "food", "parent": "home", "kind": "word", "label": "food", "say": "I want food please", "emoji": "🥪", "colour": "thing", "order": 10},
-  {"id": "drink", "parent": "home", "kind": "word", "label": "drink", "say": "I want a drink please", "emoji": "🥤", "colour": "thing", "order": 20},
-  {"id": "nappy", "parent": "home", "kind": "word", "label": "nappy", "say": "change my nappy please", "emoji": "🚼", "colour": "thing", "order": 30},
-  {"id": "goout", "parent": "home", "kind": "word", "label": "go out", "say": "I want to go out", "emoji": "🌳", "colour": "action", "order": 40},
-  {"id": "hug", "parent": "home", "kind": "word", "label": "cuddle", "say": "cuddle please", "emoji": "🫂", "colour": "social", "order": 50},
-  {"id": "help", "parent": "home", "kind": "word", "label": "help", "say": "help me please", "emoji": "🆘", "colour": "action", "order": 60}
+{"updated": "2026-10-12T18:00:00.000Z", "display": {"cols": 4, "strip": false, "labels": true}, "items": [
+  {"id": "food", "parent": "home", "kind": "word", "label": "food", "say": "food", "emoji": "🍕", "colour": "thing", "order": 10},
+  {"id": "drink", "parent": "home", "kind": "word", "label": "juice", "say": "juice", "emoji": "🧃", "colour": "thing", "order": 20, "img": "symbols/beaker.svg"},
+  {"id": "chocolate", "parent": "home", "kind": "word", "label": "chocolate", "say": "chocolate", "emoji": "🍫", "colour": "thing", "order": 30},
+  {"id": "crisps", "parent": "home", "kind": "word", "label": "crisps", "say": "crisps", "emoji": "🥔", "colour": "thing", "order": 40, "img": "symbols/crisps.svg"},
+  {"id": "nappy", "parent": "home", "kind": "word", "label": "nappy", "say": "nappy", "emoji": "🚼", "colour": "thing", "order": 50},
+  {"id": "goout", "parent": "home", "kind": "word", "label": "outside", "say": "outside", "emoji": "🌳", "colour": "action", "order": 60},
+  {"id": "hug", "parent": "home", "kind": "word", "label": "cuddle", "say": "cuddle", "emoji": "🫂", "colour": "social", "order": 70},
+  {"id": "help", "parent": "home", "kind": "word", "label": "help", "say": "help", "emoji": "🆘", "colour": "action", "order": 80}
 ]}

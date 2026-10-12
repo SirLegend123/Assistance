@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Packet of crisps">
+  <path d="M28 20 L34 12 L40 20 L46 12 L52 20 L58 12 L64 20 L70 12 L76 20 L82 12 L88 20 L94 12 L100 20 Z" fill="#B3261E"/>
+  <path d="M28 108 L34 116 L40 108 L46 116 L52 108 L58 116 L64 108 L70 116 L76 108 L82 116 L88 108 L94 116 L100 108 Z" fill="#B3261E"/>
+  <path d="M28 20 H100 Q93 64 100 108 H28 Q35 64 28 20 Z" fill="#E8412E" stroke="#B3261E" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M40 28 Q36 64 40 100" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" fill="none" opacity=".45"/>
+  <circle cx="66" cy="66" r="26" fill="#FFF6D6"/>
+  <ellipse cx="58" cy="70" rx="13" ry="9" transform="rotate(-20 58 70)" fill="#F6C744" stroke="#D49A12" stroke-width="2.5"/>
+  <ellipse cx="74" cy="60" rx="12" ry="8.5" transform="rotate(25 74 60)" fill="#F9D35B" stroke="#D49A12" stroke-width="2.5"/>
+  <ellipse cx="72" cy="76" rx="10" ry="7" transform="rotate(-5 72 76)" fill="#F6C744" stroke="#D49A12" stroke-width="2.5"/>
+</svg>
