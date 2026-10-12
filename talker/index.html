@@ -109,7 +109,7 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
 .tile:active { transform: scale(.96); }
 .tile .pic { flex: 1; min-height: 0; width: 100%; display: grid; place-items: center; }
 .tile .pic img { max-width: 100%; max-height: 100%; width: auto; height: 100%; object-fit: contain; border-radius: 10px; }
-.tile .pic img.sym { height: 70%; height: min(68cqh, 74cqw); border-radius: 0; }
+.tile .pic img.sym { height: 70%; height: min(68cqh, 74cqw); max-width: 92%; border-radius: 0; }
 .chip img.sym { width: 34px; height: 34px; }
 .tile .pic .e { font-size: 3rem; font-size: min(52cqh, 60cqw); line-height: 1; }
 .tile .lbl {
@@ -321,7 +321,7 @@ input[type=range] { width: 100%; }
 
 <div class="toast" id="toast" hidden></div>
 
-<script type="application/json" id="board-data">{"updated": "2026-10-12T18:30:00.000Z", "display": {"cols": 4, "strip": false, "labels": true}, "items": [{"id": "food", "parent": "home", "kind": "word", "label": "food", "say": "food", "emoji": "🍕", "colour": "thing", "order": 10}, {"id": "drink", "parent": "home", "kind": "word", "label": "juice", "say": "juice", "emoji": "🧃", "colour": "thing", "order": 20, "img": "symbols/juice-cup.webp"}, {"id": "chocolate", "parent": "home", "kind": "word", "label": "chocolate", "say": "chocolate", "emoji": "🍫", "colour": "thing", "order": 30}, {"id": "crisps", "parent": "home", "kind": "word", "label": "crisps", "say": "crisps", "emoji": "🥔", "colour": "thing", "order": 40, "img": "symbols/crisps.svg"}, {"id": "nappy", "parent": "home", "kind": "word", "label": "nappy", "say": "nappy", "emoji": "🚼", "colour": "thing", "order": 50}, {"id": "goout", "parent": "home", "kind": "word", "label": "outside", "say": "outside", "emoji": "🌳", "colour": "action", "order": 60}, {"id": "hug", "parent": "home", "kind": "word", "label": "cuddle", "say": "cuddle", "emoji": "🫂", "colour": "social", "order": 70}, {"id": "help", "parent": "home", "kind": "word", "label": "help", "say": "help", "emoji": "🆘", "colour": "action", "order": 80}]}</script>
+<script type="application/json" id="board-data">{"updated": "2026-10-12T19:00:00.000Z", "display": {"cols": 4, "strip": false, "labels": true}, "items": [{"id": "food", "parent": "home", "kind": "word", "label": "food", "say": "food", "emoji": "🍕", "colour": "thing", "order": 10}, {"id": "drink", "parent": "home", "kind": "word", "label": "juice", "say": "juice", "emoji": "🧃", "colour": "thing", "order": 20, "img": "symbols/juice-cup.webp"}, {"id": "chocolate", "parent": "home", "kind": "word", "label": "chocolate", "say": "chocolate", "emoji": "🍫", "colour": "thing", "order": 30, "img": "symbols/cadbury-animals.webp"}, {"id": "crisps", "parent": "home", "kind": "word", "label": "crisps", "say": "crisps", "emoji": "🥔", "colour": "thing", "order": 40, "img": "symbols/pom-bear.webp"}, {"id": "nappy", "parent": "home", "kind": "word", "label": "nappy", "say": "nappy", "emoji": "🚼", "colour": "thing", "order": 50}, {"id": "goout", "parent": "home", "kind": "word", "label": "outside", "say": "outside", "emoji": "🌳", "colour": "action", "order": 60}, {"id": "hug", "parent": "home", "kind": "word", "label": "cuddle", "say": "cuddle", "emoji": "🫂", "colour": "social", "order": 70}, {"id": "barny", "parent": "home", "kind": "word", "label": "Barny", "say": "Barny", "emoji": "🧸", "colour": "thing", "order": 80, "img": "symbols/barny.webp"}]}</script>
 <script>
 (function () {
 'use strict';
