@@ -2,7 +2,7 @@
 
 An assistive reading tool, built to support readers with dyslexia.
 
-**Open the app:** https://sirlegend123.github.io/assistance/
+**Open the app:** https://sirlegend123.github.io/Assistance/
 
 ## What it does
 
@@ -37,7 +37,7 @@ See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the open-source librari
 
 A picture talking board (AAC) for a pre-verbal child. Tap a symbol and the tablet says it aloud.
 
-**Open the app:** https://sirlegend123.github.io/assistance/talker/
+**Open the app:** https://sirlegend123.github.io/Assistance/talker/
 
 - Big, colour-coded picture buttons (Fitzgerald Key colours used in AAC), folders, and a sentence strip for joining words.
 - Grown-up mode: press and hold the lock for 2 seconds to change words, symbols, colours and the voice.
