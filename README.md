@@ -42,4 +42,5 @@ A picture talking board (AAC) for a pre-verbal child. Tap a symbol and the table
 - Big, colour-coded picture buttons (Fitzgerald Key colours used in AAC), folders, and a sentence strip for joining words.
 - Grown-up mode: press and hold the lock for 2 seconds to change words, symbols, colours and the voice.
 - Works without Wi-Fi once it has been opened, and can be added to the home screen like an app.
-- Symbols only, no photos. The board's words live in `talker/board.json`; changes made in grown-up mode stay on that device until `board.json` is updated.
+- Symbols only, no photos. The board's words live in `talker/board.json`.
+- **Save for everyone:** on the owner's own device, add a GitHub key in Settings (a fine-grained token with *Contents: read and write* on this repository only). Changes made in grown-up mode can then be saved to `board.json`, and every other device picks them up within a few minutes when online. On devices without the key, changes stay on that device only.

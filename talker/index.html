@@ -297,7 +297,17 @@ input[type=range] { width: 100%; }
         <button class="btn danger" id="resetBtn" type="button">Undo changes on this device</button>
       </div>
       <textarea id="copyArea" rows="3" readonly hidden style="font:inherit;font-size:.8rem;width:100%;box-sizing:border-box" aria-label="Board text to copy"></textarea>
-      <p class="note">“Copy board” copies this board as text. Paste it to Claude to update the board for everyone. “Undo” puts back the shared board.</p>
+      <p class="note">“Copy board” copies this board as text, for pasting to Claude. “Undo” puts back the shared board.</p>
+    </div>
+    <div class="field">
+      <label for="ghKeyInput">Save for everyone (owner only)</label>
+      <p class="note" id="ghKeyStatus"></p>
+      <div class="row">
+        <input type="password" id="ghKeyInput" autocomplete="off" placeholder="Paste GitHub key" style="flex:1;min-width:0;font:inherit;font-size:1rem;padding:10px 12px;border-radius:10px;border:2px solid var(--line)">
+        <button class="btn primary" id="ghKeySaveBtn" type="button">Connect</button>
+        <button class="btn danger" id="ghKeyRemoveBtn" type="button" hidden>Disconnect this device</button>
+      </div>
+      <p class="note">Only add the key on your own phone or tablet, never on school or family devices. Other devices can still use the board; they just can’t change it for everyone.</p>
     </div>
     <div class="sheet-foot">
       <button class="btn" id="fullscreenBtn" type="button">⛶ Full screen</button>
@@ -341,9 +351,20 @@ function adopt(pub) {
   else { if (local) { local = null; lsDel(LS_LOCAL); } items = clone(pub.items); }
 }
 adopt(published);
-fetch('board.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (b) {
-  if (b && Array.isArray(b.items) && b.updated > published.updated) { adopt(b); if (!editingId) render(); }
-}).catch(function () {});
+/* Fetch the latest shared board (the ?v= stops GitHub's 10-minute cache serving an old copy). */
+function refreshBoard() {
+  return fetch('board.json?v=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (b) {
+    if (b && Array.isArray(b.items) && b.updated > published.updated) {
+      adopt(b);
+      if (!editingId) render();
+      if (adult) updateSaveUI();
+    }
+  }).catch(function () {});
+}
+refreshBoard();
+// Pick up changes while the app stays open: when it comes back on screen, and every 5 minutes.
+document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') refreshBoard(); });
+setInterval(function () { if (document.visibilityState === 'visible') refreshBoard(); }, 5 * 60 * 1000);
 
 function markChanged() {
   if (!local) local = { base: published.updated };
@@ -351,34 +372,64 @@ function markChanged() {
   lsSet(LS_LOCAL, local);
   updateSaveUI();
 }
+
+/* ---------------- saving for everyone (owner's devices only) ----------------
+   The board is the file talker/board.json in the owner's GitHub repository. A device that has
+   the owner's GitHub key saves straight to it; GitHub Pages then serves it to every device. */
+var GH = { owner: 'SirLegend123', repo: 'Assistance', path: 'talker/board.json', branch: 'main' };
+var LS_KEY = 'talker.githubKey.v1';
+function ghKey() { try { return localStorage.getItem(LS_KEY) || ''; } catch (e) { return ''; } }
+function canSave() { return !!ghKey(); }
+
 function updateSaveUI(msg) {
   var dirty = !!local;
-  document.getElementById('saveAllBtn').hidden = !dirty || !canSave;
+  document.getElementById('saveAllBtn').hidden = !dirty || !canSave();
   document.getElementById('syncNote').textContent = msg || (dirty
-    ? (canSave ? 'You have changes on this device only. Tap “Save for everyone” to update the shared link.' : 'Changes are saved on this device only. To update everyone, use Settings › Copy board and paste it to Claude.')
+    ? (canSave() ? 'You have changes on this device only. Tap “Save for everyone” to send them to every device.' : 'Changes here stay on this device only. Only the board’s owner can change it for everyone.')
     : 'This is the shared board everyone sees.');
 }
 
-var artifactApi = null, canSave = true;
-if (window.claude && typeof window.claude.use === 'function') {
-  window.claude.use('artifact').then(function (a) { artifactApi = a; if (!a) canSave = false; updateSaveUI(); }).catch(function () { canSave = false; updateSaveUI(); });
-} else canSave = false;
+function ghRequest(method, body) {
+  var url = 'https://api.github.com/repos/' + GH.owner + '/' + GH.repo + '/contents/' + GH.path + (method === 'GET' ? '?ref=' + GH.branch + '&t=' + Date.now() : '');
+  return fetch(url, {
+    method: method,
+    headers: { 'Authorization': 'Bearer ' + ghKey(), 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' },
+    body: body ? JSON.stringify(body) : undefined,
+    cache: 'no-store'
+  }).then(function (r) {
+    return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) { var e = new Error(j.message || 'GitHub error'); e.status = r.status; throw e; } return j; });
+  });
+}
+function toBase64(text) {
+  var bytes = new TextEncoder().encode(text), bin = '';
+  for (var i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+function boardText(board) {
+  // One button per line so the history on GitHub is easy to read.
+  return '{"updated": ' + JSON.stringify(board.updated) + ', "items": [\n' + board.items.map(function (it) { return '  ' + JSON.stringify(it); }).join(',\n') + '\n]}\n';
+}
 
 function saveForEveryone() {
-  if (!artifactApi || !local) return;
+  if (!canSave() || !local) return;
   var btn = document.getElementById('saveAllBtn');
   btn.disabled = true; btn.textContent = 'Saving…';
   var next = { updated: new Date().toISOString(), items: clone(items) };
-  artifactApi.publish({ 'board.json': JSON.stringify(next) }).then(function () {
+  function attempt(retry) {
+    return ghRequest('GET').then(function (cur) {
+      return ghRequest('PUT', { message: 'Update My Talker board', content: toBase64(boardText(next)), sha: cur.sha, branch: GH.branch });
+    }).catch(function (e) {
+      if (retry && (e.status === 409 || e.status === 422)) return attempt(false);
+      throw e;
+    });
+  }
+  attempt(true).then(function () {
     published = next; local = null; lsDel(LS_LOCAL);
-    updateSaveUI('Saved. Everyone using the link now gets this board.');
+    updateSaveUI('Saved for everyone. Other devices get it within a few minutes when they’re online.');
     toast('Saved for everyone');
   }).catch(function (e) {
-    var code = e && e.code;
-    if (code === 'conflict') { updateSaveUI('Someone else saved first. The page is reloading with their version.'); return; }
-    if (code === 'rate_limited' || code === 'upstream_error') { updateSaveUI('Couldn’t save just now. Your changes are safe on this device; try again in a minute.'); return; }
-    canSave = false;
-    updateSaveUI('Changes stay on this device. To update everyone, use Settings › Copy board and paste it to Claude.');
+    if (e.status === 401 || e.status === 403 || e.status === 404) updateSaveUI('Couldn’t save: the GitHub key isn’t working (it may have expired). Add a new key in Settings. Your changes are safe on this device.');
+    else updateSaveUI('Couldn’t save just now (check the Wi-Fi). Your changes are safe on this device; try again in a minute.');
   }).then(function () { btn.disabled = false; btn.textContent = 'Save for everyone'; });
 }
 
@@ -637,6 +688,28 @@ function openSettings() {
   $('settingsScrim').hidden = false;
 }
 $('settingsBtn').addEventListener('click', openSettings);
+function showKeyState() {
+  var has = canSave();
+  $('ghKeyStatus').textContent = has ? 'This device is connected. “Save for everyone” appears after you make changes.' : 'Not connected. Changes made here stay on this device.';
+  $('ghKeyInput').hidden = has; $('ghKeySaveBtn').hidden = has; $('ghKeyRemoveBtn').hidden = !has;
+  $('ghKeyInput').value = '';
+}
+$('settingsBtn').addEventListener('click', showKeyState);
+$('ghKeySaveBtn').addEventListener('click', function () {
+  var key = $('ghKeyInput').value.trim();
+  if (!key) { toast('Paste the GitHub key first.'); return; }
+  try { localStorage.setItem(LS_KEY, key); } catch (e) { toast('This browser won’t store the key.'); return; }
+  $('ghKeyStatus').textContent = 'Checking…';
+  ghRequest('GET').then(function () { showKeyState(); updateSaveUI(); toast('Connected'); })
+    .catch(function (e) {
+      try { localStorage.removeItem(LS_KEY); } catch (er) {}
+      showKeyState();
+      $('ghKeyStatus').textContent = (e.status === 401 || e.status === 403 || e.status === 404)
+        ? 'That key didn’t work. Check it has “Contents: read and write” for the Assistance repository.'
+        : 'Couldn’t reach GitHub. Check the Wi-Fi and try again.';
+    });
+});
+$('ghKeyRemoveBtn').addEventListener('click', function () { try { localStorage.removeItem(LS_KEY); } catch (e) {} showKeyState(); updateSaveUI(); toast('Disconnected'); });
 $('closeSettingsBtn').addEventListener('click', function () { $('settingsScrim').hidden = true; });
 $('colsInput').addEventListener('input', function () { settings.cols = +this.value; $('colsVal').textContent = this.value; saveSettings(); render(); });
 $('voiceSelect').addEventListener('change', function () { settings.voiceURI = this.value; saveSettings(); speak('Hello, this is my voice'); });
