@@ -1,10 +1,10 @@
-{"updated": "2026-10-12T19:00:00.000Z", "display": {"cols": 4, "strip": false, "labels": true}, "items": [
-  {"id": "food", "parent": "home", "kind": "word", "label": "food", "say": "food", "emoji": "🍕", "colour": "thing", "order": 10},
-  {"id": "drink", "parent": "home", "kind": "word", "label": "juice", "say": "juice", "emoji": "🧃", "colour": "thing", "order": 20, "img": "symbols/juice-cup.webp"},
-  {"id": "chocolate", "parent": "home", "kind": "word", "label": "chocolate", "say": "chocolate", "emoji": "🍫", "colour": "thing", "order": 30, "img": "symbols/cadbury-animals.webp"},
-  {"id": "crisps", "parent": "home", "kind": "word", "label": "crisps", "say": "crisps", "emoji": "🥔", "colour": "thing", "order": 40, "img": "symbols/pom-bear.webp"},
-  {"id": "nappy", "parent": "home", "kind": "word", "label": "nappy", "say": "nappy", "emoji": "🚼", "colour": "thing", "order": 50},
-  {"id": "goout", "parent": "home", "kind": "word", "label": "outside", "say": "outside", "emoji": "🌳", "colour": "action", "order": 60},
-  {"id": "hug", "parent": "home", "kind": "word", "label": "cuddle", "say": "cuddle", "emoji": "🫂", "colour": "social", "order": 70},
-  {"id": "barny", "parent": "home", "kind": "word", "label": "Barny", "say": "Barny", "emoji": "🧸", "colour": "thing", "order": 80, "img": "symbols/barny.webp"}
+{"updated": "2026-10-13T13:00:00.000Z", "display": {"cols": 4, "strip": false, "labels": true}, "items": [
+  {"id": "food", "parent": "home", "kind": "word", "label": "food", "say": "food", "emoji": "🍕", "colour": "thing", "order": 10, "audio": "audio/food.mp3"},
+  {"id": "drink", "parent": "home", "kind": "word", "label": "juice", "say": "juice", "emoji": "🧃", "colour": "thing", "order": 20, "img": "symbols/juice-cup.webp", "audio": "audio/drink.mp3"},
+  {"id": "chocolate", "parent": "home", "kind": "word", "label": "chocolate", "say": "chocolate", "emoji": "🍫", "colour": "thing", "order": 30, "img": "symbols/cadbury-animals.webp", "audio": "audio/chocolate.mp3"},
+  {"id": "crisps", "parent": "home", "kind": "word", "label": "crisps", "say": "crisps", "emoji": "🥔", "colour": "thing", "order": 40, "img": "symbols/pom-bear.webp", "audio": "audio/crisps.mp3"},
+  {"id": "nappy", "parent": "home", "kind": "word", "label": "nappy", "say": "nappy", "emoji": "🚼", "colour": "thing", "order": 50, "audio": "audio/nappy.mp3"},
+  {"id": "goout", "parent": "home", "kind": "word", "label": "outside", "say": "outside", "emoji": "🌳", "colour": "action", "order": 60, "audio": "audio/goout.mp3"},
+  {"id": "hug", "parent": "home", "kind": "word", "label": "cuddle", "say": "cuddle", "emoji": "🫂", "colour": "social", "order": 70, "audio": "audio/hug.mp3"},
+  {"id": "barny", "parent": "home", "kind": "word", "label": "Barny", "say": "Barny", "emoji": "🧸", "colour": "thing", "order": 80, "img": "symbols/barny.webp", "audio": "audio/barny.mp3"}
 ]}

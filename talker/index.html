@@ -321,7 +321,7 @@ input[type=range] { width: 100%; }
 
 <div class="toast" id="toast" hidden></div>
 
-<script type="application/json" id="board-data">{"updated": "2026-10-12T19:00:00.000Z", "display": {"cols": 4, "strip": false, "labels": true}, "items": [{"id": "food", "parent": "home", "kind": "word", "label": "food", "say": "food", "emoji": "🍕", "colour": "thing", "order": 10}, {"id": "drink", "parent": "home", "kind": "word", "label": "juice", "say": "juice", "emoji": "🧃", "colour": "thing", "order": 20, "img": "symbols/juice-cup.webp"}, {"id": "chocolate", "parent": "home", "kind": "word", "label": "chocolate", "say": "chocolate", "emoji": "🍫", "colour": "thing", "order": 30, "img": "symbols/cadbury-animals.webp"}, {"id": "crisps", "parent": "home", "kind": "word", "label": "crisps", "say": "crisps", "emoji": "🥔", "colour": "thing", "order": 40, "img": "symbols/pom-bear.webp"}, {"id": "nappy", "parent": "home", "kind": "word", "label": "nappy", "say": "nappy", "emoji": "🚼", "colour": "thing", "order": 50}, {"id": "goout", "parent": "home", "kind": "word", "label": "outside", "say": "outside", "emoji": "🌳", "colour": "action", "order": 60}, {"id": "hug", "parent": "home", "kind": "word", "label": "cuddle", "say": "cuddle", "emoji": "🫂", "colour": "social", "order": 70}, {"id": "barny", "parent": "home", "kind": "word", "label": "Barny", "say": "Barny", "emoji": "🧸", "colour": "thing", "order": 80, "img": "symbols/barny.webp"}]}</script>
+<script type="application/json" id="board-data">{"updated": "2026-10-13T13:00:00.000Z", "display": {"cols": 4, "strip": false, "labels": true}, "items": [{"id": "food", "parent": "home", "kind": "word", "label": "food", "say": "food", "emoji": "🍕", "colour": "thing", "order": 10, "audio": "audio/food.mp3"}, {"id": "drink", "parent": "home", "kind": "word", "label": "juice", "say": "juice", "emoji": "🧃", "colour": "thing", "order": 20, "img": "symbols/juice-cup.webp", "audio": "audio/drink.mp3"}, {"id": "chocolate", "parent": "home", "kind": "word", "label": "chocolate", "say": "chocolate", "emoji": "🍫", "colour": "thing", "order": 30, "img": "symbols/cadbury-animals.webp", "audio": "audio/chocolate.mp3"}, {"id": "crisps", "parent": "home", "kind": "word", "label": "crisps", "say": "crisps", "emoji": "🥔", "colour": "thing", "order": 40, "img": "symbols/pom-bear.webp", "audio": "audio/crisps.mp3"}, {"id": "nappy", "parent": "home", "kind": "word", "label": "nappy", "say": "nappy", "emoji": "🚼", "colour": "thing", "order": 50, "audio": "audio/nappy.mp3"}, {"id": "goout", "parent": "home", "kind": "word", "label": "outside", "say": "outside", "emoji": "🌳", "colour": "action", "order": 60, "audio": "audio/goout.mp3"}, {"id": "hug", "parent": "home", "kind": "word", "label": "cuddle", "say": "cuddle", "emoji": "🫂", "colour": "social", "order": 70, "audio": "audio/hug.mp3"}, {"id": "barny", "parent": "home", "kind": "word", "label": "Barny", "say": "Barny", "emoji": "🧸", "colour": "thing", "order": 80, "img": "symbols/barny.webp", "audio": "audio/barny.mp3"}]}</script>
 <script>
 (function () {
 'use strict';
@@ -491,10 +491,57 @@ function playTone(n) {
   } catch (e) { return false; }
 }
 function noteFor(it) { return childrenOf(it.parent).indexOf(it); }
+
+/* ---------------- recorded words ----------------
+   Buttons with a recording play it through the same sound system as the notes. Some browsers
+   (such as the Amazon Kids browser) play sounds but have no speaking voice, so recordings are
+   used first and the device's voice is only a backup. */
+var wordBuffers = {}, wordLoading = {};
+function ensureCtx() {
+  var AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+  if (!audioCtx) audioCtx = new AC();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+function loadWord(url) {
+  if (wordBuffers[url]) return Promise.resolve(wordBuffers[url]);
+  if (wordLoading[url]) return wordLoading[url];
+  var ctx = ensureCtx();
+  if (!ctx) return Promise.reject(new Error('no audio'));
+  wordLoading[url] = fetch(url).then(function (r) { if (!r.ok) throw new Error('missing'); return r.arrayBuffer(); })
+    .then(function (data) {
+      // Older browsers only support the callback form of decodeAudioData.
+      return new Promise(function (resolve, reject) { ctx.decodeAudioData(data, resolve, reject); });
+    })
+    .then(function (buf) { wordBuffers[url] = buf; return buf; })
+    .catch(function (e) { delete wordLoading[url]; throw e; });
+  return wordLoading[url];
+}
+function playBuffer(buf, delay) {
+  var ctx = ensureCtx(); if (!ctx) return;
+  var src = ctx.createBufferSource(), g = ctx.createGain();
+  g.gain.value = 1; src.buffer = buf; src.connect(g); g.connect(ctx.destination);
+  src.start(ctx.currentTime + (delay || 0));
+}
+// Load every recording on the board after the first tap, so later taps play instantly.
+var preloaded = false;
+function preloadWords() {
+  if (preloaded) return; preloaded = true;
+  items.forEach(function (it) { if (it.audio) loadWord(it.audio).catch(function () {}); });
+}
 function sayWithTone(it) {
   var text = it.say || it.label;
-  if (settings.tones && playTone(noteFor(it))) setTimeout(function () { speak(text); }, 320);
-  else speak(text);
+  var toned = settings.tones && playTone(noteFor(it));
+  var delay = toned ? 0.32 : 0;
+  preloadWords();
+  if (it.audio) {
+    if (wordBuffers[it.audio]) { playBuffer(wordBuffers[it.audio], delay); return; }
+    loadWord(it.audio).then(function (buf) { playBuffer(buf, toned ? 0.12 : 0); })
+      .catch(function () { setTimeout(function () { speak(text); }, delay * 1000); });
+    return;
+  }
+  setTimeout(function () { speak(text); }, delay * 1000);
 }
 
 function speak(text) {
@@ -673,6 +720,8 @@ $('saveEditBtn').addEventListener('click', function () {
   draft.label = $('labelInput').value.trim();
   if (!draft.label) { toast('Give the button a word first.'); $('labelInput').focus(); return; }
   draft.say = $('sayInput').value.trim() || draft.label;
+  var before = byId(draft.id);
+  if (draft.audio && (!before || before.say !== draft.say)) delete draft.audio;
   if (!draft.emoji && !draft.img) draft.emoji = '⭐';
   var i = items.findIndex(function (x) { return x.id === draft.id; });
   if (i >= 0) items[i] = draft; else items.push(draft);
