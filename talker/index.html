@@ -477,8 +477,10 @@ function saveForEveryone() {
     updateSaveUI('Saved for everyone. Other devices get it within a few minutes when they’re online.');
     toast('Saved for everyone');
   }).catch(function (e) {
-    if (e.status === 401 || e.status === 403 || e.status === 404) updateSaveUI('Couldn’t save: the GitHub key isn’t working (it may have expired, or needs “Contents: read and write”). Add a new key in Settings. Your changes are safe on this device.');
-    else updateSaveUI('Couldn’t save just now (check the Wi-Fi). Your changes are safe on this device; try again in a minute.');
+    var why = e && e.message ? ' (GitHub said: “' + e.message + '”, code ' + (e.status || '?') + ')' : '';
+    if (e.status === 403) updateSaveUI('Couldn’t save: the GitHub key can read but not write. On github.com, edit the key and set Contents to “Read and write”, then tap Save for everyone again. Your changes are safe on this device.' + why);
+    else if (e.status === 401 || e.status === 404) updateSaveUI('Couldn’t save: the GitHub key isn’t working (it may have expired, or isn’t set up for the Assistance repository). Add a new key in Settings. Your changes are safe on this device.' + why);
+    else updateSaveUI('Couldn’t save just now (check the Wi-Fi). Your changes are safe on this device; try again in a minute.' + why);
   }).then(function () { btn.disabled = false; btn.textContent = 'Save for everyone'; });
 }
 
