@@ -1,7 +1,7 @@
 // Keeps My Talker working without Wi-Fi once it has been opened.
 // The page and fonts come from the cache first; board.json is fetched fresh when online.
-var CACHE = 'my-talker-v8';
-var SHELL = ['./', 'index.html', 'board.json', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'symbols/juice-cup.webp', 'symbols/pom-bear.webp', 'symbols/cadbury-animals.webp', 'symbols/barny.webp', 'audio/food.mp3', 'audio/drink.mp3', 'audio/chocolate.mp3', 'audio/crisps.mp3', 'audio/nappy.mp3', 'audio/goout.mp3', 'audio/hug.mp3', 'audio/barny.mp3'];
+var CACHE = 'my-talker-v9';
+var SHELL = ['./', 'index.html', 'board.json', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'symbols/juice-cup.webp', 'symbols/pom-bear.webp', 'symbols/cadbury-animals.webp', 'symbols/barny.webp', 'audio/food.mp3?v=2', 'audio/drink.mp3?v=2', 'audio/chocolate.mp3?v=2', 'audio/crisps.mp3?v=2', 'audio/nappy.mp3?v=2', 'audio/goout.mp3?v=2', 'audio/hug.mp3?v=2', 'audio/barny.mp3?v=2'];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); }));
