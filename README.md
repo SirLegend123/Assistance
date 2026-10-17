@@ -54,4 +54,5 @@ A decision tool for testing an opportunity against the philosophy *children flou
 **Open the app:** https://sirlegend123.github.io/Assistance/alignment-check/
 
 - The source lives in `alignment-check/index.html` and mirrors the Claude artefact of the same name.
-- The **Decision log** and **Ask Claude** features only work when the page is opened as the Claude artefact. On GitHub Pages the checks, verdict and draft reply all work, but decisions are not saved.
+- **Decision log:** on GitHub Pages, decisions are saved in the browser you use, so they stay on that device and are lost if you clear your browsing data. Opened as the Claude artefact, the log uses your Claude account instead.
+- **Ask Claude** only works when the page is opened as the Claude artefact.

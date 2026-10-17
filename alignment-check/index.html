@@ -284,7 +284,8 @@ select{font:inherit;font-size:14px;color:var(--ink);background:var(--surface-2);
     </div>
     <ul class="entries" id="entries"></ul>
     <div class="empty" id="logEmpty"><b>No decisions saved yet</b>Run a check, then choose "Save to log". Each opportunity appears here with its verdict and what you decided, so you can spot patterns over time.</div>
-    <div class="empty" id="logUnavailable" hidden><b>The decision log isn't available here</b>Open this page from your Claude account to save and view decisions.</div>
+    <div class="empty" id="logUnavailable" hidden><b>The decision log isn't available here</b>This browser is blocking storage, for example in a private window. Open the page in a normal window to save and view decisions.</div>
+    <p class="meta" id="logLocal" hidden>Decisions are saved in this browser only. They won't appear on other devices, and clearing your browsing data removes them.</p>
   </section>
 </div>
 
@@ -534,12 +535,45 @@ function renderLog(){
   });
 }
 
+/* Outside Claude, keep the log in this browser's storage, behind the same calls the Claude db uses. */
+function localDb(){
+  const KEY = 'alignment-check:decisions';
+  try{ localStorage.setItem(KEY+':test','1'); localStorage.removeItem(KEY+':test'); }catch(e){ return null; }
+  const listeners = [];
+  const load = () => { try{ return JSON.parse(localStorage.getItem(KEY)) || []; }catch(e){ return []; } };
+  const emit = () => {
+    const list = load().sort((x,y) => (y.d.createdAt||0) - (x.d.createdAt||0));
+    const snap = {docs: list.map(e => ({id:e.id, exists:true, data:() => e.d}))};
+    listeners.forEach(fn => fn(snap));
+  };
+  const save = list => {
+    try{ localStorage.setItem(KEY, JSON.stringify(list)); }catch(e){ throw {code:'quota_exceeded'}; }
+    emit();
+  };
+  window.addEventListener('storage', e => { if(e.key===KEY) emit(); });
+  const query = {orderBy:() => query, limit:() => query, onSnapshot(fn){ listeners.push(fn); emit(); }};
+  return {
+    local: true,
+    collection: () => ({...query, add: async d => {
+      const id = Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+      save([...load(), {id, d}]); return {id};
+    }}),
+    doc: path => { const id = path.split('/')[1]; return {
+      update: async ch => save(load().map(e => e.id===id ? {id, d:{...e.d, ...ch}} : e)),
+      delete: async () => save(load().filter(e => e.id!==id))
+    }; }
+  };
+}
+
 (async () => {
-  if(!window.claude || !claude.use){ $('logEmpty').hidden = true; $('logUnavailable').hidden = false; return; }
-  const [dbNs, sampleNs] = await Promise.all([claude.use('db'), claude.use('sample')]);
-  sample = sampleNs; if(sample) $('askBtn').hidden = false;
-  db = dbNs;
+  let dbNs = null;
+  if(window.claude && claude.use){
+    const [d, sampleNs] = await Promise.all([claude.use('db'), claude.use('sample')]);
+    dbNs = d; sample = sampleNs; if(sample) $('askBtn').hidden = false;
+  }
+  db = dbNs || localDb();
   if(!db){ $('logEmpty').hidden = true; $('logUnavailable').hidden = false; return; }
+  $('logLocal').hidden = !db.local;
   $('saveBtn').hidden = false; render();
   db.collection('decisions').orderBy('createdAt','desc').limit(300).onSnapshot(snap => {
     entries = snap.docs.filter(s => s.exists).map(s => ({id:s.id, d:s.data()}));
