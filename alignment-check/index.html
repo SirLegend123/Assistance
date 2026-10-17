@@ -509,7 +509,12 @@ function logAsCsv(){
 }
 $('dlLog').addEventListener('click', () => {
   const name = `alignment-check-log-${new Date().toISOString().slice(0,10)}.csv`;
-  if(saveFile) saveFile.save({filename:name, data:logAsCsv()}).catch(() => {});
+  if(saveFile) saveFile.save({filename:name, data:logAsCsv()}).catch(e => {
+    const code = e && e.code;
+    if(code === 'declined') return;
+    if(code === 'rate_limited'){ $('dlLog').textContent = 'Try again in a moment'; setTimeout(() => $('dlLog').textContent = 'Download log', 2500); }
+    else { canDownload = false; $('dlLog').hidden = true; }
+  });
   else {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([logAsCsv()], {type:'text/csv'}));
