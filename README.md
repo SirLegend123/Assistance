@@ -49,7 +49,7 @@ A picture talking board (AAC) for a pre-verbal child. Tap a symbol and the table
 
 # Alignment Check
 
-A decision tool for testing an opportunity against the philosophy *children flourish when the systems around them align*. Five checks (system, vehicle, values, roots, practical fit) give a live verdict (Pursue, Shape it or Decline) and a draft reply.
+A decision tool for testing an opportunity against the philosophy *children flourish when the systems around them align*. A remit check comes first: anything outside work with families and schools (for example health, GPs or social care) is a Decline straight away. Then five checks (system, vehicle, values, roots, practical fit) give a live verdict (Pursue, Shape it or Decline) and a draft reply. The firm boundaries live in the `BOUNDARIES` list in `alignment-check/index.html`.
 
 **Open the app:** https://sirlegend123.github.io/Assistance/alignment-check/
 

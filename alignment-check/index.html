@@ -103,6 +103,7 @@ legend{font-weight:700;font-size:14px;margin-bottom:8px;padding:0}
 .opt input:checked + span{border-color:var(--teal);background:var(--teal-soft);box-shadow:inset 0 0 0 1px var(--teal)}
 .rec{background:var(--teal-soft);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;font-size:15px}
 .rec p{margin:0}
+.bounds{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:14px;color:var(--muted)}
 .rec dl{margin:0;display:flex;flex-direction:column;gap:8px}
 .rec dt{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .rec dd{margin:2px 0 0}
@@ -134,7 +135,7 @@ select{font:inherit;font-size:14px;color:var(--ink);background:var(--surface-2);
 <div class="wrap">
   <header>
     <h1>Alignment Check</h1>
-    <p class="lede">Test an opportunity against your philosophy: <b>children flourish when the systems around them align.</b> Work through the five checks and the verdict updates as you go.</p>
+    <p class="lede">Test an opportunity against your philosophy: <b>children flourish when the systems around them align.</b> Start with your remit, then work through the checks. The verdict updates as you go.</p>
   </header>
 
   <div class="tabs" role="tablist" aria-label="Views">
@@ -145,7 +146,7 @@ select{font:inherit;font-size:14px;color:var(--ink);background:var(--surface-2);
   <section id="view-check" role="tabpanel" aria-labelledby="tab-check" class="layout">
     <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
       <div class="banner" id="exampleBanner">
-        <span>An example is filled in so you can see how it works.</span>
+        <span id="exampleText">An example is filled in so you can see how it works.</span>
         <button type="button" class="btn small ghost" id="newCheck">Start a new check</button>
       </div>
 
@@ -171,19 +172,30 @@ select{font:inherit;font-size:14px;color:var(--ink);background:var(--surface-2);
         </div>
 
         <div class="step">
-          <div class="step-head"><span class="num" aria-hidden="true">1</span><div><h2>Which system does it serve?</h2><p class="hint">Where in the child's world would this make a difference?</p></div></div>
+          <div class="step-head"><span class="num" aria-hidden="true">1</span><div><h2>Is it within your remit?</h2><p class="hint">A firm boundary, checked before anything else. If it falls outside, the answer is no.</p></div></div>
+          <ul class="bounds" id="boundsList"></ul>
+          <fieldset><legend class="sr">Remit</legend>
+            <div class="options">
+              <label class="opt"><input type="radio" name="remit" id="rem-in" value="in"><span>Yes, it's within my remit<small>Only families, schools, or the link between them</small></span></label>
+              <label class="opt"><input type="radio" name="remit" id="rem-out" value="out"><span>No, it's outside my remit<small>It centres on health, GPs, social care or other professional services</small></span></label>
+            </div>
+          </fieldset>
+        </div>
+
+        <div class="step">
+          <div class="step-head"><span class="num" aria-hidden="true">2</span><div><h2>Which system does it serve?</h2><p class="hint">Where in the child's world would this make a difference?</p></div></div>
           <fieldset><legend class="sr">System level</legend>
             <div class="options">
-              <label class="opt"><input type="radio" name="system" id="sys-micro" value="micro"><span>Microsystem<small>Inside schools: leadership, staff, classrooms</small></span></label>
-              <label class="opt"><input type="radio" name="system" id="sys-meso" value="meso"><span>Mesosystem<small>The bridge between families and schools</small></span></label>
-              <label class="opt"><input type="radio" name="system" id="sys-exo" value="exo"><span>Exosystem &amp; macrosystem<small>Policy, national data, culture</small></span></label>
+              <label class="opt"><input type="radio" name="system" id="sys-micro" value="micro"><span>Microsystem<small>Inside schools or the family: leadership, staff, classrooms, home</small></span></label>
+              <label class="opt"><input type="radio" name="system" id="sys-meso" value="meso"><span>Mesosystem<small>The bridge between families and schools only</small></span></label>
+              <label class="opt"><input type="radio" name="system" id="sys-exo" value="exo"><span>Exosystem &amp; macrosystem<small>Policy, national data and culture around schools</small></span></label>
               <label class="opt"><input type="radio" name="system" id="sys-none" value="none"><span>None of these<small>It doesn't touch the systems around the child</small></span></label>
             </div>
           </fieldset>
         </div>
 
         <div class="step">
-          <div class="step-head"><span class="num" aria-hidden="true">2</span><div><h2>Which vehicle carries it?</h2><p class="hint">Does it run through something you already do?</p></div></div>
+          <div class="step-head"><span class="num" aria-hidden="true">3</span><div><h2>Which vehicle carries it?</h2><p class="hint">Does it run through something you already do?</p></div></div>
           <fieldset><legend class="sr">Vehicle</legend>
             <div class="options">
               <label class="opt"><input type="radio" name="vehicle" id="veh-cognalign" value="cognalign"><span>CognAlign<small>Consultancy with schools and trusts</small></span></label>
@@ -196,7 +208,7 @@ select{font:inherit;font-size:14px;color:var(--ink);background:var(--surface-2);
         </div>
 
         <div class="step">
-          <div class="step-head"><span class="num" aria-hidden="true">3</span><div><h2>Does it live your values?</h2></div></div>
+          <div class="step-head"><span class="num" aria-hidden="true">4</span><div><h2>Does it live your values?</h2></div></div>
           <fieldset class="qrow"><legend>Be curious: will I learn or explore something?</legend>
             <div class="chips">
               <label class="opt"><input type="radio" name="curious" id="cur-2" value="2"><span>Yes</span></label>
@@ -221,7 +233,7 @@ select{font:inherit;font-size:14px;color:var(--ink);background:var(--surface-2);
         </div>
 
         <div class="step roots">
-          <div class="step-head"><span class="num" aria-hidden="true">4</span><div><h2>Does it protect the roots?</h2><p class="hint">Your family is the base of the tree. This check can outweigh everything else.</p></div></div>
+          <div class="step-head"><span class="num" aria-hidden="true">5</span><div><h2>Does it protect the roots?</h2><p class="hint">Your family is the base of the tree. This check can outweigh everything else.</p></div></div>
           <fieldset class="qrow"><legend>Time it would take</legend>
             <div class="chips">
               <label class="opt"><input type="radio" name="time" id="time-light" value="light"><span>Light</span></label>
@@ -246,7 +258,7 @@ select{font:inherit;font-size:14px;color:var(--ink);background:var(--surface-2);
         </div>
 
         <div class="step">
-          <div class="step-head"><span class="num" aria-hidden="true">5</span><div><h2>Practical fit</h2></div></div>
+          <div class="step-head"><span class="num" aria-hidden="true">6</span><div><h2>Practical fit</h2></div></div>
           <fieldset class="qrow"><legend>Income</legend>
             <div class="chips">
               <label class="opt"><input type="radio" name="income" id="inc-paid" value="paid"><span>Paid</span></label>
@@ -339,8 +351,14 @@ const VERDICT = {
   decline:{word:'Decline',cls:'v-decline',line:"This doesn't align strongly enough to be worth your time."},
   incomplete:{word:'Keep going',cls:'v-incomplete',line:'Answer the checks to see a verdict.'}
 };
-const REQUIRED = ['system','vehicle','curious','collab','kind','time','caring','family','income','priorities'];
-const EXAMPLE = {title:'Guest lecture for PGCE trainees',from:'A university ITT team',details:'One 90-minute session in spring term on neurodivergent educators. Fee offered.',system:'micro',vehicle:'cognalign',curious:'2',collab:'2',kind:'2',time:'light',caring:'yes',family:'neutral',income:'paid',priorities:'yes'};
+/* Firm boundaries: shown on the page, given to Claude, and enforced by the remit check. */
+const BOUNDARIES = [
+  'You work only with families and schools: the family and school microsystems.',
+  'Your mesosystem work is the link between families and schools only. It does not extend to health, GPs, social care or other professional services.',
+  'Policy and system-level work counts only when it is about schools, or families and schools.'
+];
+const REQUIRED = ['remit','system','vehicle','curious','collab','kind','time','caring','family','income','priorities'];
+const EXAMPLE = {title:'Guest lecture for PGCE trainees',from:'A university ITT team',details:'One 90-minute session in spring term on neurodivergent educators. Fee offered.',remit:'in',system:'micro',vehicle:'cognalign',curious:'2',collab:'2',kind:'2',time:'light',caring:'yes',family:'neutral',income:'paid',priorities:'yes'};
 
 function read(){
   const fd = new FormData(form); const a = {};
@@ -366,8 +384,10 @@ function compute(a){
     else if(a.caring==='adjust' || a.family==='strain' || a.time==='heavy') roots = 'amber';
     else roots = 'green';
   }
+  const outside = a.remit === 'out';
   let verdict = 'incomplete';
-  if(!missing.length){
+  if(outside) verdict = 'decline';
+  else if(!missing.length){
     if(a.system==='none' && vals < 4) verdict = 'decline';
     else if(roots==='red') verdict = align >= 9 ? 'shape' : 'decline';
     else if(align >= 9 && roots==='green') verdict = 'pursue';
@@ -375,6 +395,10 @@ function compute(a){
     else verdict = 'decline';
   }
   const reasons = [];
+  if(outside){
+    reasons.push('It’s outside your remit: you only work with families and schools. That decides it before anything else.');
+    return {missing, align, roots, verdict, reasons, vals, outside};
+  }
   if(a.system) reasons.push(a.system==='none' ? "It doesn't serve any of the systems around the child." : `It serves the ${SYS[a.system].toLowerCase()}.`);
   if(a.vehicle) reasons.push(a.vehicle==='new' ? 'It would need a new vehicle, so check it isn’t pulling you off course.' : `It runs through ${VEH[a.vehicle]}.`);
   if(a.curious && a.collab && a.kind) reasons.push(`Values: curious ${LVL[a.curious]}, collaborative ${LVL[a.collab]}, kind ${LVL[a.kind]}.`);
@@ -384,7 +408,7 @@ function compute(a){
   if(a.priorities) reasons.push({yes:'It moves your current priorities forward.',some:'It partly moves your current priorities forward.',no:'It doesn’t move your current priorities forward.'}[a.priorities]);
   if(a.income) reasons.push({paid:'It is paid.',expenses:'It covers expenses only.',unpaid:'It is unpaid.'}[a.income]);
   if(missing.length) reasons.push(`${missing.length} check${missing.length>1?'s':''} still to answer.`);
-  return {missing, align, roots, verdict, reasons, vals};
+  return {missing, align, roots, verdict, reasons, vals, outside};
 }
 
 function replyFor(a, r){
@@ -397,6 +421,7 @@ function replyFor(a, r){
     else if(a.priorities==='no' || a.priorities==='some') ask = 'whether we could shape it so it links more closely to my current focus';
     return `Thank you for thinking of me. I’m interested, as this connects with my work on ${phrase}. Before I commit, could we talk about ${ask}?`;
   }
+  if(r.outside) return `Thank you for thinking of me. My work focuses on families and schools, so this sits outside what I take on. I hope it goes well, and I’d be glad to hear about future opportunities in that area.`;
   if(r.verdict==='decline') return `Thank you for thinking of me. After some thought, I’m not able to take this on at the moment, as I’m focusing my time on ${a.system && a.system!=='none' ? phrase : 'my current priorities'}. I hope it goes well, and I’d be glad to hear about future opportunities.`;
   return '';
 }
@@ -406,7 +431,7 @@ function render(){
   const a = read(); const r = compute(a); current = {a, r};
   const v = VERDICT[r.verdict];
   $('verdictBox').className = 'verdict ' + v.cls;
-  $('verdictWord').textContent = v.word; $('verdictLine').textContent = v.line;
+  $('verdictWord').textContent = v.word; $('verdictLine').textContent = r.outside ? 'This is outside your remit, so it’s a no before anything else.' : v.line;
   $('alignNum').textContent = `${r.align} / 12`; $('alignBar').style.width = (r.align/12*100) + '%';
   const rootsMap = {green:['Protected','var(--good)','Fits around family life'],amber:['Watch','var(--warn)','Needs limits or adjustments'],red:['At risk','var(--bad)','Would strain the roots']};
   const rw = $('rootsWord'); rw.textContent = '';
@@ -425,7 +450,7 @@ form.addEventListener('change', render);
 form.addEventListener('submit', e => e.preventDefault());
 
 $('newCheck').addEventListener('click', () => {
-  form.reset(); $('exampleBanner').hidden = true; clearAnalysis(); $('myDecision').value = 'undecided';
+  form.reset(); $('exampleText').textContent = 'Checking a new opportunity.'; clearAnalysis(); $('myDecision').value = 'undecided';
   render(); $('status').textContent=''; $('oppTitle').focus();
 });
 
@@ -447,7 +472,7 @@ $('tab-log').addEventListener('click', () => showTab('log'));
 /* Claude's analysis: places the opportunity in the structure, suggests answers and recommends a verdict.
    Caring and home life are never suggested: only Simon can judge the roots. The final decision is his. */
 let sample = null, ctl = null, analysis = null;
-const SUGGESTABLE = {system:['micro','meso','exo','none'], vehicle:['cognalign','obu','wpcf','coe','new'], curious:['2','1','0'], collab:['2','1','0'], kind:['2','1','0'],
+const SUGGESTABLE = {remit:['in','out'], system:['micro','meso','exo','none'], vehicle:['cognalign','obu','wpcf','coe','new'], curious:['2','1','0'], collab:['2','1','0'], kind:['2','1','0'],
   time:['light','moderate','heavy'], income:['paid','expenses','unpaid'], priorities:['yes','some','no']};
 const REC_DECIDED = {pursue:'pursued', shape:'shaped', decline:'declined'};
 const describe = a => [a.title, a.from, a.details].join('\n');
@@ -455,8 +480,13 @@ const describe = a => [a.title, a.from, a.details].join('\n');
 function analysisPrompt(a){
   return `You are helping Simon Preston weigh up an opportunity against his personal structure. His philosophy: "Children flourish when the systems around them align." His values: be curious, be collaborative, be kind. He works across Bronfenbrenner's systems: the school microsystem (EdD research at Oxford Brookes on leading a neurodiverse workforce; CognAlign consultancy with schools and trusts, applying his MBA in leadership), the mesosystem (parent carer advocacy through Worcestershire Parent Carer Forum, where he is an ambassador), and the exosystem and macrosystem (Count Our Expertise, a campaign for neurodivergent staff to be counted in the School Workforce Census). His family is the root of everything: he is a parent carer.
 
-Place the opportunity in his structure using these exact keys:
-system: "micro" (inside schools: leadership, staff, classrooms), "meso" (the bridge between families and schools), "exo" (policy, national data, culture), or "none" (doesn't touch the systems around the child).
+His firm boundaries, which are not negotiable:
+${BOUNDARIES.map(b => '- ' + b.replace(/^You /, 'He ').replace(/^Your /, 'His ')).join('\n')}
+
+First decide remit: "in" only if the opportunity works with families, schools, or the link between them; "out" if it centres on health services, GPs, social care or any other professional service, even when families are involved. If remit is "out", the verdict must be "decline", whatever else is true, and why must say it is outside his remit.
+
+Then place the opportunity in his structure using these exact keys:
+system: "micro" (inside schools or the family: leadership, staff, classrooms, home), "meso" (the bridge between families and schools only), "exo" (policy, national data and culture around schools), or "none" (doesn't touch the systems around the child within his remit).
 vehicle: "cognalign", "obu" (Oxford Brookes EdD), "wpcf", "coe" (Count Our Expertise), or "new" (would need a new vehicle).
 curious, collab, kind: "2" yes, "1" partly, "0" no. curious = will he learn or explore something; collab = will he work with others or co-produce; kind = will it benefit children, families or staff.
 time: "light", "moderate", "heavy", or "unknown" if the description doesn't say.
@@ -469,7 +499,7 @@ Opportunity: ${a.title || '(untitled)'}
 From: ${a.from || '(not given)'}
 Details: ${(a.details || '(none)').slice(0,3000)}
 
-Reply with only a JSON object with these keys: system, systemWhy (one sentence on why that system), vehicle, vehicleWhy (one sentence), curious, collab, kind, time, income, priorities, verdict, why (two or three sentences explaining the recommendation; if the description is too thin to be sure, say what is missing), shapeIt (one concrete adjustment that would make it fit better, or what to say no to), rootsCheck (one sentence on what to check about caring and home life before deciding), question (one question for him to sit with). Plain British English, speaking to him as "you". No other text.`;
+Reply with only a JSON object with these keys: remit, system, systemWhy (one sentence on why that system), vehicle, vehicleWhy (one sentence), curious, collab, kind, time, income, priorities, verdict, why (two or three sentences explaining the recommendation; if the description is too thin to be sure, say what is missing), shapeIt (one concrete adjustment that would make it fit better, or what to say no to), rootsCheck (one sentence on what to check about caring and home life before deciding), question (one question for him to sit with). Plain British English, speaking to him as "you". No other text.`;
 }
 
 function markSuggestions(){
@@ -510,13 +540,16 @@ $('analyseBtn').addEventListener('click', async () => {
     const str = v => typeof v === 'string' ? v.trim().slice(0,1000) : '';
     const suggested = {};
     Object.entries(SUGGESTABLE).forEach(([k, allowed]) => { const v = String(res[k] ?? ''); if(allowed.includes(v)) suggested[k] = v; });
-    analysis = {suggested, verdict:res.verdict, basis:describe(a),
+    // The remit boundary is firm: an out-of-remit pick always means decline, whatever Claude recommended.
+    analysis = {suggested, verdict:suggested.remit==='out' ? 'decline' : res.verdict, basis:describe(a),
       why:str(res.why), systemWhy:str(res.systemWhy), vehicleWhy:str(res.vehicleWhy), shapeIt:str(res.shapeIt), rootsCheck:str(res.rootsCheck), question:str(res.question)};
     Object.entries(suggested).forEach(([k, v]) => { form.querySelector(`input[name="${k}"][value="${v}"]`).checked = true; });
-    $('exampleBanner').hidden = true;
+    $('exampleText').textContent = 'Checking a new opportunity.';
     markSuggestions(); render();
     const left = REQUIRED.filter(k => !current.a[k]).length;
-    $('analyseStatus').textContent = `Claude’s picks are marked with a dashed outline. Change anything that’s wrong.${left ? ' Caring and home life are yours to answer.' : ''}`;
+    $('analyseStatus').textContent = suggested.remit==='out'
+      ? 'Claude thinks this is outside your remit, so the verdict is Decline. If that’s wrong, change the remit answer.'
+      : `Claude’s picks are marked with a dashed outline. Change anything that’s wrong.${left ? ' Caring and home life are yours to answer.' : ''}`;
   }catch(e){
     const code = e && e.code;
     if(code === 'cancelled') $('analyseStatus').textContent = 'Stopped.';
@@ -583,7 +616,7 @@ function logAsCsv(){
     ['Verdict', d => (VERDICT[d.verdict]||{}).word || d.verdict], ['Alignment (out of 12)', d => d.alignment],
     ['Roots', d => ({green:'Protected',amber:'Watch',red:'At risk'})[d.roots] || ''],
     ['What I decided', d => DECIDED[d.decided||'undecided']],
-    ['System', d => SYS[(d.answers||{}).system]], ['Vehicle', d => VEH[(d.answers||{}).vehicle]],
+    ['Remit', d => ({in:'Within',out:'Outside'})[(d.answers||{}).remit] || ''], ['System', d => SYS[(d.answers||{}).system]], ['Vehicle', d => VEH[(d.answers||{}).vehicle]],
     ['Curious', d => LVL[(d.answers||{}).curious]], ['Collaborative', d => LVL[(d.answers||{}).collab]], ['Kind', d => LVL[(d.answers||{}).kind]],
     ['Time', d => (d.answers||{}).time], ['Fits caring', d => (d.answers||{}).caring], ['Home life', d => (d.answers||{}).family],
     ['Income', d => (d.answers||{}).income], ['Moves priorities', d => (d.answers||{}).priorities],
@@ -700,6 +733,7 @@ function localDb(){
   };
 }
 
+BOUNDARIES.forEach(t => { const li = document.createElement('li'); li.textContent = t; $('boundsList').append(li); });
 fill(EXAMPLE); render();
 
 (async () => {
