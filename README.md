@@ -44,3 +44,14 @@ A picture talking board (AAC) for a pre-verbal child. Tap a symbol and the table
 - Works without Wi-Fi once it has been opened, and can be added to the home screen like an app.
 - Symbols only, no photos. The board's words live in `talker/board.json`.
 - **Save for everyone:** on the owner's own device, add a GitHub key in Settings (a fine-grained token with *Contents: read and write* on this repository only). Changes made in grown-up mode can then be saved to `board.json`, and every other device picks them up within a few minutes when online. On devices without the key, changes stay on that device only.
+
+---
+
+# Alignment Check
+
+A decision tool for testing an opportunity against the philosophy *children flourish when the systems around them align*. Five checks (system, vehicle, values, roots, practical fit) give a live verdict (Pursue, Shape it or Decline) and a draft reply.
+
+**Open the app:** https://sirlegend123.github.io/Assistance/alignment-check/
+
+- The source lives in `alignment-check/index.html` and mirrors the Claude artefact of the same name.
+- The **Decision log** and **Ask Claude** features only work when the page is opened as the Claude artefact. On GitHub Pages the checks, verdict and draft reply all work, but decisions are not saved.

@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Test an opportunity against the philosophy: children flourish when the systems around them align.">
+<title>Alignment Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: form of five checks (mirroring the philosophy tree) on the left, live verdict panel on the right; stacks on phones. */
+:root{
+  --bg:#F6F2EA; --surface:#FFFFFF; --surface-2:#FBF8F3; --ink:#16363A; --muted:#4E6264; --line:#DDD5C8;
+  --teal:#2A7570; --teal-soft:#E3EFEC; --coral:#B24C29; --coral-soft:#FBEAE2; --roots:#5B3A26; --roots-soft:#F1E4D8;
+  --good:#24704A; --good-soft:#E2F1E8; --warn:#9A6200; --warn-soft:#FBEFD6; --bad:#A3362B; --bad-soft:#F8E1DE;
+  --focus:#2A7570;
+  --font-display:'Sora', 'Segoe UI', system-ui, sans-serif;
+  --font-body:'Manrope', 'Segoe UI', system-ui, sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F2123; --surface:#16302F; --surface-2:#122927; --ink:#E9F1EF; --muted:#A8BDB9; --line:#2C4846;
+  --teal:#7CC5BD; --teal-soft:#1D3F3D; --coral:#F0A07F; --coral-soft:#3A2A24; --roots:#D9A57E; --roots-soft:#352A22;
+  --good:#7FD3A2; --good-soft:#1C3A2B; --warn:#F2C46B; --warn-soft:#3A3220; --bad:#F29A8F; --bad-soft:#3E2422;
+  --focus:#7CC5BD; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0F2123; --surface:#16302F; --surface-2:#122927; --ink:#E9F1EF; --muted:#A8BDB9; --line:#2C4846;
+  --teal:#7CC5BD; --teal-soft:#1D3F3D; --coral:#F0A07F; --coral-soft:#3A2A24; --roots:#D9A57E; --roots-soft:#352A22;
+  --good:#7FD3A2; --good-soft:#1C3A2B; --warn:#F2C46B; --warn-soft:#3A3220; --bad:#F29A8F; --bad-soft:#3E2422;
+  --focus:#7CC5BD; color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-top:calc(24px + env(safe-area-inset-top,0px));padding-bottom:calc(48px + env(safe-area-inset-bottom,0px))}
+.wrap{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--font-display);margin:0;text-wrap:balance}
+h1{font-size:clamp(28px,5vw,40px);line-height:1.1}
+.lede{margin:6px 0 0;color:var(--muted);max-width:62ch}
+.lede b{color:var(--ink)}
+.tabs{display:flex;gap:6px;border-bottom:1px solid var(--line)}
+.tab{font:inherit;font-weight:700;background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);padding:10px 4px;margin-right:16px;cursor:pointer;min-height:44px}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--coral)}
+.tab:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:24px;align-items:start}
+@media (max-width:900px){.layout{grid-template-columns:minmax(0,1fr)}}
+.banner{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;background:var(--teal-soft);border-radius:12px;padding:12px 14px;font-size:15px}
+form{display:flex;flex-direction:column;gap:16px;min-width:0}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.step-head{display:flex;gap:12px;align-items:baseline}
+.num{font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--coral);min-width:18px}
+.step h2{font-size:19px}
+.step p.hint{margin:2px 0 0;color:var(--muted);font-size:14px}
+label.field{display:flex;flex-direction:column;gap:6px;font-weight:700;font-size:14px}
+input[type=text],textarea{font:inherit;font-weight:500;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+textarea{min-height:76px;resize:vertical}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend{font-weight:700;font-size:14px;margin-bottom:8px;padding:0}
+.options{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.opt{position:relative;display:block;cursor:pointer}
+.opt input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.opt span{display:flex;flex-direction:column;gap:2px;min-height:44px;justify-content:center;border:1.5px solid var(--line);border-radius:10px;padding:9px 12px;background:var(--surface-2);font-weight:700;font-size:15px}
+.opt small{font-weight:500;color:var(--muted);font-size:13px;line-height:1.35}
+.chips .opt span{padding:8px 14px;border-radius:999px}
+.opt input:checked + span{border-color:var(--teal);background:var(--teal-soft);box-shadow:inset 0 0 0 1px var(--teal)}
+.opt input:focus-visible + span{outline:3px solid var(--focus);outline-offset:2px}
+.step.roots{background:var(--roots-soft);border-color:transparent}
+.step.roots .num{color:var(--roots)}
+.step.roots .opt span{background:var(--surface)}
+.qrow{display:flex;flex-direction:column;gap:8px}
+.result{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:16px;min-width:0}
+@media (max-width:900px){.result{position:static}}
+.eyebrow{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.verdict{display:flex;flex-direction:column;gap:6px;border-radius:12px;padding:14px 16px}
+.verdict strong{font-family:var(--font-display);font-size:30px;line-height:1.1}
+.verdict p{margin:0;font-size:15px}
+.v-pursue{background:var(--good-soft);color:var(--good)}
+.v-shape{background:var(--warn-soft);color:var(--warn)}
+.v-decline{background:var(--bad-soft);color:var(--bad)}
+.v-incomplete{background:var(--surface-2);color:var(--muted)}
+.verdict p{color:var(--ink)}
+.meters{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.meter{background:var(--surface-2);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.meter b{font-family:var(--font-display);font-size:20px;font-variant-numeric:tabular-nums}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--teal);border-radius:3px;transition:width .25s}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:baseline}
+.reasons{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:15px}
+.reply{background:var(--surface-2);border-radius:10px;padding:12px;font-size:15px;white-space:pre-wrap}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{font:inherit;font-weight:700;border-radius:10px;padding:10px 16px;min-height:44px;cursor:pointer;border:1.5px solid var(--ink);background:var(--ink);color:var(--bg)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.small{min-height:36px;padding:6px 12px;font-size:14px}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.claude-out{border-left:0;background:var(--teal-soft);border-radius:10px;padding:12px 14px;font-size:15px;white-space:pre-wrap}
+.status{font-size:14px;color:var(--muted);min-height:1.2em}
+/* Log */
+.log-wrap{display:flex;flex-direction:column;gap:20px}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.panel h3{font-size:16px}
+.tally{display:grid;grid-template-columns:110px minmax(0,1fr) 28px;gap:8px;align-items:center;font-size:14px}
+.tally .bar{height:10px}
+.tally span:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.insight{font-size:15px;margin:0}
+.entries{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.entry{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px;align-items:start}
+.entry h3{font-size:17px;overflow-wrap:anywhere}
+.meta{color:var(--muted);font-size:14px}
+.pill{display:inline-block;font-size:13px;font-weight:800;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.entry .controls{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:14px}
+select{font:inherit;font-size:14px;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-height:36px}
+.empty{background:var(--surface);border:1.5px dashed var(--line);border-radius:14px;padding:24px;text-align:center;color:var(--muted)}
+.empty b{color:var(--ink);display:block;font-family:var(--font-display);font-size:18px;margin-bottom:4px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Alignment Check</h1>
+    <p class="lede">Test an opportunity against your philosophy: <b>children flourish when the systems around them align.</b> Work through the five checks and the verdict updates as you go.</p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Views">
+    <button class="tab" role="tab" id="tab-check" aria-selected="true" aria-controls="view-check">Check an opportunity</button>
+    <button class="tab" role="tab" id="tab-log" aria-selected="false" aria-controls="view-log">Decision log</button>
+  </div>
+
+  <section id="view-check" role="tabpanel" aria-labelledby="tab-check" class="layout">
+    <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+      <div class="banner" id="exampleBanner">
+        <span>An example is filled in so you can see how it works.</span>
+        <button type="button" class="btn small ghost" id="newCheck">Start a new check</button>
+      </div>
+
+      <form id="form" novalidate>
+        <div class="step">
+          <div class="step-head"><span class="num" aria-hidden="true">—</span><div><h2>The opportunity</h2><p class="hint">What has come your way?</p></div></div>
+          <label class="field" for="oppTitle">What is it?
+            <input type="text" id="oppTitle" name="title" placeholder="e.g. Guest lecture for PGCE trainees" autocomplete="off">
+          </label>
+          <label class="field" for="oppFrom">Who is asking?
+            <input type="text" id="oppFrom" name="from" placeholder="e.g. A university ITT team" autocomplete="off">
+          </label>
+          <label class="field" for="oppDetails">Details (optional)
+            <textarea id="oppDetails" name="details" placeholder="Dates, time commitment, fee, anything else you know"></textarea>
+          </label>
+        </div>
+
+        <div class="step">
+          <div class="step-head"><span class="num" aria-hidden="true">1</span><div><h2>Which system does it serve?</h2><p class="hint">Where in the child's world would this make a difference?</p></div></div>
+          <fieldset><legend class="sr">System level</legend>
+            <div class="options">
+              <label class="opt"><input type="radio" name="system" id="sys-micro" value="micro"><span>Microsystem<small>Inside schools: leadership, staff, classrooms</small></span></label>
+              <label class="opt"><input type="radio" name="system" id="sys-meso" value="meso"><span>Mesosystem<small>The bridge between families and schools</small></span></label>
+              <label class="opt"><input type="radio" name="system" id="sys-exo" value="exo"><span>Exosystem &amp; macrosystem<small>Policy, national data, culture</small></span></label>
+              <label class="opt"><input type="radio" name="system" id="sys-none" value="none"><span>None of these<small>It doesn't touch the systems around the child</small></span></label>
+            </div>
+          </fieldset>
+        </div>
+
+        <div class="step">
+          <div class="step-head"><span class="num" aria-hidden="true">2</span><div><h2>Which vehicle carries it?</h2><p class="hint">Does it run through something you already do?</p></div></div>
+          <fieldset><legend class="sr">Vehicle</legend>
+            <div class="options">
+              <label class="opt"><input type="radio" name="vehicle" id="veh-cognalign" value="cognalign"><span>CognAlign<small>Consultancy with schools and trusts</small></span></label>
+              <label class="opt"><input type="radio" name="vehicle" id="veh-obu" value="obu"><span>Oxford Brookes<small>Doctoral research (EdD)</small></span></label>
+              <label class="opt"><input type="radio" name="vehicle" id="veh-wpcf" value="wpcf"><span>WPCF<small>Parent carer forum and ambassador role</small></span></label>
+              <label class="opt"><input type="radio" name="vehicle" id="veh-coe" value="coe"><span>Count Our Expertise<small>School Workforce Census campaign</small></span></label>
+              <label class="opt"><input type="radio" name="vehicle" id="veh-new" value="new"><span>A new vehicle<small>It would need something new</small></span></label>
+            </div>
+          </fieldset>
+        </div>
+
+        <div class="step">
+          <div class="step-head"><span class="num" aria-hidden="true">3</span><div><h2>Does it live your values?</h2></div></div>
+          <fieldset class="qrow"><legend>Be curious: will I learn or explore something?</legend>
+            <div class="chips">
+              <label class="opt"><input type="radio" name="curious" id="cur-2" value="2"><span>Yes</span></label>
+              <label class="opt"><input type="radio" name="curious" id="cur-1" value="1"><span>Partly</span></label>
+              <label class="opt"><input type="radio" name="curious" id="cur-0" value="0"><span>No</span></label>
+            </div>
+          </fieldset>
+          <fieldset class="qrow"><legend>Be collaborative: will I work with others or co-produce?</legend>
+            <div class="chips">
+              <label class="opt"><input type="radio" name="collab" id="col-2" value="2"><span>Yes</span></label>
+              <label class="opt"><input type="radio" name="collab" id="col-1" value="1"><span>Partly</span></label>
+              <label class="opt"><input type="radio" name="collab" id="col-0" value="0"><span>No</span></label>
+            </div>
+          </fieldset>
+          <fieldset class="qrow"><legend>Be kind: will it benefit children, families or staff?</legend>
+            <div class="chips">
+              <label class="opt"><input type="radio" name="kind" id="kin-2" value="2"><span>Yes</span></label>
+              <label class="opt"><input type="radio" name="kind" id="kin-1" value="1"><span>Partly</span></label>
+              <label class="opt"><input type="radio" name="kind" id="kin-0" value="0"><span>No</span></label>
+            </div>
+          </fieldset>
+        </div>
+
+        <div class="step roots">
+          <div class="step-head"><span class="num" aria-hidden="true">4</span><div><h2>Does it protect the roots?</h2><p class="hint">Your family is the base of the tree. This check can outweigh everything else.</p></div></div>
+          <fieldset class="qrow"><legend>Time it would take</legend>
+            <div class="chips">
+              <label class="opt"><input type="radio" name="time" id="time-light" value="light"><span>Light</span></label>
+              <label class="opt"><input type="radio" name="time" id="time-moderate" value="moderate"><span>Moderate</span></label>
+              <label class="opt"><input type="radio" name="time" id="time-heavy" value="heavy"><span>Heavy</span></label>
+            </div>
+          </fieldset>
+          <fieldset class="qrow"><legend>Does it fit around caring commitments?</legend>
+            <div class="chips">
+              <label class="opt"><input type="radio" name="caring" id="car-yes" value="yes"><span>Yes</span></label>
+              <label class="opt"><input type="radio" name="caring" id="car-adjust" value="adjust"><span>With adjustments</span></label>
+              <label class="opt"><input type="radio" name="caring" id="car-no" value="no"><span>No</span></label>
+            </div>
+          </fieldset>
+          <fieldset class="qrow"><legend>Likely effect on home life</legend>
+            <div class="chips">
+              <label class="opt"><input type="radio" name="family" id="fam-positive" value="positive"><span>Positive</span></label>
+              <label class="opt"><input type="radio" name="family" id="fam-neutral" value="neutral"><span>Neutral</span></label>
+              <label class="opt"><input type="radio" name="family" id="fam-strain" value="strain"><span>A strain</span></label>
+            </div>
+          </fieldset>
+        </div>
+
+        <div class="step">
+          <div class="step-head"><span class="num" aria-hidden="true">5</span><div><h2>Practical fit</h2></div></div>
+          <fieldset class="qrow"><legend>Income</legend>
+            <div class="chips">
+              <label class="opt"><input type="radio" name="income" id="inc-paid" value="paid"><span>Paid</span></label>
+              <label class="opt"><input type="radio" name="income" id="inc-expenses" value="expenses"><span>Expenses only</span></label>
+              <label class="opt"><input type="radio" name="income" id="inc-unpaid" value="unpaid"><span>Unpaid</span></label>
+            </div>
+          </fieldset>
+          <fieldset class="qrow"><legend>Does it move my current priorities forward?</legend>
+            <div class="chips">
+              <label class="opt"><input type="radio" name="priorities" id="pri-yes" value="yes"><span>Yes</span></label>
+              <label class="opt"><input type="radio" name="priorities" id="pri-some" value="some"><span>Somewhat</span></label>
+              <label class="opt"><input type="radio" name="priorities" id="pri-no" value="no"><span>No</span></label>
+            </div>
+          </fieldset>
+        </div>
+      </form>
+    </div>
+
+    <aside class="result" aria-live="polite">
+      <div class="eyebrow">Verdict</div>
+      <div class="verdict v-incomplete" id="verdictBox"><strong id="verdictWord">Keep going</strong><p id="verdictLine">Answer the checks to see a verdict.</p></div>
+      <div class="meters">
+        <div class="meter"><span class="eyebrow">Alignment</span><b id="alignNum">0 / 12</b><div class="bar"><i id="alignBar" style="width:0%"></i></div></div>
+        <div class="meter"><span class="eyebrow">Roots</span><b id="rootsWord"><span class="dot" style="background:var(--line)"></span>—</b><span class="meta" id="rootsLine">Not answered yet</span></div>
+      </div>
+      <div>
+        <div class="eyebrow" style="margin-bottom:6px">Why</div>
+        <ul class="reasons" id="reasons"></ul>
+      </div>
+      <div id="replyWrap" hidden>
+        <div class="row" style="justify-content:space-between;margin-bottom:6px"><span class="eyebrow">Draft reply</span><button type="button" class="btn small ghost" id="copyReply">Copy</button></div>
+        <div class="reply" id="replyText"></div>
+      </div>
+      <div id="claudeWrap" hidden>
+        <div class="eyebrow" style="margin-bottom:6px">Second opinion from Claude</div>
+        <div class="claude-out" id="claudeOut"></div>
+      </div>
+      <div class="row">
+        <button type="button" class="btn" id="saveBtn" hidden>Save to log</button>
+        <button type="button" class="btn ghost" id="askBtn" hidden>Ask Claude</button>
+        <button type="button" class="btn ghost small" id="stopBtn" hidden>Stop</button>
+      </div>
+      <div class="status" id="status" role="status"></div>
+    </aside>
+  </section>
+
+  <section id="view-log" role="tabpanel" aria-labelledby="tab-log" class="log-wrap" hidden>
+    <div class="summary" id="summary" hidden>
+      <div class="panel"><h3>Verdicts</h3><div id="tallyVerdict"></div></div>
+      <div class="panel"><h3>Where opportunities land</h3><div id="tallySystem"></div></div>
+      <div class="panel"><h3>Pattern</h3><p class="insight" id="insight"></p></div>
+    </div>
+    <ul class="entries" id="entries"></ul>
+    <div class="empty" id="logEmpty"><b>No decisions saved yet</b>Run a check, then choose "Save to log". Each opportunity appears here with its verdict and what you decided, so you can spot patterns over time.</div>
+    <div class="empty" id="logUnavailable" hidden><b>The decision log isn't available here</b>Open this page from your Claude account to save and view decisions.</div>
+  </section>
+</div>
+
+<script>
+(function(){
+const $ = id => document.getElementById(id);
+const form = $('form');
+const SYS = {micro:'Microsystem',meso:'Mesosystem',exo:'Exosystem & macrosystem',none:'None of these'};
+const SYS_PHRASE = {micro:'inclusion within schools',meso:'strengthening the links between families and schools',exo:'system-level change for neurodivergent staff',none:'my current priorities'};
+const VEH = {cognalign:'CognAlign',obu:'Oxford Brookes (EdD)',wpcf:'WPCF',coe:'Count Our Expertise',new:'a new vehicle'};
+const LVL = {'2':'yes','1':'partly','0':'no'};
+const VERDICT = {
+  pursue:{word:'Pursue',cls:'v-pursue',line:'This sits squarely in your philosophy and the roots are protected.'},
+  shape:{word:'Shape it',cls:'v-shape',line:'Worth doing if you change the terms.'},
+  decline:{word:'Decline',cls:'v-decline',line:"This doesn't align strongly enough to be worth your time."},
+  incomplete:{word:'Keep going',cls:'v-incomplete',line:'Answer the checks to see a verdict.'}
+};
+const REQUIRED = ['system','vehicle','curious','collab','kind','time','caring','family','income','priorities'];
+const EXAMPLE = {title:'Guest lecture for PGCE trainees',from:'A university ITT team',details:'One 90-minute session in spring term on neurodivergent educators. Fee offered.',system:'micro',vehicle:'cognalign',curious:'2',collab:'2',kind:'2',time:'light',caring:'yes',family:'neutral',income:'paid',priorities:'yes'};
+
+function read(){
+  const fd = new FormData(form); const a = {};
+  ['title','from','details',...REQUIRED].forEach(k => a[k] = (fd.get(k) || '').toString().trim());
+  return a;
+}
+function fill(a){
+  form.reset();
+  $('oppTitle').value = a.title||''; $('oppFrom').value = a.from||''; $('oppDetails').value = a.details||'';
+  REQUIRED.forEach(k => { if(a[k]){ const el = form.querySelector(`input[name="${k}"][value="${a[k]}"]`); if(el) el.checked = true; } });
+}
+
+function compute(a){
+  const missing = REQUIRED.filter(k => !a[k]);
+  const sys = ['micro','meso','exo'].includes(a.system) ? 2 : 0;
+  const veh = a.vehicle === 'new' ? 1 : (a.vehicle ? 2 : 0);
+  const vals = ['curious','collab','kind'].reduce((s,k)=> s + (Number(a[k])||0), 0);
+  const pri = {yes:2,some:1,no:0}[a.priorities] ?? 0;
+  const align = sys + veh + vals + pri;
+  let roots = null;
+  if(a.time && a.caring && a.family){
+    if(a.caring==='no' || (a.family==='strain' && a.time==='heavy')) roots = 'red';
+    else if(a.caring==='adjust' || a.family==='strain' || a.time==='heavy') roots = 'amber';
+    else roots = 'green';
+  }
+  let verdict = 'incomplete';
+  if(!missing.length){
+    if(a.system==='none' && vals < 4) verdict = 'decline';
+    else if(roots==='red') verdict = align >= 9 ? 'shape' : 'decline';
+    else if(align >= 9 && roots==='green') verdict = 'pursue';
+    else if(align >= 6) verdict = 'shape';
+    else verdict = 'decline';
+  }
+  const reasons = [];
+  if(a.system) reasons.push(a.system==='none' ? "It doesn't serve any of the systems around the child." : `It serves the ${SYS[a.system].toLowerCase()}.`);
+  if(a.vehicle) reasons.push(a.vehicle==='new' ? 'It would need a new vehicle, so check it isn’t pulling you off course.' : `It runs through ${VEH[a.vehicle]}.`);
+  if(a.curious && a.collab && a.kind) reasons.push(`Values: curious ${LVL[a.curious]}, collaborative ${LVL[a.collab]}, kind ${LVL[a.kind]}.`);
+  if(roots==='red') reasons.push(a.caring==='no' ? 'It doesn’t fit around caring commitments, which outweighs the rest.' : 'A heavy time demand that strains home life, which outweighs the rest.');
+  else if(roots==='amber') reasons.push(a.caring==='adjust' ? 'It only fits around caring with adjustments, so agree those first.' : (a.family==='strain' ? 'It could strain home life, so set limits before saying yes.' : 'The time demand is heavy, so look for a lighter version.'));
+  else if(roots==='green') reasons.push('The roots are protected: it fits around family life.');
+  if(a.priorities) reasons.push({yes:'It moves your current priorities forward.',some:'It partly moves your current priorities forward.',no:'It doesn’t move your current priorities forward.'}[a.priorities]);
+  if(a.income) reasons.push({paid:'It is paid.',expenses:'It covers expenses only.',unpaid:'It is unpaid.'}[a.income]);
+  if(missing.length) reasons.push(`${missing.length} check${missing.length>1?'s':''} still to answer.`);
+  return {missing, align, roots, verdict, reasons, vals};
+}
+
+function replyFor(a, r){
+  const phrase = SYS_PHRASE[a.system] || SYS_PHRASE.none;
+  if(r.verdict==='pursue') return `Thank you for thinking of me. This fits closely with my work on ${phrase}, and I’d be glad to take part. Could we arrange a time to talk through the details?`;
+  if(r.verdict==='shape'){
+    let ask = 'whether the scope could be adjusted to fit alongside my current commitments';
+    if(a.caring==='adjust' || a.caring==='no' || a.time==='heavy') ask = 'whether a lighter time commitment or a more flexible format would be possible';
+    else if(a.income==='unpaid' || a.income==='expenses') ask = 'whether there is any budget to cover my time';
+    else if(a.priorities==='no' || a.priorities==='some') ask = 'whether we could shape it so it links more closely to my current focus';
+    return `Thank you for thinking of me. I’m interested, as this connects with my work on ${phrase}. Before I commit, could we talk about ${ask}?`;
+  }
+  if(r.verdict==='decline') return `Thank you for thinking of me. After some thought, I’m not able to take this on at the moment, as I’m focusing my time on ${a.system && a.system!=='none' ? phrase : 'my current priorities'}. I hope it goes well, and I’d be glad to hear about future opportunities.`;
+  return '';
+}
+
+let current = null;
+function render(){
+  const a = read(); const r = compute(a); current = {a, r};
+  const v = VERDICT[r.verdict];
+  $('verdictBox').className = 'verdict ' + v.cls;
+  $('verdictWord').textContent = v.word; $('verdictLine').textContent = v.line;
+  $('alignNum').textContent = `${r.align} / 12`; $('alignBar').style.width = (r.align/12*100) + '%';
+  const rootsMap = {green:['Protected','var(--good)','Fits around family life'],amber:['Watch','var(--warn)','Needs limits or adjustments'],red:['At risk','var(--bad)','Would strain the roots']};
+  const rw = $('rootsWord'); rw.textContent = '';
+  const dot = document.createElement('span'); dot.className='dot';
+  if(r.roots){ const [w,c,l] = rootsMap[r.roots]; dot.style.background = c; rw.append(dot, w); $('rootsLine').textContent = l; }
+  else { dot.style.background = 'var(--line)'; rw.append(dot, '—'); $('rootsLine').textContent = 'Not answered yet'; }
+  const ul = $('reasons'); ul.textContent = '';
+  r.reasons.forEach(t => { const li = document.createElement('li'); li.textContent = t; ul.append(li); });
+  const reply = replyFor(a, r);
+  $('replyWrap').hidden = !reply; $('replyText').textContent = reply;
+  $('saveBtn').disabled = r.verdict==='incomplete';
+  $('askBtn').disabled = r.verdict==='incomplete';
+}
+form.addEventListener('input', () => { render(); hideClaude(); });
+form.addEventListener('change', () => { render(); hideClaude(); });
+form.addEventListener('submit', e => e.preventDefault());
+
+fill(EXAMPLE); render();
+$('newCheck').addEventListener('click', () => { form.reset(); $('exampleBanner').hidden = true; hideClaude(); render(); $('status').textContent=''; $('oppTitle').focus(); });
+
+$('copyReply').addEventListener('click', async () => {
+  const t = $('replyText').textContent;
+  try { await navigator.clipboard.writeText(t); $('copyReply').textContent = 'Copied'; setTimeout(()=>$('copyReply').textContent='Copy',1500); }
+  catch(e){ const s = window.getSelection(); const rg = document.createRange(); rg.selectNodeContents($('replyText')); s.removeAllRanges(); s.addRange(rg); $('status').textContent = 'Text selected. Copy it from your device menu.'; }
+});
+
+/* Tabs */
+function showTab(which){
+  const isLog = which==='log';
+  $('tab-check').setAttribute('aria-selected', String(!isLog)); $('tab-log').setAttribute('aria-selected', String(isLog));
+  $('view-check').hidden = isLog; $('view-log').hidden = !isLog;
+}
+$('tab-check').addEventListener('click', () => showTab('check'));
+$('tab-log').addEventListener('click', () => showTab('log'));
+
+/* Claude second opinion */
+let sample = null, ctl = null;
+function hideClaude(){ if(ctl){ ctl.abort(); ctl = null; } $('claudeWrap').hidden = true; $('claudeOut').textContent=''; $('stopBtn').hidden = true; }
+function buildPrompt(a, r){
+  const ans = REQUIRED.map(k => `${k}: ${a[k]||'(unanswered)'}`).join('\n');
+  return `You are helping Simon Preston decide whether to pursue an opportunity. His philosophy: "Children flourish when the systems around them align." His values: be curious, be collaborative, be kind. He works across Bronfenbrenner's systems: the school microsystem (EdD research on leading a neurodiverse workforce; CognAlign consultancy applying his MBA in leadership), the mesosystem (parent carer advocacy through Worcestershire Parent Carer Forum), and the exosystem and macrosystem (Count Our Expertise, a campaign for neurodivergent staff in the School Workforce Census). His family is the root of everything: he is a parent carer, and protecting time and energy for home outweighs other factors.
+
+Opportunity: ${a.title || '(untitled)'}
+From: ${a.from || '(not given)'}
+Details: ${(a.details || '(none)').slice(0,1500)}
+
+His answers:
+${ans}
+
+The tool's verdict: ${VERDICT[r.verdict].word} (alignment ${r.align}/12, roots ${r.roots}).
+
+Give a reflective second opinion in under 170 words, in plain British English, as three short labelled parts:
+Does the verdict hold? One or two sentences, saying if anything in the details changes the picture.
+A question to sit with: one question he should ask himself before deciding.
+How to shape it: one concrete adjustment that would make it fit better, or what to say no to.
+No headings beyond those labels, no bullet symbols, no preamble.`;
+}
+$('askBtn').addEventListener('click', async () => {
+  if(!sample || !current) return;
+  if(ctl) ctl.abort();
+  ctl = new AbortController(); const my = ctl;
+  $('claudeWrap').hidden = false; $('claudeOut').textContent = 'Thinking…';
+  $('askBtn').disabled = true; $('stopBtn').hidden = false; $('status').textContent = '';
+  try{
+    const { text, truncated } = await sample(buildPrompt(current.a, current.r), { signal: my.signal, onText: ({text}) => { $('claudeOut').textContent = text; } });
+    $('claudeOut').textContent = text;
+    if(truncated) $('status').textContent = 'The answer was cut short.';
+  }catch(e){
+    $('claudeOut').textContent = e && e.text ? e.text : '';
+    const code = e && e.code;
+    if(code === 'cancelled'){ if(!$('claudeOut').textContent) $('claudeWrap').hidden = true; }
+    else if(['not_granted','sampling_disabled','not_declared','capability_disabled','capability_removed'].includes(code)){ $('askBtn').hidden = true; $('claudeWrap').hidden = true; $('status').textContent = 'Asking Claude isn’t available in this view.'; }
+    else if(code === 'rate_limited'){ $('status').textContent = 'Claude is busy or your usage limit has been reached. Try again later.'; }
+    else if(code === 'session_expired'){ $('status').textContent = 'Please sign in to Claude again, then retry.'; }
+    else if(code === 'refused'){ $('claudeWrap').hidden = true; $('status').textContent = 'Claude couldn’t answer this one. Try rewording the details.'; }
+    else { $('status').textContent = 'Something went wrong reaching Claude. Try again.'; }
+  }finally{
+    if(ctl === my) ctl = null;
+    $('stopBtn').hidden = true; $('askBtn').disabled = current.r.verdict==='incomplete';
+  }
+});
+$('stopBtn').addEventListener('click', () => { if(ctl) ctl.abort(); });
+
+/* Decision log */
+let db = null, entries = [];
+const DECIDED = {undecided:'Not decided yet',pursued:'Pursued',shaped:'Shaped and agreed',declined:'Declined'};
+const VCOL = {pursue:['var(--good-soft)','var(--good)'],shape:['var(--warn-soft)','var(--warn)'],decline:['var(--bad-soft)','var(--bad)']};
+
+$('saveBtn').addEventListener('click', async () => {
+  if(!db || !current) return;
+  const {a, r} = current;
+  if(!a.title){ $('status').textContent = 'Give the opportunity a name before saving.'; $('oppTitle').focus(); return; }
+  $('saveBtn').disabled = true; $('status').textContent = 'Saving…';
+  const doc = {title:a.title, from:a.from, details:a.details.slice(0,4000), answers:Object.fromEntries(REQUIRED.map(k=>[k,a[k]])),
+    verdict:r.verdict, alignment:r.align, roots:r.roots, decided:'undecided', createdAt:Date.now()};
+  const note = $('claudeWrap').hidden ? '' : $('claudeOut').textContent.trim();
+  if(note) doc.claudeNote = note.slice(0,4000);
+  try{ await db.collection('decisions').add(doc); $('status').textContent = 'Saved to your decision log.'; }
+  catch(e){ $('status').textContent = e && e.code==='quota_exceeded' ? 'The log is full. Delete some old entries first.' : 'Couldn’t save. Try again.'; }
+  finally{ $('saveBtn').disabled = false; }
+});
+
+function tally(el, rows, total){
+  el.textContent = '';
+  rows.forEach(([label, n, color]) => {
+    const row = document.createElement('div'); row.className = 'tally';
+    const l = document.createElement('span'); l.textContent = label;
+    const bar = document.createElement('div'); bar.className = 'bar'; const i = document.createElement('i');
+    i.style.width = total ? (n/total*100)+'%' : '0%'; if(color) i.style.background = color; bar.append(i);
+    const c = document.createElement('span'); c.textContent = n;
+    row.append(l, bar, c); el.append(row);
+  });
+}
+function renderLog(){
+  const list = $('entries'); list.textContent = '';
+  $('logEmpty').hidden = entries.length > 0; $('summary').hidden = entries.length === 0;
+  if(!entries.length) return;
+  const n = entries.length;
+  const vc = k => entries.filter(e => e.d.verdict===k).length;
+  tally($('tallyVerdict'), [['Pursue',vc('pursue'),'var(--good)'],['Shape it',vc('shape'),'var(--warn)'],['Decline',vc('decline'),'var(--bad)']], n);
+  const sc = k => entries.filter(e => (e.d.answers||{}).system===k).length;
+  const sysRows = [['Micro',sc('micro')],['Meso',sc('meso')],['Exo & macro',sc('exo')],['None',sc('none')]];
+  tally($('tallySystem'), sysRows, n);
+  const top = sysRows.slice().sort((x,y)=>y[1]-x[1])[0];
+  const yes = entries.filter(e => e.d.decided==='pursued' || e.d.decided==='shaped').length;
+  const strained = entries.filter(e => e.d.roots==='red' || e.d.roots==='amber').length;
+  let insight = `${n} opportunit${n===1?'y':'ies'} checked. Most land in: ${top[0].toLowerCase()} (${top[1]}). You've said yes to ${yes}.`;
+  if(strained/n >= 0.5 && n >= 3) insight += ' Half or more put pressure on the roots, so watch your capacity.';
+  $('insight').textContent = insight;
+
+  entries.forEach(({id, d}) => {
+    const li = document.createElement('li'); li.className = 'entry';
+    const left = document.createElement('div');
+    const h = document.createElement('h3'); h.textContent = d.title || 'Untitled';
+    const meta = document.createElement('div'); meta.className = 'meta';
+    const date = d.createdAt ? new Date(d.createdAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
+    const sys = SYS[(d.answers||{}).system] || '';
+    meta.textContent = [d.from, sys, `alignment ${d.alignment}/12`, date].filter(Boolean).join(' · ');
+    left.append(h, meta);
+    const pill = document.createElement('span'); pill.className = 'pill';
+    const [bg, fg] = VCOL[d.verdict] || ['var(--surface-2)','var(--muted)'];
+    pill.style.background = bg; pill.style.color = fg; pill.textContent = (VERDICT[d.verdict]||{}).word || d.verdict;
+    const controls = document.createElement('div'); controls.className = 'controls';
+    const lab = document.createElement('label'); lab.htmlFor = 'dec-'+id; lab.textContent = 'What I decided:';
+    const sel = document.createElement('select'); sel.id = 'dec-'+id;
+    Object.entries(DECIDED).forEach(([k,t]) => { const o = document.createElement('option'); o.value=k; o.textContent=t; if((d.decided||'undecided')===k) o.selected=true; sel.append(o); });
+    sel.addEventListener('change', async () => { try{ await db.doc('decisions/'+id).update({decided: sel.value}); }catch(e){ $('status').textContent='Couldn’t update.'; } });
+    const del = document.createElement('button'); del.type='button'; del.className='btn small ghost'; del.textContent='Delete';
+    let armed = false;
+    del.addEventListener('click', async () => {
+      if(!armed){ armed = true; del.textContent = 'Confirm delete'; del.style.color='var(--bad)'; setTimeout(()=>{ armed=false; del.textContent='Delete'; del.style.color=''; }, 4000); return; }
+      try{ await db.doc('decisions/'+id).delete(); }catch(e){ del.textContent='Couldn’t delete'; }
+    });
+    controls.append(lab, sel, del);
+    if(d.claudeNote){
+      const det = document.createElement('details'); det.style.gridColumn='1/-1';
+      const sum = document.createElement('summary'); sum.textContent = 'Claude’s second opinion'; sum.style.cursor='pointer'; sum.style.fontWeight='700'; sum.style.fontSize='14px';
+      const p = document.createElement('div'); p.className='claude-out'; p.style.marginTop='8px'; p.textContent = d.claudeNote;
+      det.append(sum, p); li.append(left, pill, controls, det);
+    } else li.append(left, pill, controls);
+    list.append(li);
+  });
+}
+
+(async () => {
+  if(!window.claude || !claude.use){ $('logEmpty').hidden = true; $('logUnavailable').hidden = false; return; }
+  const [dbNs, sampleNs] = await Promise.all([claude.use('db'), claude.use('sample')]);
+  sample = sampleNs; if(sample) $('askBtn').hidden = false;
+  db = dbNs;
+  if(!db){ $('logEmpty').hidden = true; $('logUnavailable').hidden = false; return; }
+  $('saveBtn').hidden = false; render();
+  db.collection('decisions').orderBy('createdAt','desc').limit(300).onSnapshot(snap => {
+    entries = snap.docs.filter(s => s.exists).map(s => ({id:s.id, d:s.data()}));
+    renderLog();
+  }, () => { $('logEmpty').hidden = true; $('logUnavailable').hidden = false; });
+})();
+})();
+</script>
+</body>
+</html>
