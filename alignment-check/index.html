@@ -66,7 +66,6 @@ legend{font-weight:700;font-size:14px;margin-bottom:8px;padding:0}
 .opt span{display:flex;flex-direction:column;gap:2px;min-height:44px;justify-content:center;border:1.5px solid var(--line);border-radius:10px;padding:9px 12px;background:var(--surface-2);font-weight:700;font-size:15px}
 .opt small{font-weight:500;color:var(--muted);font-size:13px;line-height:1.35}
 .chips .opt span{padding:8px 14px;border-radius:999px}
-.opt input:checked + span{border-color:var(--teal);background:var(--teal-soft);box-shadow:inset 0 0 0 1px var(--teal)}
 .opt input:focus-visible + span{outline:3px solid var(--focus);outline-offset:2px}
 .step.roots{background:var(--roots-soft);border-color:transparent}
 .step.roots .num{color:var(--roots)}
@@ -98,6 +97,17 @@ legend{font-weight:700;font-size:14px;margin-bottom:8px;padding:0}
 .btn:disabled{opacity:.55;cursor:not-allowed}
 .claude-out{border-left:0;background:var(--teal-soft);border-radius:10px;padding:12px 14px;font-size:15px;white-space:pre-wrap}
 .status{font-size:14px;color:var(--muted);min-height:1.2em}
+/* Claude's analysis: dashed outline + label on the option Claude picked; stays visible if the user picks another. */
+.opt.suggested span{border-style:dashed;border-color:var(--coral)}
+.opt.suggested span::before{content:"Claude’s pick";font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--coral)}
+.opt input:checked + span{border-color:var(--teal);background:var(--teal-soft);box-shadow:inset 0 0 0 1px var(--teal)}
+.rec{background:var(--teal-soft);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;font-size:15px}
+.rec p{margin:0}
+.rec dl{margin:0;display:flex;flex-direction:column;gap:8px}
+.rec dt{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.rec dd{margin:2px 0 0}
+.yours{border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:10px}
+.yours select{font-size:15px;min-height:44px}
 /* Log */
 .log-wrap{display:flex;flex-direction:column;gap:20px}
 .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
@@ -151,6 +161,13 @@ select{font:inherit;font-size:14px;color:var(--ink);background:var(--surface-2);
           <label class="field" for="oppDetails">Details (optional)
             <textarea id="oppDetails" name="details" placeholder="Dates, time commitment, fee, anything else you know"></textarea>
           </label>
+          <div id="analyseRow" hidden>
+            <div class="row">
+              <button type="button" class="btn" id="analyseBtn">Analyse with Claude</button>
+              <button type="button" class="btn ghost small" id="stopBtn" hidden>Stop</button>
+            </div>
+            <p class="status" id="analyseStatus" role="status" style="margin:8px 0 0">Claude suggests where it fits and recommends a verdict. You check the answers and make the final decision.</p>
+          </div>
         </div>
 
         <div class="step">
@@ -263,14 +280,30 @@ select{font:inherit;font-size:14px;color:var(--ink);background:var(--surface-2);
         <div class="row" style="justify-content:space-between;margin-bottom:6px"><span class="eyebrow">Draft reply</span><button type="button" class="btn small ghost" id="copyReply">Copy</button></div>
         <div class="reply" id="replyText"></div>
       </div>
-      <div id="claudeWrap" hidden>
-        <div class="eyebrow" style="margin-bottom:6px">Second opinion from Claude</div>
-        <div class="claude-out" id="claudeOut"></div>
+      <div id="recWrap" hidden>
+        <div class="eyebrow" style="margin-bottom:6px">Claude’s recommendation</div>
+        <div class="rec">
+          <div class="row"><span class="pill" id="recPill"></span><span class="meta" id="recAgree"></span></div>
+          <p id="recWhy"></p>
+          <dl>
+            <div><dt>Where it fits</dt><dd id="recFits"></dd></div>
+            <div><dt>How to shape it</dt><dd id="recShape"></dd></div>
+            <div><dt>Before you decide</dt><dd id="recRoots"></dd></div>
+            <div><dt>A question to sit with</dt><dd id="recQuestion"></dd></div>
+          </dl>
+        </div>
+        <p class="meta" id="recStale" style="margin:6px 0 0" hidden>You’ve changed the description since. Analyse again to update this.</p>
       </div>
-      <div class="row">
-        <button type="button" class="btn" id="saveBtn" hidden>Save to log</button>
-        <button type="button" class="btn ghost" id="askBtn" hidden>Ask Claude</button>
-        <button type="button" class="btn ghost small" id="stopBtn" hidden>Stop</button>
+      <div class="yours" id="yoursWrap" hidden>
+        <label class="field" for="myDecision">Your decision
+          <select id="myDecision">
+            <option value="undecided">Not decided yet</option>
+            <option value="pursued">Pursue</option>
+            <option value="shaped">Shape it and agree</option>
+            <option value="declined">Decline</option>
+          </select>
+        </label>
+        <div class="row"><button type="button" class="btn" id="saveBtn">Save to log</button></div>
       </div>
       <div class="status" id="status" role="status"></div>
     </aside>
@@ -385,14 +418,16 @@ function render(){
   const reply = replyFor(a, r);
   $('replyWrap').hidden = !reply; $('replyText').textContent = reply;
   $('saveBtn').disabled = r.verdict==='incomplete';
-  $('askBtn').disabled = r.verdict==='incomplete';
+  renderRec();
 }
-form.addEventListener('input', () => { render(); hideClaude(); });
-form.addEventListener('change', () => { render(); hideClaude(); });
+form.addEventListener('input', render);
+form.addEventListener('change', render);
 form.addEventListener('submit', e => e.preventDefault());
 
-fill(EXAMPLE); render();
-$('newCheck').addEventListener('click', () => { form.reset(); $('exampleBanner').hidden = true; hideClaude(); render(); $('status').textContent=''; $('oppTitle').focus(); });
+$('newCheck').addEventListener('click', () => {
+  form.reset(); $('exampleBanner').hidden = true; clearAnalysis(); $('myDecision').value = 'undecided';
+  render(); $('status').textContent=''; $('oppTitle').focus();
+});
 
 $('copyReply').addEventListener('click', async () => {
   const t = $('replyText').textContent;
@@ -409,50 +444,91 @@ function showTab(which){
 $('tab-check').addEventListener('click', () => showTab('check'));
 $('tab-log').addEventListener('click', () => showTab('log'));
 
-/* Claude second opinion */
-let sample = null, ctl = null;
-function hideClaude(){ if(ctl){ ctl.abort(); ctl = null; } $('claudeWrap').hidden = true; $('claudeOut').textContent=''; $('stopBtn').hidden = true; }
-function buildPrompt(a, r){
-  const ans = REQUIRED.map(k => `${k}: ${a[k]||'(unanswered)'}`).join('\n');
-  return `You are helping Simon Preston decide whether to pursue an opportunity. His philosophy: "Children flourish when the systems around them align." His values: be curious, be collaborative, be kind. He works across Bronfenbrenner's systems: the school microsystem (EdD research on leading a neurodiverse workforce; CognAlign consultancy applying his MBA in leadership), the mesosystem (parent carer advocacy through Worcestershire Parent Carer Forum), and the exosystem and macrosystem (Count Our Expertise, a campaign for neurodivergent staff in the School Workforce Census). His family is the root of everything: he is a parent carer, and protecting time and energy for home outweighs other factors.
+/* Claude's analysis: places the opportunity in the structure, suggests answers and recommends a verdict.
+   Caring and home life are never suggested: only Simon can judge the roots. The final decision is his. */
+let sample = null, ctl = null, analysis = null;
+const SUGGESTABLE = {system:['micro','meso','exo','none'], vehicle:['cognalign','obu','wpcf','coe','new'], curious:['2','1','0'], collab:['2','1','0'], kind:['2','1','0'],
+  time:['light','moderate','heavy'], income:['paid','expenses','unpaid'], priorities:['yes','some','no']};
+const REC_DECIDED = {pursue:'pursued', shape:'shaped', decline:'declined'};
+const describe = a => [a.title, a.from, a.details].join('\n');
+
+function analysisPrompt(a){
+  return `You are helping Simon Preston weigh up an opportunity against his personal structure. His philosophy: "Children flourish when the systems around them align." His values: be curious, be collaborative, be kind. He works across Bronfenbrenner's systems: the school microsystem (EdD research at Oxford Brookes on leading a neurodiverse workforce; CognAlign consultancy with schools and trusts, applying his MBA in leadership), the mesosystem (parent carer advocacy through Worcestershire Parent Carer Forum, where he is an ambassador), and the exosystem and macrosystem (Count Our Expertise, a campaign for neurodivergent staff to be counted in the School Workforce Census). His family is the root of everything: he is a parent carer.
+
+Place the opportunity in his structure using these exact keys:
+system: "micro" (inside schools: leadership, staff, classrooms), "meso" (the bridge between families and schools), "exo" (policy, national data, culture), or "none" (doesn't touch the systems around the child).
+vehicle: "cognalign", "obu" (Oxford Brookes EdD), "wpcf", "coe" (Count Our Expertise), or "new" (would need a new vehicle).
+curious, collab, kind: "2" yes, "1" partly, "0" no. curious = will he learn or explore something; collab = will he work with others or co-produce; kind = will it benefit children, families or staff.
+time: "light", "moderate", "heavy", or "unknown" if the description doesn't say.
+income: "paid", "expenses", "unpaid", or "unknown" if the description doesn't say.
+priorities: "yes", "some", or "no": does it move his current work (EdD, CognAlign, WPCF advocacy, Count Our Expertise) forward.
+
+Then recommend a verdict: "pursue" when it clearly serves one of his systems through an existing vehicle and lives his values; "shape" when it fits but the terms (time, pay, scope) need changing; "decline" when it doesn't serve the systems around the child or would pull him off course. Assume the roots are protected: do not judge whether it fits around caring or how it affects home life, because only he can. Instead, name what he should check.
 
 Opportunity: ${a.title || '(untitled)'}
 From: ${a.from || '(not given)'}
-Details: ${(a.details || '(none)').slice(0,1500)}
+Details: ${(a.details || '(none)').slice(0,3000)}
 
-His answers:
-${ans}
-
-The tool's verdict: ${VERDICT[r.verdict].word} (alignment ${r.align}/12, roots ${r.roots}).
-
-Give a reflective second opinion in under 170 words, in plain British English, as three short labelled parts:
-Does the verdict hold? One or two sentences, saying if anything in the details changes the picture.
-A question to sit with: one question he should ask himself before deciding.
-How to shape it: one concrete adjustment that would make it fit better, or what to say no to.
-No headings beyond those labels, no bullet symbols, no preamble.`;
+Reply with only a JSON object with these keys: system, systemWhy (one sentence on why that system), vehicle, vehicleWhy (one sentence), curious, collab, kind, time, income, priorities, verdict, why (two or three sentences explaining the recommendation; if the description is too thin to be sure, say what is missing), shapeIt (one concrete adjustment that would make it fit better, or what to say no to), rootsCheck (one sentence on what to check about caring and home life before deciding), question (one question for him to sit with). Plain British English, speaking to him as "you". No other text.`;
 }
-$('askBtn').addEventListener('click', async () => {
-  if(!sample || !current) return;
+
+function markSuggestions(){
+  const s = analysis ? analysis.suggested : {};
+  form.querySelectorAll('.opt input').forEach(i => i.parentElement.classList.toggle('suggested', s[i.name] === i.value));
+}
+function clearAnalysis(){
+  if(ctl){ ctl.abort(); ctl = null; }
+  analysis = null; markSuggestions(); $('recWrap').hidden = true;
+  $('analyseStatus').textContent = 'Claude suggests where it fits and recommends a verdict. You check the answers and make the final decision.';
+}
+function renderRec(){
+  if(!analysis){ $('recWrap').hidden = true; return; }
+  $('recWrap').hidden = false;
+  const [bg, fg] = VCOL[analysis.verdict]; const pill = $('recPill');
+  pill.style.background = bg; pill.style.color = fg; pill.textContent = VERDICT[analysis.verdict].word;
+  const r = current && current.r;
+  $('recAgree').textContent = !r || r.verdict==='incomplete' ? 'Answer the roots checks to compare'
+    : r.verdict===analysis.verdict ? 'Your answers agree' : `Your answers say: ${VERDICT[r.verdict].word}`;
+  $('recWhy').textContent = analysis.why;
+  $('recFits').textContent = [analysis.systemWhy, analysis.vehicleWhy].filter(Boolean).join(' ');
+  $('recShape').textContent = analysis.shapeIt;
+  $('recRoots').textContent = analysis.rootsCheck;
+  $('recQuestion').textContent = analysis.question;
+  $('recStale').hidden = !current || describe(current.a) === analysis.basis;
+}
+
+$('analyseBtn').addEventListener('click', async () => {
+  if(!sample) return;
+  const a = read();
+  if(!a.title && !a.details){ $('analyseStatus').textContent = 'Describe the opportunity first.'; $('oppTitle').focus(); return; }
   if(ctl) ctl.abort();
   ctl = new AbortController(); const my = ctl;
-  $('claudeWrap').hidden = false; $('claudeOut').textContent = 'Thinking…';
-  $('askBtn').disabled = true; $('stopBtn').hidden = false; $('status').textContent = '';
+  $('analyseBtn').disabled = true; $('stopBtn').hidden = false; $('analyseStatus').textContent = 'Claude is reading the opportunity…';
   try{
-    const { text, truncated } = await sample(buildPrompt(current.a, current.r), { signal: my.signal, onText: ({text}) => { $('claudeOut').textContent = text; } });
-    $('claudeOut').textContent = text;
-    if(truncated) $('status').textContent = 'The answer was cut short.';
+    const res = await sample.json(analysisPrompt(a), { signal: my.signal, modelTier: 'complex', cache: false });
+    if(!res || typeof res !== 'object' || !VCOL[res.verdict]) throw {code:'invalid_json'};
+    const str = v => typeof v === 'string' ? v.trim().slice(0,1000) : '';
+    const suggested = {};
+    Object.entries(SUGGESTABLE).forEach(([k, allowed]) => { const v = String(res[k] ?? ''); if(allowed.includes(v)) suggested[k] = v; });
+    analysis = {suggested, verdict:res.verdict, basis:describe(a),
+      why:str(res.why), systemWhy:str(res.systemWhy), vehicleWhy:str(res.vehicleWhy), shapeIt:str(res.shapeIt), rootsCheck:str(res.rootsCheck), question:str(res.question)};
+    Object.entries(suggested).forEach(([k, v]) => { form.querySelector(`input[name="${k}"][value="${v}"]`).checked = true; });
+    $('exampleBanner').hidden = true;
+    markSuggestions(); render();
+    const left = REQUIRED.filter(k => !current.a[k]).length;
+    $('analyseStatus').textContent = `Claude’s picks are marked with a dashed outline. Change anything that’s wrong.${left ? ' Caring and home life are yours to answer.' : ''}`;
   }catch(e){
-    $('claudeOut').textContent = e && e.text ? e.text : '';
     const code = e && e.code;
-    if(code === 'cancelled'){ if(!$('claudeOut').textContent) $('claudeWrap').hidden = true; }
-    else if(['not_granted','sampling_disabled','not_declared','capability_disabled','capability_removed'].includes(code)){ $('askBtn').hidden = true; $('claudeWrap').hidden = true; $('status').textContent = 'Asking Claude isn’t available in this view.'; }
-    else if(code === 'rate_limited'){ $('status').textContent = 'Claude is busy or your usage limit has been reached. Try again later.'; }
-    else if(code === 'session_expired'){ $('status').textContent = 'Please sign in to Claude again, then retry.'; }
-    else if(code === 'refused'){ $('claudeWrap').hidden = true; $('status').textContent = 'Claude couldn’t answer this one. Try rewording the details.'; }
-    else { $('status').textContent = 'Something went wrong reaching Claude. Try again.'; }
+    if(code === 'cancelled') $('analyseStatus').textContent = 'Stopped.';
+    else if(['not_granted','sampling_disabled','not_declared','capability_disabled','capability_removed'].includes(code)){ $('analyseRow').hidden = true; $('status').textContent = 'Analysing with Claude isn’t available in this view.'; }
+    else if(code === 'rate_limited') $('analyseStatus').textContent = 'Claude is busy or your usage limit has been reached. Try again later.';
+    else if(code === 'session_expired') $('analyseStatus').textContent = 'Please sign in to Claude again, then retry.';
+    else if(code === 'refused') $('analyseStatus').textContent = 'Claude couldn’t analyse this one. Try rewording the details.';
+    else if(code === 'invalid_json') $('analyseStatus').textContent = 'Claude’s answer didn’t come back in a usable form. Try again.';
+    else $('analyseStatus').textContent = 'Something went wrong reaching Claude. Try again.';
   }finally{
     if(ctl === my) ctl = null;
-    $('stopBtn').hidden = true; $('askBtn').disabled = current.r.verdict==='incomplete';
+    $('analyseBtn').disabled = false; $('stopBtn').hidden = true;
   }
 });
 $('stopBtn').addEventListener('click', () => { if(ctl) ctl.abort(); });
@@ -468,9 +544,11 @@ $('saveBtn').addEventListener('click', async () => {
   if(!a.title){ $('status').textContent = 'Give the opportunity a name before saving.'; $('oppTitle').focus(); return; }
   $('saveBtn').disabled = true; $('status').textContent = 'Saving…';
   const doc = {title:a.title, from:a.from, details:a.details.slice(0,4000), answers:Object.fromEntries(REQUIRED.map(k=>[k,a[k]])),
-    verdict:r.verdict, alignment:r.align, roots:r.roots, decided:'undecided', createdAt:Date.now()};
-  const note = $('claudeWrap').hidden ? '' : $('claudeOut').textContent.trim();
-  if(note) doc.claudeNote = note.slice(0,4000);
+    verdict:r.verdict, alignment:r.align, roots:r.roots, decided:$('myDecision').value, createdAt:Date.now()};
+  if(analysis){
+    const {suggested, verdict, why, systemWhy, vehicleWhy, shapeIt, rootsCheck, question} = analysis;
+    doc.claude = {suggested, verdict, why, systemWhy, vehicleWhy, shapeIt, rootsCheck, question};
+  }
   try{ await db.collection('decisions').add(doc); $('status').textContent = 'Saved to your decision log.'; }
   catch(e){ $('status').textContent = e && e.code==='quota_exceeded' ? 'The log is full. Delete some old entries first.' : 'Couldn’t save. Try again.'; }
   finally{ $('saveBtn').disabled = false; }
@@ -487,6 +565,15 @@ function tally(el, rows, total){
     row.append(l, bar, c); el.append(row);
   });
 }
+/* Claude's analysis as saved text; older entries kept a free-text second opinion instead. */
+function claudeText(d){
+  const c = d.claude;
+  if(!c || !VERDICT[c.verdict]) return d.claudeNote || '';
+  return [c.why, [c.systemWhy, c.vehicleWhy].filter(Boolean).join(' ') && 'Where it fits: ' + [c.systemWhy, c.vehicleWhy].filter(Boolean).join(' '),
+    c.shapeIt && 'How to shape it: ' + c.shapeIt, c.rootsCheck && 'Before you decide: ' + c.rootsCheck, c.question && 'A question to sit with: ' + c.question]
+    .filter(Boolean).join('\n\n');
+}
+
 /* Download: a CSV that opens in Excel or Google Sheets, one row per decision. */
 let saveFile = null;
 function logAsCsv(){
@@ -500,7 +587,8 @@ function logAsCsv(){
     ['Curious', d => LVL[(d.answers||{}).curious]], ['Collaborative', d => LVL[(d.answers||{}).collab]], ['Kind', d => LVL[(d.answers||{}).kind]],
     ['Time', d => (d.answers||{}).time], ['Fits caring', d => (d.answers||{}).caring], ['Home life', d => (d.answers||{}).family],
     ['Income', d => (d.answers||{}).income], ['Moves priorities', d => (d.answers||{}).priorities],
-    ['Claude’s second opinion', d => d.claudeNote]
+    ['Claude recommended', d => d.claude && VERDICT[d.claude.verdict] ? VERDICT[d.claude.verdict].word : ''],
+    ['Claude’s reasoning', d => claudeText(d)]
   ];
   // Quote every cell, and stop spreadsheet apps treating text that starts with = + - @ as a formula.
   const cell = v => { let s = v == null ? '' : String(v); if(/^[=+\-@]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; };
@@ -540,6 +628,8 @@ function renderLog(){
   const yes = entries.filter(e => e.d.decided==='pursued' || e.d.decided==='shaped').length;
   const strained = entries.filter(e => e.d.roots==='red' || e.d.roots==='amber').length;
   let insight = `${n} opportunit${n===1?'y':'ies'} checked. Most land in: ${top[0].toLowerCase()} (${top[1]}). You've said yes to ${yes}.`;
+  const recd = entries.filter(e => e.d.claude && REC_DECIDED[e.d.claude.verdict] && e.d.decided && e.d.decided!=='undecided');
+  if(recd.length) insight += ` Where Claude made a recommendation and you've decided, you went with it ${recd.filter(e => REC_DECIDED[e.d.claude.verdict]===e.d.decided).length} of ${recd.length} times.`;
   if(strained/n >= 0.5 && n >= 3) insight += ' Half or more put pressure on the roots, so watch your capacity.';
   $('insight').textContent = insight;
 
@@ -567,10 +657,13 @@ function renderLog(){
       try{ await db.doc('decisions/'+id).delete(); }catch(e){ del.textContent='Couldn’t delete'; }
     });
     controls.append(lab, sel, del);
-    if(d.claudeNote){
+    const note = claudeText(d);
+    if(note){
       const det = document.createElement('details'); det.style.gridColumn='1/-1';
-      const sum = document.createElement('summary'); sum.textContent = 'Claude’s second opinion'; sum.style.cursor='pointer'; sum.style.fontWeight='700'; sum.style.fontSize='14px';
-      const p = document.createElement('div'); p.className='claude-out'; p.style.marginTop='8px'; p.textContent = d.claudeNote;
+      const sum = document.createElement('summary');
+      sum.textContent = d.claude ? `Claude recommended: ${VERDICT[d.claude.verdict].word}` : 'Claude’s second opinion';
+      sum.style.cursor='pointer'; sum.style.fontWeight='700'; sum.style.fontSize='14px';
+      const p = document.createElement('div'); p.className='claude-out'; p.style.marginTop='8px'; p.textContent = note;
       det.append(sum, p); li.append(left, pill, controls, det);
     } else li.append(left, pill, controls);
     list.append(li);
@@ -607,18 +700,20 @@ function localDb(){
   };
 }
 
+fill(EXAMPLE); render();
+
 (async () => {
   let dbNs = null;
   if(window.claude && claude.use){
     const [d, sampleNs] = await Promise.all([claude.use('db'), claude.use('sample')]);
-    dbNs = d; sample = sampleNs; if(sample) $('askBtn').hidden = false;
+    dbNs = d; sample = sampleNs; if(sample) $('analyseRow').hidden = false;
     try{ saveFile = await claude.use('downloads'); }catch(e){ saveFile = null; }
     canDownload = !!saveFile;
   }
   db = dbNs || localDb();
   if(!db){ $('logEmpty').hidden = true; $('logUnavailable').hidden = false; return; }
   $('logLocal').hidden = !db.local;
-  $('saveBtn').hidden = false; render();
+  $('yoursWrap').hidden = false; render();
   db.collection('decisions').orderBy('createdAt','desc').limit(300).onSnapshot(snap => {
     entries = snap.docs.filter(s => s.exists).map(s => ({id:s.id, d:s.data()}));
     renderLog();
