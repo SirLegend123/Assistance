@@ -285,7 +285,10 @@ select{font:inherit;font-size:14px;color:var(--ink);background:var(--surface-2);
     <ul class="entries" id="entries"></ul>
     <div class="empty" id="logEmpty"><b>No decisions saved yet</b>Run a check, then choose "Save to log". Each opportunity appears here with its verdict and what you decided, so you can spot patterns over time.</div>
     <div class="empty" id="logUnavailable" hidden><b>The decision log isn't available here</b>This browser is blocking storage, for example in a private window. Open the page in a normal window to save and view decisions.</div>
-    <p class="meta" id="logLocal" hidden>Decisions are saved in this browser only. They won't appear on other devices, and clearing your browsing data removes them.</p>
+    <div class="row" style="justify-content:space-between">
+      <p class="meta" id="logLocal" style="margin:0" hidden>Decisions are saved in this browser only. They won't appear on other devices, and clearing your browsing data removes them, so download a copy now and then.</p>
+      <button type="button" class="btn small ghost" id="dlLog" hidden>Download log</button>
+    </div>
   </section>
 </div>
 
@@ -484,9 +487,43 @@ function tally(el, rows, total){
     row.append(l, bar, c); el.append(row);
   });
 }
+/* Download: a CSV that opens in Excel or Google Sheets, one row per decision. */
+let saveFile = null;
+function logAsCsv(){
+  const cols = [
+    ['Date', d => d.createdAt ? new Date(d.createdAt).toLocaleDateString('en-GB') : ''],
+    ['Opportunity', d => d.title], ['From', d => d.from], ['Details', d => d.details],
+    ['Verdict', d => (VERDICT[d.verdict]||{}).word || d.verdict], ['Alignment (out of 12)', d => d.alignment],
+    ['Roots', d => ({green:'Protected',amber:'Watch',red:'At risk'})[d.roots] || ''],
+    ['What I decided', d => DECIDED[d.decided||'undecided']],
+    ['System', d => SYS[(d.answers||{}).system]], ['Vehicle', d => VEH[(d.answers||{}).vehicle]],
+    ['Curious', d => LVL[(d.answers||{}).curious]], ['Collaborative', d => LVL[(d.answers||{}).collab]], ['Kind', d => LVL[(d.answers||{}).kind]],
+    ['Time', d => (d.answers||{}).time], ['Fits caring', d => (d.answers||{}).caring], ['Home life', d => (d.answers||{}).family],
+    ['Income', d => (d.answers||{}).income], ['Moves priorities', d => (d.answers||{}).priorities],
+    ['Claude’s second opinion', d => d.claudeNote]
+  ];
+  // Quote every cell, and stop spreadsheet apps treating text that starts with = + - @ as a formula.
+  const cell = v => { let s = v == null ? '' : String(v); if(/^[=+\-@]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; };
+  const rows = [cols.map(c => cell(c[0])), ...entries.map(({d}) => cols.map(c => cell(c[1](d))))];
+  return '﻿' + rows.map(r => r.join(',')).join('\r\n');
+}
+$('dlLog').addEventListener('click', () => {
+  const name = `alignment-check-log-${new Date().toISOString().slice(0,10)}.csv`;
+  if(saveFile) saveFile.save({filename:name, data:logAsCsv()}).catch(() => {});
+  else {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([logAsCsv()], {type:'text/csv'}));
+    a.download = name;
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+});
+let canDownload = !window.claude;
+
 function renderLog(){
   const list = $('entries'); list.textContent = '';
   $('logEmpty').hidden = entries.length > 0; $('summary').hidden = entries.length === 0;
+  $('dlLog').hidden = !canDownload || entries.length === 0;
   if(!entries.length) return;
   const n = entries.length;
   const vc = k => entries.filter(e => e.d.verdict===k).length;
@@ -570,6 +607,8 @@ function localDb(){
   if(window.claude && claude.use){
     const [d, sampleNs] = await Promise.all([claude.use('db'), claude.use('sample')]);
     dbNs = d; sample = sampleNs; if(sample) $('askBtn').hidden = false;
+    try{ saveFile = await claude.use('downloads'); }catch(e){ saveFile = null; }
+    canDownload = !!saveFile;
   }
   db = dbNs || localDb();
   if(!db){ $('logEmpty').hidden = true; $('logUnavailable').hidden = false; return; }

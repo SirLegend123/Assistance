@@ -55,4 +55,5 @@ A decision tool for testing an opportunity against the philosophy *children flou
 
 - The source lives in `alignment-check/index.html` and mirrors the Claude artefact of the same name.
 - **Decision log:** on GitHub Pages, decisions are saved in the browser you use, so they stay on that device and are lost if you clear your browsing data. Opened as the Claude artefact, the log uses your Claude account instead.
+- **Download log** saves every decision as a spreadsheet file (CSV) that opens in Excel or Google Sheets, so you can keep a copy.
 - **Ask Claude** only works when the page is opened as the Claude artefact.
