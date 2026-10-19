@@ -137,7 +137,7 @@ footer { padding-block: 0 40px; font-size: .85rem; color: var(--muted); }
 <header class="top">
   <div class="wrap">
     <div class="title-row"><h1>UDL Class Planner</h1><button class="btn on-accent no-print" data-act="ask-clear">Clear app</button></div>
-    <p>Add your scheme of work and your class's SEND information. The planner finds the adjustments the whole class can share, then the ones only some pupils need.</p>
+    <p>For secondary teachers. Start with your pupils' needs: the planner finds what the whole class needs in common, then what individual pupils need, and builds both into your scheme of work.</p>
     <nav class="tabs" id="tabs" role="tablist" aria-label="Planner steps"></nav>
   </div>
 </header>
@@ -425,6 +425,7 @@ async function docxToLines(buf, splitCells = true) {
         const cells = [...tr.getElementsByTagNameNS(W, "tc")].map(paras);
         // A cell holding a list of provision becomes one line per item; a simple row stays one line.
         if (splitCells && Math.max(0, ...cells.map(c => c.length)) >= 3) cells.forEach(c => lines.push(...c));
+        else if (!splitCells) { const row = cells.map(c => c.join("; ")).join(" | "); if (row.replace(/[\s|]/g, "")) lines.push(row); }
         else { const row = cells.map(c => c.join("; ")).filter(Boolean).join(" — "); if (row) lines.push(row); }
       }
     }
@@ -548,7 +549,58 @@ const ADJ = [
   { id: "praise", label: "Specific praise and feedback", p: "eng", g: "Sustaining effort and persistence", scope: "universal", acts: [], rx: /\bpraise\b|rewards?|positive reinforcement/i, cls: "Praise effort and strategies specifically, not just outcomes.", ind: "Agree how they like to receive praise (some prefer it private)." },
   { id: "ta", label: "Adult support", p: "ae", g: "Interaction", scope: "individual", acts: [], rx: /teaching assistant|\bta\b|learning support assistant|\blsa\b|adult support|\b1:1\b|one[- ]to[- ]one/i, ind: "Brief the supporting adult on the lesson goal and this pupil's targets." },
 ];
+// Secondary-wide adjustments, and ones that only apply from Key Stage 4.
+ADJ.push(
+  { id: "homework", label: "Homework set in writing online", p: "eng", g: "Sustaining effort and persistence", scope: "universal", acts: ["homework"], needs: ["adhd", "memory", "dyslexia", "autism"], rx: /homework (set |written |posted )?(online|on (the )?(platform|teams|google classroom|satchel))|written (copy of )?homework|homework planner/i, cls: "Set homework in writing on the school's online platform, with the deadline, not only verbally at the end of the lesson.", ind: "Check they have recorded the homework before they leave." },
+  { id: "examtech", label: "Exam technique taught explicitly", p: "ae", g: "Strategy development", scope: "universal", acts: ["assessment"], minKs: 4, needs: ["dyslexia", "memory", "adhd", "anxiety", "mld"], rx: /exam technique|command words|past papers?/i, cls: "Teach exam technique explicitly (command words, mark allocation, timing) using past-paper questions in class.", ind: "Practise with their access arrangements on past-paper questions." },
+);
+const SUBJECTS = ["English", "Maths", "Science", "Biology", "Chemistry", "Physics", "History", "Geography", "French", "Spanish", "German", "Computing", "Art and design", "Design and technology", "Food preparation and nutrition", "Music", "Drama", "PE", "RE", "PSHE", "Citizenship", "Business", "Media studies", "Psychology", "Sociology"];
+function subjectKey(s) {
+  s = (s || "").toLowerCase();
+  return /english|literature/.test(s) ? "english" : /math/.test(s) ? "maths" : /science|biology|chemistry|physics/.test(s) ? "science"
+    : /history/.test(s) ? "history" : /geograph/.test(s) ? "geography" : /french|spanish|german|mfl|languages?|mandarin|latin|urdu|italian/.test(s) ? "mfl"
+    : /comput|\bict\b/.test(s) ? "computing" : /\bart\b|photograph|textiles/.test(s) ? "art" : /food|cook|nutrition/.test(s) ? "food"
+    : /design|technolog|\bdt\b|engineering/.test(s) ? "dt" : /music/.test(s) ? "music" : /drama|theatre/.test(s) ? "drama"
+    : /\bpe\b|physical education|sport/.test(s) ? "pe" : /\bre\b|\brs\b|religio|philosophy|ethics/.test(s) ? "re" : /pshe|rshe|citizenship|personal development/.test(s) ? "pshe" : "other";
+}
+function keyStage() { const n = parseInt(String(S.year || "").replace(/\D+/g, ""), 10); return n >= 12 ? 5 : n >= 10 ? 4 : 3; }
+const NEVER = /(?!)/;
+// Subject adjustments are suggested when a pupil has one of the listed needs and the class studies that subject.
+const SUBJECT_ADJ = [
+  { id: "s-cards", subjects: ["science"], label: "Illustrated practical method cards", p: "rep", g: "Building knowledge", scope: "universal", acts: ["practical"], needs: ["dyslexia", "mld", "memory", "slcn", "autism", "adhd"], cls: "Give a photo or diagram step card for each practical, with the equipment labelled.", ind: "Talk them through the step card before the practical starts." },
+  { id: "s-roles", subjects: ["science"], label: "Pre-assigned practical roles", p: "ae", g: "Interaction", scope: "flexible", acts: ["practical"], needs: ["autism", "anxiety", "dcd", "adhd"], cls: "Assign roles (equipment, reader, recorder, timer) before practicals start.", ind: "Give them a role that suits them, such as recorder if handling equipment is hard." },
+  { id: "s-tables", subjects: ["science", "geography"], label: "Results tables and graph axes provided", p: "ae", g: "Expression and communication", scope: "universal", acts: ["practical", "maths"], needs: ["dcd", "dyslexia", "dyscalculia", "mld"], cls: "Provide pre-drawn results tables and graph axes so the time goes on the subject, not the drawing.", ind: "Give them a pre-drawn table and axes." },
+  { id: "m-help", subjects: ["maths"], label: "Method help sheets", p: "rep", g: "Building knowledge", scope: "universal", acts: ["maths"], needs: ["dyscalculia", "mld", "memory"], cls: "Keep a help sheet with a worked example on desks for each new method.", ind: "Give them their own copy of the method help sheet." },
+  { id: "m-print", subjects: ["maths", "science"], label: "Printed questions, not copied out", p: "ae", g: "Expression and communication", scope: "universal", acts: ["maths", "copying"], needs: ["dyslexia", "dcd", "vision"], cls: "Give question sheets with space to answer instead of copying questions from the board or textbook.", ind: "Give them a printed question sheet." },
+  { id: "e-audio", subjects: ["english"], label: "Audiobook and film versions of set texts", p: "rep", g: "Perception", scope: "universal", acts: ["reading"], needs: ["dyslexia", "vision", "mld", "slcn"], cls: "Offer audiobook versions of set texts and use film clips to introduce the plot.", ind: "Give them access to the audiobook to listen ahead of lessons." },
+  { id: "e-plan", subjects: ["english", "history", "re"], label: "Quotation banks and essay planners", p: "ae", g: "Strategy development", scope: "universal", acts: ["writing", "assessment"], needs: ["dyslexia", "memory", "mld", "adhd"], cls: "Provide quotation or evidence banks and paragraph planners for analytical writing.", ind: "Give them a partly filled essay planner." },
+  { id: "h-sources", subjects: ["history", "geography", "re"], label: "Shorter, annotated sources", p: "rep", g: "Language and symbols", scope: "universal", acts: ["reading"], needs: ["dyslexia", "slcn", "mld"], cls: "Use shorter source extracts with key terms explained in the margin.", ind: "Give them a version with the hardest words explained." },
+  { id: "h-display", subjects: ["history", "geography"], label: "Timeline or map on display", p: "rep", g: "Building knowledge", scope: "universal", acts: [], needs: ["memory", "mld", "autism"], cls: "Keep a timeline (history) or labelled map (geography) on display through the unit.", ind: "Give them a desk copy of the timeline or map." },
+  { id: "g-maps", subjects: ["geography"], label: "Clear, high-contrast maps", p: "rep", g: "Perception", scope: "flexible", acts: ["maths", "reading"], needs: ["vision", "dyslexia"], cls: "Use clear, high-contrast maps and have enlarged copies ready.", ind: "Give them an enlarged map." },
+  { id: "l-audio", subjects: ["mfl"], label: "Slowed audio and transcripts", p: "rep", g: "Perception", scope: "universal", acts: ["listening", "video"], needs: ["hearing", "slcn", "dyslexia", "memory"], cls: "Play listening tracks twice at reduced speed and share the transcript afterwards.", ind: "Give them the transcript to follow during the second listen." },
+  { id: "l-builders", subjects: ["mfl"], label: "Sentence builders", p: "ae", g: "Expression and communication", scope: "universal", acts: ["writing", "speaking"], needs: ["dyslexia", "slcn", "mld", "memory", "anxiety"], cls: "Use sentence builders and knowledge organisers for all speaking and writing tasks.", ind: "Highlight the sentence-builder rows they need." },
+  { id: "l-speak", subjects: ["mfl", "english"], label: "Rehearsed, low-stakes speaking", p: "eng", g: "Emotional capacity", scope: "flexible", acts: ["speaking"], needs: ["anxiety", "slcn", "autism"], cls: "Let pupils rehearse in pairs first, and offer recorded speaking instead of performing live.", ind: "Let them record their speaking task or present to you alone." },
+  { id: "p-change", subjects: ["pe"], label: "Changing arrangements", p: "eng", g: "Emotional capacity", scope: "individual", acts: [], needs: ["autism", "anxiety", "sensory", "physical", "dcd"], ind: "Agree changing arrangements (time, space or kit) in advance." },
+  { id: "p-demo", subjects: ["pe", "dt", "art", "food"], label: "Demonstrations broken into stages", p: "rep", g: "Perception", scope: "universal", acts: ["practical"], needs: ["dcd", "hearing", "slcn", "autism", "mld", "memory"], cls: "Demonstrate each skill in stages, show it from the pupils' viewpoint, and keep photos of each stage visible.", ind: "Show them the demonstration again close up." },
+  { id: "p-adapt", subjects: ["pe"], label: "Adapted equipment and roles", p: "ae", g: "Interaction", scope: "flexible", acts: ["practical"], needs: ["dcd", "physical", "vision"], cls: "Offer adapted equipment (bigger, softer, slower balls) and roles such as coach or umpire.", ind: "Have their adapted equipment ready." },
+  { id: "p-signals", subjects: ["pe", "music", "drama"], label: "Visual signals as well as sound", p: "rep", g: "Perception", scope: "flexible", acts: [], needs: ["hearing", "sensory"], cls: "Use visual signals as well as whistles or voice in noisy spaces.", ind: "Agree a visual signal with them." },
+  { id: "a-tools", subjects: ["art", "dt", "food"], label: "Adapted tools", p: "ae", g: "Interaction", scope: "individual", acts: ["practical"], needs: ["dcd", "physical"], ind: "Have adapted tools ready (spring scissors, easy-grip tools, bench hooks)." },
+  { id: "a-safety", subjects: ["science", "dt", "food", "art"], label: "Visual safety rules", p: "rep", g: "Perception", scope: "universal", acts: ["practical"], needs: ["autism", "adhd", "slcn", "mld", "hearing"], cls: "Show safety rules with pictures and check them before any tools, chemicals or heat are used.", ind: "Check they understand the safety rules one to one." },
+  { id: "f-sensory", subjects: ["food", "science", "art"], label: "Warnings about smells, textures and noise", p: "eng", g: "Emotional capacity", scope: "flexible", acts: ["practical"], needs: ["autism", "sensory"], cls: "Warn the class about strong smells, messy textures or loud equipment and offer alternatives.", ind: "Offer gloves, a different task role or a quieter space." },
+  { id: "mu-notation", subjects: ["music"], label: "Colour-coded or letter-name notation", p: "rep", g: "Language and symbols", scope: "flexible", acts: [], needs: ["dyslexia", "vision", "mld", "dcd"], cls: "Offer colour-coded or letter-name notation alongside standard notation.", ind: "Give them colour-coded notation." },
+  { id: "mu-noise", subjects: ["music", "drama"], label: "Managing noise in practical rooms", p: "eng", g: "Emotional capacity", scope: "flexible", acts: ["practical", "speaking"], needs: ["autism", "sensory", "hearing", "anxiety"], cls: "Agree a quiet signal, use practice rooms where possible and allow ear defenders.", ind: "Let them work in a practice room or quieter corner." },
+  { id: "d-roles", subjects: ["drama", "music"], label: "Choice of performance role", p: "eng", g: "Welcoming interests and identities", scope: "flexible", acts: ["speaking"], needs: ["anxiety", "autism", "slcn"], cls: "Offer roles such as director, designer, technician or narrator as well as performer.", ind: "Agree their role in advance." },
+  { id: "c-screen", subjects: ["computing"], label: "Accessible screens", p: "rep", g: "Perception", scope: "flexible", acts: [], needs: ["vision", "dyslexia"], cls: "Show pupils how to zoom, change contrast and use a screen reader; use a large font in code editors.", ind: "Set up their screen settings before the lesson." },
+  { id: "c-code", subjects: ["computing"], label: "Printed code and part-written programs", p: "ae", g: "Strategy development", scope: "universal", acts: [], needs: ["dyslexia", "dcd", "memory", "mld"], cls: "Give printed code examples and part-written programs (Parsons problems) so typing isn't the barrier.", ind: "Give them a part-written program to complete." },
+  { id: "r-sensitive", subjects: ["re", "pshe", "english", "history"], label: "Warning of sensitive topics", p: "eng", g: "Emotional capacity", scope: "universal", acts: ["discussion", "reading", "video"], needs: ["anxiety", "semh", "autism"], cls: "Warn the class before sensitive topics, agree discussion ground rules and give a way to step out.", ind: "Tell them privately what's coming up and agree what they can do if it's too much." },
+].map(a => Object.assign({ rx: NEVER }, a));
+ADJ.push(...SUBJECT_ADJ);
+function activeAdj() { const sk = subjectKey(S.subject), ks = keyStage(); return ADJ.filter(a => (!a.subjects || a.subjects.includes(sk)) && (!a.minKs || ks >= a.minKs)); }
 const ADJ_BY = Object.fromEntries(ADJ.map(a => [a.id, a]));
+["extratime", "access"].forEach(id => {
+  const a = ADJ_BY[id], base = a.ind;
+  Object.defineProperty(a, "ind", { get: () => base + (keyStage() >= 4 ? " Use them in class tests too, so they're the pupil's normal way of working for exam access arrangements." : "") });
+});
 const ACTS = [
   ["lecture", "Teacher explanation", /explain\w*|explanation|introduc\w*|teacher[- ]led|direct instruction|\binput\b|lecture/i],
   ["reading", "Reading", /\bread(ing)?\b|\btexts?\b|article|sources?\b|extract|comprehension|novel|poem|play script/i],
@@ -557,13 +609,14 @@ const ACTS = [
   ["discussion", "Group or pair work", /discuss\w*|debate|in groups|group work|in pairs|pair work|talk partners?|collaborat\w*|think[- ]pair[- ]share/i],
   ["speaking", "Speaking to the class", /\bpresent(ation|s)?\b|perform\w*|speak\w*|\boral\b|role[- ]play|recite/i],
   ["practical", "Practical work", /practical|experiment|investigat\w*|\blab\b|equipment|\bbuild\b|design and make|\bcook\w*|newton meters?|apparatus/i],
-  ["maths", "Calculations and data", /calculat\w*|equation|graphs?|formula|measur\w*|\bdata\b|fraction|algebra|percent\w*|÷|×/i],
+  ["maths", "Calculations and data", /calculat\w*|equation|\bgraphs?\b|formula|measur\w*|\bdata\b|fraction|algebra|percent\w*|÷|×/i],
   ["video", "Video or audio", /video|clip|\bfilm\b|documentary|\bwatch\b|podcast|audio/i],
   ["assessment", "Test or assessment", /\btest\b|quiz|assessment|\bexam\b|mock|end of unit/i],
   ["timed", "Timed task", /timed|time limit|against the clock/i],
   ["independent", "Independent work", /independent\w*|individually|on their own/i],
   ["homework", "Homework", /homework|home ?learning/i],
   ["trip", "Trip or fieldwork", /\btrip\b|\bvisit\b|fieldwork|outdoor/i],
+  ["listening", "Listening task", /listening|listen to|audio recording/i],
 ];
 const ACT_LABEL = Object.fromEntries(ACTS.map(a => [a[0], a[1]]));
 const BARRIERS = {
@@ -571,9 +624,16 @@ const BARRIERS = {
   discussion: ["autism", "anxiety", "slcn", "hearing"], speaking: ["anxiety", "slcn", "autism"], practical: ["sensory", "physical", "vision", "adhd", "dcd"],
   assessment: ["anxiety", "dyslexia", "memory", "adhd"], timed: ["anxiety", "memory", "dyslexia", "dcd"], video: ["hearing", "vision"],
   lecture: ["adhd", "hearing", "slcn", "memory"], maths: ["dyscalculia", "mld", "memory"], homework: ["adhd", "memory"], independent: ["adhd", "mld", "memory"],
-  trip: ["autism", "anxiety", "physical", "medical"],
+  trip: ["autism", "anxiety", "physical", "medical"], listening: ["hearing", "slcn", "memory", "adhd"],
 };
-function activitiesOf(text) { return ACTS.filter(([, , rx]) => rx.test(text)).map(a => a[0]); }
+// Homework and key vocabulary columns describe the lesson, not what happens in it, so they don't count as activities.
+function activitiesOf(text) {
+  let hw = false;
+  const t = String(text).replace(/(home ?work|home ?learning)\s*:\s*[^.|]*/gi, () => { hw = true; return " "; }).replace(/key (words|vocabulary|terms)\s*:\s*[^.|]*/gi, " ");
+  const out = ACTS.filter(([id, , rx]) => id !== "homework" && rx.test(t)).map(a => a[0]);
+  if (hw || /homework|home ?learning/i.test(t)) out.push("homework");
+  return out;
+}
 
 /* ---------- Reading a scheme of work ---------- */
 async function xlsxToLines(buf) {
@@ -583,12 +643,16 @@ async function xlsxToLines(buf) {
     shared = [...d.getElementsByTagName("si")].map(si => [...si.getElementsByTagName("t")].map(t => t.textContent).join(""));
   } catch (e) { }
   const d = new DOMParser().parseFromString(await unzipEntry(buf, "xl/worksheets/sheet1.xml"), "application/xml");
-  return [...d.getElementsByTagName("row")].map(r => [...r.getElementsByTagName("c")].map(c => {
-    const t = c.getAttribute("t"), v = c.getElementsByTagName("v")[0];
-    if (t === "s") return shared[+(v && v.textContent)] || "";
-    if (t === "inlineStr") return [...c.getElementsByTagName("t")].map(x => x.textContent).join("");
-    return v ? v.textContent : "";
-  }).map(s => s.trim()).filter(Boolean).join(" — ")).filter(Boolean);
+  const colIdx = ref => { let n = 0; for (const ch of (ref || "").replace(/\d+/g, "")) n = n * 26 + ch.charCodeAt(0) - 64; return n - 1; };
+  return [...d.getElementsByTagName("row")].map(r => {
+    const cells = [];
+    [...r.getElementsByTagName("c")].forEach((c, i) => {
+      const t = c.getAttribute("t"), v = c.getElementsByTagName("v")[0];
+      const val = t === "s" ? shared[+(v && v.textContent)] || "" : t === "inlineStr" ? [...c.getElementsByTagName("t")].map(x => x.textContent).join("") : v ? v.textContent : "";
+      cells[c.getAttribute("r") ? colIdx(c.getAttribute("r")) : i] = val.replace(/\s+/g, " ").trim();
+    });
+    return Array.from(cells, v => v || "").join(" | ");
+  }).filter(l => l.replace(/[\s|]/g, ""));
 }
 async function fileToLines(file, opts = {}) {
   const buf = await file.arrayBuffer();
@@ -611,12 +675,33 @@ function fileError(err) {
     : /password/i.test(m) ? "This PDF is password-protected. Save an unprotected copy and upload that."
     : "The planner couldn't read this file. Try a PDF, .docx or .xlsx version, or paste the text.";
 }
-const shortTitle = (t, n = 70) => { t = t.replace(/\s+—\s+.*$/, "").replace(/[.;:?!](\s.*)?$/, m => m[0] === "?" || m[0] === "!" ? m[0] : "").trim() || t; return t.length > n ? t.slice(0, n - 1) + "…" : t; };
+const shortTitle = (t, n = 70) => { t = t.replace(/\s+—\s+.*$|\s*\|.*$|\t.*$/, "").replace(/[.;:?!](\s.*)?$/, m => m[0] === "?" || m[0] === "!" ? m[0] : "").trim() || t; return t.length > n ? t.slice(0, n - 1) + "…" : t; };
+const CELL_SPLIT = /\t|\s*\|\s*|\s+—\s+/;
+const SOW_COLS = { n: /^(lesson|week|wk|no\.?|number|#|l)$/i, title: /title|topic|objective|learning (intention|outcome|question|focus)|focus|big question|enquiry|content/i, vocab: /vocab|key (words|terms)|tier 3/i, acts: /activit|tasks?|teaching|sequence|outline|learning/i, assess: /assess|check|afl|hinge|exit/i, hw: /home ?work|home ?learning/i, res: /resource/i };
+// Most secondary schemes are tables with headings (Lesson | Objective | Key vocabulary | Activities | Homework).
+function parseSowTable(lines) {
+  const roleOf = h => Object.keys(SOW_COLS).find(k => SOW_COLS[k].test(h.trim())) || "other";
+  const hi = lines.findIndex(l => { const c = l.split(CELL_SPLIT); return c.length >= 2 && c.filter(x => x && roleOf(x) !== "other" && x.length < 40).length >= 2; });
+  if (hi < 0) return null;
+  const head = lines[hi].split(CELL_SPLIT).map(s => s.trim()), role = head.map(roleOf), out = [];
+  lines.slice(hi + 1).forEach(l => {
+    const c = l.split(CELL_SPLIT).map(s => s.trim());
+    if (c.filter(Boolean).length < 2) return;
+    const get = k => c.filter((v, i) => role[i] === k && v).join("; ");
+    const n = parseInt(get("n"), 10) || out.length + 1;
+    const title = get("title") || c.find((v, i) => v && role[i] !== "n") || "";
+    const parts = c.map((v, i) => !v || role[i] === "n" ? "" : (head[i] ? head[i] + ": " : "") + v).filter(Boolean);
+    out.push({ id: uid(), unit: "", n, title: `Lesson ${n}: ${shortTitle(title)}`, text: parts.join(". ") });
+  });
+  return out.length ? out : null;
+}
+function vocabOf(l) { const m = (l.text || "").match(/key (?:words|vocabulary|terms)\s*[:\-–—]\s*([^.|]+)/i); return m ? m[1].trim() : ""; }
 function parseSow(text) {
   const raw = String(text || "");
   const lines = raw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const table = parseSowTable(lines); if (table) return table;
   const lessons = []; let unit = "", cur = null;
-  const lessonRx = /^(?:lesson|les|session|week|wk|l)\s*(\d{1,2})\b\s*[:.\-–—)]?\s*(.*)$/i, rowRx = /^(\d{1,2})\s*(?:—|[:.)])\s*(.*)$/;
+  const lessonRx = /^(?:lesson|les|session|week|wk|l)\s*(\d{1,2})\b\s*[:.\-–—)]?\s*(.*)$/i, rowRx = /^(\d{1,2})\s*(?:—|\||[:.)])\s*(.*)$/;
   lines.forEach(line => {
     if (/^(unit|topic|module|half[- ]?term|scheme of work)\b/i.test(line) && line.length < 90 && !lessonRx.test(line)) { unit = line.replace(/^(unit|topic|module|half[- ]?term|scheme of work)\s*\d*\s*[:.\-–—]?\s*/i, "").trim() || line; return; }
     const m = line.match(lessonRx) || line.match(rowRx);
@@ -685,9 +770,13 @@ function pupilText(p) { return [p.notes, p.b, p.f].filter(Boolean).join("\n"); }
 function fItems(p) { return p.f ? parseSectionF(p.f, PS) : []; }
 function pupilAdjustments(p) {
   const text = pupilText(p), out = new Map();
-  ADJ.forEach(a => { if (a.rx.test(text)) out.set(a.id, "stated"); });
-  if (S.useSuggestions) p.needs.forEach(n => (NEED[n]?.sug || []).forEach(id => { if (!out.has(id)) out.set(id, "suggested"); }));
-  p.add.forEach(id => { if (!out.has(id)) out.set(id, "added"); });
+  const active = activeAdj(), ok = new Set(active.map(a => a.id));
+  active.forEach(a => { if (a.rx.test(text)) out.set(a.id, "stated"); });
+  if (S.useSuggestions) p.needs.forEach(n => {
+    (NEED[n]?.sug || []).forEach(id => { if (ok.has(id) && !out.has(id)) out.set(id, "suggested"); });
+    active.forEach(a => { if (a.needs && a.needs.includes(n) && !out.has(a.id)) out.set(a.id, "suggested"); });
+  });
+  p.add.forEach(id => { if (ok.has(id) && !out.has(id)) out.set(id, "added"); });
   p.off.forEach(id => out.delete(id));
   return out;
 }
@@ -706,7 +795,7 @@ function analyse() {
   const flexWhole = Math.max(S.threshold, Math.ceil(S.classSize * 0.2));
   const tiers = { whole: [], group: [], individual: {} };
   S.pupils.forEach(p => { tiers.individual[p.id] = []; });
-  ADJ.forEach(a => {
+  activeAdj().forEach(a => {
     const who = per.filter(x => x.adj.has(a.id)).map(x => ({ p: x.p, src: x.adj.get(a.id) }));
     if (!who.length) return;
     const n = who.length, item = { a, who };
@@ -742,13 +831,13 @@ function lessonPlan(lesson, A) {
 
 /* ---------- State ---------- */
 const KEY = "udl-class-v1";
-const EXAMPLE_SOW = `Unit: Forces and motion
-Lesson 1: What is a force? Teacher explanation of contact and non-contact forces with a short video clip. Pupils draw and label force diagrams.
-Lesson 2: Measuring forces. Practical in groups: use newton meters to measure the weight of objects and record results in a table.
-Lesson 3: Balanced and unbalanced forces. Read a text about tug of war and skydiving, answer comprehension questions, then class discussion.
-Lesson 4: Speed. Calculate speed = distance ÷ time using worked examples, then independent practice questions and a distance-time graph.
-Lesson 5: Investigating friction. Plan and carry out an investigation in groups, then write up the method and conclusion.
-Lesson 6: End of unit assessment. Timed written test, then each group presents one finding to the class.`;
+const EXAMPLE_SOW = `Lesson | Learning objective | Key vocabulary | Activities | Homework
+1 | What is a force? | force, contact, non-contact, newton | Teacher explanation with a short video clip; draw and label force diagrams | Online quiz on forces
+2 | Measuring forces | weight, mass, newton meter | Practical in groups: use newton meters to measure the weight of objects and record results in a table |
+3 | Balanced and unbalanced forces | resultant force, balanced, unbalanced | Read a text about tug of war and skydiving, answer comprehension questions, then class discussion | Write a paragraph explaining a skydive
+4 | Speed | speed, distance, time | Calculate speed = distance ÷ time from worked examples, then independent questions and a distance-time graph |
+5 | Investigating friction | friction, variable, method, conclusion | Plan and carry out an investigation in groups, then write up the method and conclusion |
+6 | End of unit assessment | | Timed written test, then each group presents one finding to the class | Revise with the knowledge organiser`;
 function examplePupils() {
   const mk = (label, status, text, f) => { const p = newPupil({ label, status, notes: f ? "" : text, f: f ? text : "", b: f ? "Autism and speech, language and communication needs." : "", source: "Example" }); p.needs = detectNeeds(pupilText(p)); return p; };
   return [
@@ -760,7 +849,7 @@ function examplePupils() {
     mk("KL", "support", "Dyspraxia. Writing slope and pencil grip. Reduced written output and alternative ways to record, such as diagrams."),
   ];
 }
-function blank() { return { v: 1, example: false, tab: "sow", subject: "", year: "", className: "", classSize: 30, threshold: 2, useSuggestions: true, sowText: "", lessons: [], pupils: [], sel: null }; }
+function blank() { return { v: 1, example: false, tab: "pupils", subject: "", year: "", className: "", classSize: 30, threshold: 2, useSuggestions: true, sowText: "", lessons: [], pupils: [], sel: null }; }
 let S;
 try { S = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { S = null; }
 if (!S || S.v !== 1) {
@@ -775,11 +864,11 @@ const framed = (() => { try { return window.self !== window.top; } catch (e) { r
 const classTitle = () => [S.subject, S.className || S.year].filter(Boolean).join(" · ") || "Your class";
 
 /* ---------- Rendering ---------- */
-const TABS = [["sow", "Scheme of work"], ["pupils", "SEND information"], ["class", "Class adjustments"], ["lessons", "Lesson plans"], ["export", "Download and track"]];
+const TABS = [["pupils", "Pupil needs"], ["class", "Class needs"], ["sow", "Scheme of work"], ["lessons", "Lesson plans"], ["export", "Download and track"]];
 let confirmClear = false, clearedMsg = false, busy = false, statusMsg = "";
 function render() {
   document.getElementById("tabs").innerHTML = TABS.map(([id, label], i) => `<button role="tab" data-tab="${id}" aria-selected="${S.tab === id}"><span class="n">${i + 1}</span>${label}</button>`).join("");
-  const banner = S.example ? `<div class="banner no-print"><p><b>Showing an example.</b> A made-up Year 8 science class with six pupils, so you can see how the planner works.</p><button class="btn ghost" data-act="clear-example">Start my own class</button></div>` : "";
+  const banner = S.example ? `<div class="banner no-print"><p><b>Showing an example.</b> A made-up Year 8 science class with six pupils with SEND, so you can see how the planner works.</p><button class="btn ghost" data-act="clear-example">Start my own class</button></div>` : "";
   const view = ({ sow: vSow, pupils: vPupils, class: vClass, lessons: vLessons, export: vExport })[S.tab]();
   document.getElementById("main").innerHTML = clearHtml() + banner + view;
 }
@@ -798,15 +887,9 @@ const statusLine = () => `<p id="up-status" class="small" role="status">${esc(st
 
 function vSow() {
   const items = S.lessons.map(l => `<div class="sow-item" data-lid="${l.id}"><div class="stack"><input type="text" id="lt-${l.id}" data-lf="title" value="${esc(l.title)}" aria-label="Lesson title"><textarea id="lx-${l.id}" rows="2" data-lf="text" aria-label="Lesson details">${esc(l.text)}</textarea><div class="row">${activitiesOf(l.text + " " + l.title).map(a => `<span class="chip">${ACT_LABEL[a]}</span>`).join("") || '<span class="small muted">No activities recognised. Add words like "practical", "write", "discussion" or "test".</span>'}</div></div><button class="btn quiet small" data-act="del-lesson">Remove</button></div>`).join("");
-  return `<section class="panel start">
-    <h2>Start here: your class and scheme of work</h2>
-    <div class="grid4">
-      <label class="f"><span>Subject</span><input type="text" id="subject" data-set="subject" value="${esc(S.subject)}" placeholder="e.g. Science"></label>
-      <label class="f"><span>Year group</span><input type="text" id="year" data-set="year" value="${esc(S.year)}" placeholder="e.g. Year 8"></label>
-      <label class="f"><span>Class</span><input type="text" id="className" data-set="className" value="${esc(S.className)}" placeholder="e.g. 8X2"></label>
-      <label class="f"><span>Pupils in the class</span><input type="number" id="classSize" min="1" max="60" data-set="classSize" data-num value="${S.classSize}"></label>
-    </div>
-    <p class="small muted">Upload the scheme of work for one unit or half term (Word, Excel, PDF or text), or paste it below. The planner splits it into lessons and spots activities such as extended writing, group work, practicals and tests.</p>
+  return `<section class="panel">
+    <h2>Scheme of work</h2>
+    <p class="small muted">Upload your department's scheme of work for one unit or half term (Word, Excel, PDF or text), or paste it below. Tables with headings like Lesson, Learning objective, Key vocabulary, Activities and Homework work best. The planner splits it into lessons and spots activities such as extended writing, practicals, group work, listening tasks and tests.</p>
     ${dropZone("sow-file", "Upload the scheme of work", ".pdf,.docx,.xlsx,.txt,.doc,.xls", false)}
     ${statusLine()}
     <label class="f"><span>Scheme of work</span><textarea id="sowText" rows="8" data-set="sowText" placeholder="Lesson 1: …">${esc(S.sowText)}</textarea></label>
@@ -814,7 +897,7 @@ function vSow() {
   </section>
   <section class="panel"><div class="row"><h2>Lessons</h2><span class="chip">${S.lessons.length}</span><span class="sp"></span><button class="btn ghost small" data-act="add-lesson">Add a lesson</button></div>
     ${items || '<p class="muted">No lessons yet. Upload or paste a scheme of work above.</p>'}
-    ${S.lessons.length ? `<div class="row"><span class="sp"></span><button class="btn" data-tab="pupils">Next: SEND information</button></div>` : ""}
+    ${S.lessons.length ? `<div class="row"><span class="sp"></span><button class="btn" data-tab="lessons">Next: lesson plans</button></div>` : ""}
   </section>`;
 }
 
@@ -823,8 +906,21 @@ function vPupils() {
     const adj = pupilAdjustments(p), open = S.sel === p.id;
     return `<button class="pupil-row" data-pupil="${p.id}" aria-expanded="${open}"><span class="lbl">${esc(p.label)}</span><span class="small">${p.status === "ehcp" ? "EHCP" : "SEN support"}</span><span class="needs row">${p.needs.map(n => `<span class="chip need">${esc(NEED[n].label)}</span>`).join("") || '<span class="small muted">No needs recorded yet</span>'}</span><span class="small muted">${adj.size} adjustments</span></button>${open ? pupilEditor(p) : ""}`;
   }).join("");
+  const yearOpts = ["", 7, 8, 9, 10, 11, 12, 13].map(y => `<option value="${y ? "Year " + y : ""}" ${S.year === (y ? "Year " + y : "") ? "selected" : ""}>${y ? "Year " + y : "Choose…"}</option>`).join("");
+  const sk = subjectKey(S.subject), nSub = SUBJECT_ADJ.filter(a => a.subjects.includes(sk)).length, ks = keyStage();
   return `<section class="panel start">
-    <h2>Add your class's SEND information</h2>
+    <h2>Start here: your class</h2>
+    <div class="grid4">
+      <label class="f"><span>Subject</span><input type="text" id="subject" list="subject-list" data-set="subject" value="${esc(S.subject)}" placeholder="e.g. Science"></label>
+      <label class="f"><span>Year group</span><select id="year" data-set="year">${yearOpts}</select></label>
+      <label class="f"><span>Class</span><input type="text" id="className" data-set="className" value="${esc(S.className)}" placeholder="e.g. 8X2"></label>
+      <label class="f"><span>Pupils in the class</span><input type="number" id="classSize" min="1" max="60" data-set="classSize" data-num value="${S.classSize}"></label>
+    </div>
+    <datalist id="subject-list">${SUBJECTS.map(x => `<option value="${esc(x)}"></option>`).join("")}</datalist>
+    <p class="small muted">${S.subject ? (nSub ? `${nSub} adjustments specific to ${esc(S.subject)} will be considered.` : `No subject-specific adjustments for ${esc(S.subject)} yet; the general ones still apply.`) : "The subject adds subject-specific adjustments, such as practical step cards in science or sentence builders in languages."}${S.year ? ` Key Stage ${ks}${ks >= 4 ? ": exam access arrangements are treated as the pupil's normal way of working in class tests." : "."}` : ""}</p>
+  </section>
+  <section class="panel">
+    <h2>Pupil needs</h2>
     <p class="small muted">Upload EHCPs and pupil passports or SEN support plans, several at once if you like. Each file becomes a pupil, labelled with initials. The planner reads Sections B, E and F of an EHCP, and all the text of other documents.</p>
     <div class="grid2">
       <div class="stack"><h3>EHCPs</h3>${dropZone("ehcp-files", "Upload EHCPs", ".pdf,.docx,.txt,.doc,image/*", true)}</div>
@@ -839,14 +935,14 @@ function vPupils() {
   <section class="panel"><div class="row"><h2>Pupils with SEND</h2><span class="chip">${S.pupils.length}</span><span class="sp"></span><button class="btn ghost small" data-act="add-pupil">Add a pupil by hand</button></div>
     <p class="small muted">Tap a pupil to check their needs and adjustments. Use initials or a code, never full names.</p>
     <div class="pupils">${rows || '<p class="muted">No pupils yet.</p>'}</div>
-    ${S.pupils.length ? `<div class="row"><span class="sp"></span><button class="btn" data-tab="class">Next: class adjustments</button></div>` : ""}
+    ${S.pupils.length ? `<div class="row"><span class="sp"></span><button class="btn" data-tab="class">Next: class needs</button></div>` : ""}
   </section>`;
 }
 function pupilEditor(p) {
   const adj = pupilAdjustments(p), ex = pupilExtras(p);
   const needBoxes = Object.keys(AREAS).map(area => `<fieldset><legend>${AREAS[area]}</legend>${NEEDS.filter(n => n.area === area).map(n => `<label><input type="checkbox" id="nd-${p.id}-${n.id}" data-need="${n.id}" ${p.needs.includes(n.id) ? "checked" : ""}>${esc(n.label)}</label>`).join("")}</fieldset>`).join("");
   const adjList = [...adj.entries()].map(([id, src]) => { const a = ADJ_BY[id]; return `<li class="row" style="gap:6px 8px">${prChip(a.p)} <span>${esc(a.label)}</span> ${srcChip(src)} <button class="btn quiet small" data-act="adj-off" data-adj="${id}" aria-label="Remove ${esc(a.label)}">Remove</button></li>`; }).join("");
-  const addOpts = ADJ.filter(a => !adj.has(a.id)).map(a => `<option value="${a.id}">${esc(a.label)}</option>`).join("");
+  const addOpts = activeAdj().filter(a => !adj.has(a.id)).map(a => `<option value="${a.id}">${esc(a.label)}</option>`).join("");
   return `<div class="editor" data-pid="${p.id}">
     <div class="grid4">
       <label class="f"><span>Initials or code</span><input type="text" id="pl-${p.id}" data-pf="label" value="${esc(p.label)}"></label>
@@ -869,42 +965,49 @@ function pupilEditor(p) {
 }
 
 function vClass() {
-  if (!S.pupils.length) return `<section class="panel"><h2>Class adjustments</h2><p class="muted">Add pupils on the SEND information tab first.</p></section>`;
+  if (!S.pupils.length) return `<section class="panel"><h2>Class needs</h2><p class="muted">Add pupils on the Pupil needs tab first.</p></section>`;
   const A = analyse(), N = needsSummary();
   const byP = p => A.tiers.whole.filter(x => x.a.p === p);
+  const where = a => a.acts.length ? "in " + a.acts.map(x => ACT_LABEL[x].toLowerCase()).join(", ") : "every lesson";
   const cols = Object.keys(PRINCIPLES).map(k => `<article class="principle" style="--c:var(--${k})"><h3>${PRINCIPLES[k].name}</h3><p class="small muted">${PRINCIPLES[k].why}</p>
-    ${byP(k).map(x => `<div class="adj"><b>${esc(x.a.label)}</b><span>${esc(x.a.cls || x.a.ind)}</span><span class="who">${x.who.length} pupil${x.who.length > 1 ? "s" : ""}: ${esc(initialsList(x.who))} · ${esc(x.a.g)}${x.a.acts.length ? " · in " + x.a.acts.map(a => ACT_LABEL[a].toLowerCase()).join(", ") : " · every lesson"}</span></div>`).join("") || '<p class="small muted">Nothing in this principle yet.</p>'}</article>`).join("");
+    ${byP(k).map(x => `<div class="adj"><b>${esc(x.a.label)}</b><span>${esc(x.a.cls || x.a.ind)}</span><span class="who">${x.who.length} pupil${x.who.length > 1 ? "s" : ""}: ${esc(initialsList(x.who))} · ${esc(x.a.g)} · ${where(x.a)}</span></div>`).join("") || '<p class="small muted">Nothing in this principle yet.</p>'}</article>`).join("");
   const groups = A.tiers.group.map(x => `<tr><td>${prChip(x.a.p)} ${esc(x.a.label)}</td><td>${esc(initialsList(x.who))}</td><td>${esc(x.a.ind)}</td></tr>`).join("");
-  const indiv = S.pupils.map(p => {
+  const areaRows = Object.keys(AREAS).map(a => `<tr><td>${AREAS[a]}</td><td class="num">${N.byArea[a] || 0}</td><td class="small">${NEEDS.filter(n => n.area === a && N.byNeed[n.id]).map(n => `${esc(n.label)} (${N.byNeed[n.id]})`).join(", ") || '<span class="muted">None</span>'}</td></tr>`).join("");
+  const people = S.pupils.map(p => {
     const list = A.tiers.individual[p.id], ex = pupilExtras(p);
-    if (!list.length && !ex.other.length && !ex.interventions.length) return "";
-    return `<tr><td><b>${esc(p.label)}</b><div class="small muted">${p.status === "ehcp" ? "EHCP" : "SEN support"}</div></td><td class="small">${p.needs.map(n => esc(NEED[n].label)).join(", ")}</td><td><ul class="plain">${list.map(x => `<li>${esc(x.a.label)}: ${esc(x.a.ind)}${x.couldBeAll ? ' <span class="chip">Could be offered to all</span>' : ""}</li>`).join("")}${ex.other.map(t => `<li>From Section F: ${esc(t)}</li>`).join("")}</ul>${ex.interventions.length ? `<p class="small muted" style="margin-top:6px">Outside lessons: ${ex.interventions.map(esc).join("; ")}</p>` : ""}</td></tr>`;
+    const shared = A.tiers.whole.concat(A.tiers.group).filter(x => x.who.some(w => w.p === p)).map(x => x.a.label);
+    return `<article class="lesson"><header><h3>${esc(p.label)}</h3><span class="small muted">${p.status === "ehcp" ? "EHCP" : "SEN support"}</span><span class="row">${p.needs.map(n => `<span class="chip need">${esc(NEED[n].label)}</span>`).join("")}</span></header>
+      <div class="cols">
+        <div class="stack"><h4>Individual adjustments</h4><ul class="plain">${list.map(x => `<li>${esc(x.a.label)}: ${esc(x.a.ind)}${x.couldBeAll ? ' <span class="chip">Could be offered to all</span>' : ""}</li>`).join("")}${ex.other.map(t => `<li>From Section F: ${esc(t)}</li>`).join("")}${list.length || ex.other.length ? "" : '<li class="muted">Their needs are met by the whole-class and group adjustments.</li>'}</ul></div>
+        <div class="stack"><h4>Also covered by class adjustments</h4><p class="small">${shared.map(esc).join(", ") || '<span class="muted">None</span>'}</p>
+          ${ex.interventions.length ? `<h4>Interventions outside lessons</h4><ul class="plain small">${ex.interventions.map(t => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
+          ${ex.outcomes.length ? `<h4>EHCP outcomes</h4><ul class="plain small">${ex.outcomes.map(t => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}</div>
+      </div></article>`;
   }).join("");
-  const areaRows = Object.keys(AREAS).map(a => `<tr><td>${AREAS[a]}</td><td class="num">${N.byArea[a] || 0}</td><td class="small">${NEEDS.filter(n => n.area === a && N.byNeed[n.id]).map(n => `${esc(n.label)} (${N.byNeed[n.id]})`).join(", ")}</td></tr>`).join("");
-  return `<section class="panel"><h2>${esc(classTitle())}: what the class needs</h2>
+  return `<section class="panel"><h2>1. Common class needs</h2>
+    <p class="small muted">${esc(classTitle())}. The needs below shape how you teach the whole class, before any individual adjustments.</p>
     <div class="stats">
       <div class="stat"><b>${S.pupils.length}</b><span>pupils with SEND, of ${S.classSize}</span></div>
       <div class="stat"><b>${S.pupils.filter(p => p.status === "ehcp").length}</b><span>with an EHCP</span></div>
       <div class="stat"><b>${A.tiers.whole.length}</b><span>whole-class adjustments</span></div>
-      <div class="stat"><b>${A.tiers.group.length}</b><span>group adjustments</span></div>
-      <div class="stat"><b>${Object.values(A.tiers.individual).reduce((t, l) => t + l.length, 0)}</b><span>individual adjustments</span></div>
+      <div class="stat"><b>${A.tiers.group.length}</b><span>shared by a few</span></div>
     </div>
     <div class="tbl-wrap"><table><thead><tr><th>Broad area of need</th><th>Pupils</th><th>Needs</th></tr></thead><tbody>${areaRows}</tbody></table></div>
     <details class="no-print"><summary>How adjustments are sorted</summary><div class="stack small" style="padding-top:10px">
       <p>Adjustments that help everyone, like chunked instructions or captions, become whole-class practice once at least this many pupils need them:</p>
       <div class="row"><label class="f" style="max-width:160px"><span>Pupils needed</span><input type="number" id="threshold" min="1" max="10" data-set="threshold" data-num value="${S.threshold}"></label>
         <label class="row" style="gap:8px"><input type="checkbox" id="useSuggestions" data-set="useSuggestions" ${S.useSuggestions ? "checked" : ""}> Include adjustments suggested from each pupil's needs</label></div>
-      <p>Adjustments like group roles or pre-teaching become whole-class when ${A.flexWhole} or more pupils need them (a fifth of the class), and small-group adjustments below that. Personal items such as a radio aid, laptop or extra time stay individual. Suggestions from needs are marked so you can check them with your SENCo.</p></div></details>
+      <p>Adjustments like practical roles or pre-teaching become whole-class when ${A.flexWhole} or more pupils need them (a fifth of the class), and are shared by a few below that. Personal items such as a radio aid, laptop or extra time stay individual. Suggestions from needs are marked so you can check them with your SENCo.</p></div></details>
   </section>
-  <section class="stack"><h2>1. Whole class: universal design</h2><p class="small muted">Plan these into every lesson for everyone. They remove barriers for the pupils who need them and help the rest of the class too.</p><div class="principles">${cols}</div></section>
-  <section class="panel"><h2>2. Small groups</h2><p class="small muted">Needed by a few pupils. Plan them for a group, not the whole class.</p>
+  <section class="stack"><h3>Adjustments for the whole class</h3><p class="small muted">Plan these into lessons for everyone. They remove barriers for the pupils who need them and help the rest of the class too.</p><div class="principles">${cols}</div></section>
+  <section class="panel"><h3>Shared by a few pupils</h3><p class="small muted">Plan these for a small group, not the whole class.</p>
     ${groups ? `<div class="tbl-wrap"><table><thead><tr><th>Adjustment</th><th>Pupils</th><th>How</th></tr></thead><tbody>${groups}</tbody></table></div>` : '<p class="muted">None at the moment.</p>'}</section>
-  <section class="panel"><h2>3. Individual reasonable adjustments</h2><p class="small muted">Specific to one pupil, on top of the whole-class practice.</p>
-    ${indiv ? `<div class="tbl-wrap"><table><thead><tr><th>Pupil</th><th>Needs</th><th>Adjustments</th></tr></thead><tbody>${indiv}</tbody></table></div>` : '<p class="muted">None at the moment.</p>'}</section>`;
+  <section class="stack"><h2>2. Individualised needs</h2><p class="small muted">Each pupil's reasonable adjustments, on top of the class adjustments above.</p>${people}</section>
+  <div class="row no-print"><span class="sp"></span><button class="btn" data-tab="sow">Next: scheme of work</button></div>`;
 }
 
 function vLessons() {
-  if (!S.lessons.length) return `<section class="panel"><h2>Lesson plans</h2><p class="muted">Add your scheme of work on the first tab.</p></section>`;
+  if (!S.lessons.length) return `<section class="panel"><h2>Lesson plans</h2><p class="muted">Add your scheme of work on the Scheme of work tab.</p></section>`;
   const A = analyse();
   const always = A.tiers.whole.filter(x => !x.a.acts.length);
   const alwaysInd = S.pupils.map(p => ({ p, list: A.tiers.individual[p.id].filter(x => !x.a.acts.length) })).filter(x => x.list.length);
@@ -912,6 +1015,7 @@ function vLessons() {
     const L = lessonPlan(l, A);
     return `<article class="lesson"><header><h3>${esc(l.title)}</h3>${l.unit ? `<span class="small muted">${esc(l.unit)}</span>` : ""}</header>
       <p class="small">${esc(l.text)}</p>
+      ${vocabOf(l) ? `<p class="small"><b>Key vocabulary:</b> ${esc(vocabOf(l))}</p>` : ""}
       <div class="row">${L.acts.map(a => `<span class="chip">${ACT_LABEL[a]}</span>`).join("")}</div>
       ${L.barriers.length ? `<div class="barrier"><h4>Barriers to plan for</h4>${L.barriers.map(b => `<div class="small"><b>${ACT_LABEL[b.act]}:</b> ${esc(b.who.join("; "))}</div>`).join("")}</div>` : ""}
       <div class="cols">
@@ -981,28 +1085,32 @@ function buildDocx() {
   };
   body.push(para(`${classTitle()}: adapted scheme of work`, "Title"));
   body.push(para([[`${[S.year, S.subject].filter(Boolean).join(" ")}. ${S.pupils.length} pupils with SEND in a class of ${S.classSize}, ${S.pupils.filter(p => p.status === "ehcp").length} with an EHCP. Made ${new Date().toLocaleDateString("en-GB")}.`]]));
-  body.push(para("Adjustments are sorted into three tiers using Universal Design for Learning (UDL): whole-class practice first, then small groups, then individual reasonable adjustments. Check any adjustment marked as suggested from need with the SENCo."));
-  body.push(para("1. Whole class: universal design", "Heading1"));
+  body.push(para("Adjustments are sorted into three tiers using Universal Design for Learning (UDL): what the class needs in common first, then individual reasonable adjustments. Check any adjustment marked as suggested from need with the SENCo."));
+  const N = needsSummary();
+  body.push(para("1. Common class needs", "Heading1"));
+  body.push(table(["Broad area of need", "Pupils", "Needs"], Object.keys(AREAS).map(a => [AREAS[a], String(N.byArea[a] || 0), NEEDS.filter(n => n.area === a && N.byNeed[n.id]).map(n => `${n.label} (${N.byNeed[n.id]})`).join(", ") || "None"]), [3200, 1000, 5400]));
+  body.push(para("Adjustments for the whole class", "Heading2"));
   Object.keys(PRINCIPLES).forEach(k => {
     const list = A.tiers.whole.filter(i => i.a.p === k); if (!list.length) return;
-    body.push(para(PRINCIPLES[k].name, "Heading2"));
+    body.push(para(PRINCIPLES[k].name, "Heading3"));
     list.forEach(i => body.push(bullet([[i.a.label + ": ", true], [`${i.a.cls} (${i.who.length} pupils: ${initialsList(i.who)}; ${i.a.acts.length ? "in " + i.a.acts.map(a => ACT_LABEL[a].toLowerCase()).join(", ") : "every lesson"})`]])));
   });
-  body.push(para("2. Small groups", "Heading1"));
+  body.push(para("Shared by a few pupils", "Heading2"));
   if (A.tiers.group.length) body.push(table(["Adjustment", "Pupils", "How"], A.tiers.group.map(i => [i.a.label, initialsList(i.who), i.a.ind]), [2600, 1800, 5000]));
   else body.push(para("None at the moment."));
-  body.push(para("3. Individual reasonable adjustments", "Heading1"));
+  body.push(para("2. Individualised needs", "Heading1"));
   const indRows = S.pupils.map(p => {
     const ex = pupilExtras(p), list = A.tiers.individual[p.id];
     const adj = list.map(i => `${i.a.label}: ${i.a.ind}`).concat(ex.other.map(t => "From Section F: " + t));
     return [`${p.label}\n${p.status === "ehcp" ? "EHCP" : "SEN support"}`, p.needs.map(n => NEED[n].label).join(", "), adj.join("\n") || "Whole-class practice only", ex.interventions.join("\n")];
   });
   body.push(table(["Pupil", "Needs", "Adjustments", "Outside lessons"], indRows, [1200, 2200, 4200, 2000]));
-  body.push(para("Lesson by lesson", "Heading1"));
+  body.push(para("3. Scheme of work, lesson by lesson", "Heading1"));
   S.lessons.forEach(l => {
     const L = lessonPlan(l, A);
     body.push(para(l.title, "Heading2"));
     body.push(para(l.text));
+    if (vocabOf(l)) body.push(para([["Key vocabulary: ", true], [vocabOf(l)]]));
     if (L.acts.length) body.push(para([["Activities: ", true], [L.acts.map(a => ACT_LABEL[a]).join(", ")]]));
     if (L.barriers.length) { body.push(para("Barriers to plan for", "Heading3")); L.barriers.forEach(b => body.push(bullet([[ACT_LABEL[b.act] + ": ", true], [b.who.join("; ")]]))); }
     if (L.whole.length) { body.push(para("Whole class", "Heading3")); L.whole.forEach(i => body.push(bullet(i.a.cls))); }
@@ -1125,7 +1233,7 @@ document.addEventListener("click", e => {
   else if (act === "adj-add" && p) { const id = document.getElementById("add-" + p.id).value; if (id) { p.off = p.off.filter(a => a !== id); if (!p.add.includes(id)) p.add.push(id); save(); render(); } }
   else if (act === "adj-restore" && p) { p.off = []; save(); render(); }
   else if (act === "redetect" && p) { p.needs = detectNeeds(pupilText(p)); save(); render(); }
-  else if (act === "clear-example") { Object.assign(S, blank(), { tab: "sow" }); save(); render(); }
+  else if (act === "clear-example") { Object.assign(S, blank()); save(); render(); }
   else if (act === "print") window.print();
   else if (act === "dl-docx") saveFile(`${fileStem()}-adapted-scheme.docx`, buildDocx());
   else if (act === "dl-xlsx") saveFile(`${fileStem()}-adjustments-tracker.xlsx`, buildXlsx());

@@ -64,13 +64,14 @@ A scheme of work for teaching at home under EOTAS, built on the EQUALS curriculu
 
 # UDL Class Planner
 
-For mainstream subject teachers: turns a scheme of work and a class's SEND information into whole-class, small-group and individual adjustments, using Universal Design for Learning.
+For secondary teachers. Starts with the pupils' needs, finds what the whole class needs in common and what individual pupils need, then builds both into the department's scheme of work using Universal Design for Learning.
 
 **Open the app:** https://sirlegend123.github.io/Assistance/udl/
 
-- Upload or paste a scheme of work (Word, Excel, PDF or text). It is split into lessons and each lesson's activities are recognised (extended writing, group work, practicals, tests, video and more).
-- Upload EHCPs and pupil passports (several at once), or paste lines from the SEN register. Each pupil is stored by initials, with needs grouped by the four broad areas of the SEND Code of Practice.
-- Adjustments are sorted into three tiers: whole-class universal design (grouped by the UDL principles of Engagement, Representation, and Action and Expression), small groups, and individual reasonable adjustments. Adjustments taken from a plan are marked separately from those suggested from a need.
-- Each lesson shows the barriers to plan for and which adjustments apply.
-- Download an adapted scheme of work (Word) and an adjustments tracker (Excel) for the assess, plan, do, review cycle.
-- Everything is read and kept in the browser. Use initials, and check with your school's data protection lead before using real plans.
+1. **Pupil needs.** Set the subject, year group (7 to 13) and class size, then upload EHCPs and pupil passports (several at once) or paste lines from the SEN register. Pupils are stored by initials, with needs grouped by the four broad areas of the SEND Code of Practice.
+2. **Class needs.** Common class needs first: the needs profile, whole-class adjustments grouped by the UDL principles (Engagement, Representation, and Action and Expression) and adjustments shared by a few pupils. Then individualised needs: each pupil's reasonable adjustments, interventions and EHCP outcomes. Subject-specific adjustments are included (for example practical step cards in science, sentence builders in languages, changing arrangements in PE), and from Key Stage 4 exam access arrangements are treated as the normal way of working.
+3. **Scheme of work.** Upload or paste it (Word, Excel, PDF or text). Department tables with headings such as Lesson, Learning objective, Key vocabulary, Activities and Homework are read column by column.
+4. **Lesson plans.** Each lesson shows its key vocabulary, the barriers to plan for and which adjustments apply.
+5. **Download and track.** An adapted scheme of work (Word) and an adjustments tracker (Excel) for the assess, plan, do, review cycle.
+
+Everything is read and kept in the browser. Use initials, and check with your school's data protection lead before using real plans.
