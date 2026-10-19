@@ -1,0 +1,1039 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EOTAS Scheme Planner</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+/* Layout: a planning workbook. One header band, tab strip, then a single readable column that widens for timetables. */
+:root {
+  --paper: #f5f7f4; --surface: #ffffff; --sunk: #edf1ee; --ink: #1b2625; --muted: #576663; --line: #d6ded9;
+  --accent: #1d5c73; --accent-ink: #ffffff; --accent-soft: #dcebf0;
+  --hl: #f8e07a; --hl-ink: #1b2625;
+  --ok: #2c7a4b; --warn: #a86a12; --bad: #b0413a;
+  --a1: #3a6db3; --a2: #8657b5; --a3: #2b8a75; --a4: #c8722a; --a5: #3d8a40; --a6: #bf4477; --a7: #687f1f; --a8: #8a6a43;
+  --display: "Lexend", "Segoe UI", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --r: 10px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #111817; --surface: #19221f; --sunk: #0d1312; --ink: #e4ebe8; --muted: #9babA7; --line: #2c3936;
+  --accent: #74b6cf; --accent-ink: #0b171c; --accent-soft: #1d3540;
+  --hl: #77651f; --hl-ink: #fff7d6;
+  --ok: #63c08a; --warn: #e2aa4c; --bad: #ea8077;
+  --a1: #7ea7e6; --a2: #b994e3; --a3: #5cc4ab; --a4: #eba564; --a5: #79c47b; --a6: #ea86ae; --a7: #b0c95c; --a8: #c9a67a;
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --paper: #111817; --surface: #19221f; --sunk: #0d1312; --ink: #e4ebe8; --muted: #9babA7; --line: #2c3936;
+  --accent: #74b6cf; --accent-ink: #0b171c; --accent-soft: #1d3540;
+  --hl: #77651f; --hl-ink: #fff7d6;
+  --ok: #63c08a; --warn: #e2aa4c; --bad: #ea8077;
+  --a1: #7ea7e6; --a2: #b994e3; --a3: #5cc4ab; --a4: #eba564; --a5: #79c47b; --a6: #ea86ae; --a7: #b0c95c; --a8: #c9a67a;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.55 var(--body); }
+h1, h2, h3, h4 { font-family: var(--display); font-weight: 500; line-height: 1.2; text-wrap: balance; margin: 0; }
+h1 { font-size: 1.6rem; letter-spacing: -0.01em; }
+h2 { font-size: 1.3rem; }
+h3 { font-size: 1.05rem; }
+h4 { font-size: .8rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 500; }
+p { margin: 0; max-width: 68ch; }
+a { color: var(--accent); }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+header.top { background: var(--accent); color: var(--accent-ink); }
+header.top .wrap { padding-block: 22px 0; display: grid; gap: 4px; }
+header.top p { opacity: .85; font-size: .95rem; }
+nav.tabs { display: flex; gap: 2px; overflow-x: auto; margin-top: 16px; scrollbar-width: none; }
+nav.tabs button { flex: none; border: 0; background: transparent; color: var(--accent-ink); opacity: .8; padding: 10px 14px; border-radius: 10px 10px 0 0; cursor: pointer; font-family: var(--display); font-size: .92rem; display: flex; gap: 8px; align-items: center; }
+nav.tabs button .n { font-size: .72rem; border: 1.5px solid currentColor; border-radius: 99px; width: 20px; height: 20px; display: inline-grid; place-items: center; }
+nav.tabs button[aria-selected="true"] { background: var(--paper); color: var(--ink); opacity: 1; }
+nav.tabs button:hover { opacity: 1; }
+
+main { padding-block: 24px 64px; display: grid; gap: 20px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 20px; display: grid; gap: 14px; min-width: 0; }
+.stack { display: grid; gap: 12px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 16px; }
+.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px; }
+.muted { color: var(--muted); }
+.small { font-size: .88rem; }
+.sp { flex: 1; }
+
+label.f { display: grid; gap: 4px; font-size: .9rem; color: var(--muted); min-width: 0; }
+label.f > span { font-weight: 700; color: var(--ink); }
+input[type=text], input[type=date], input[type=number], input[type=time], select, textarea {
+  background: var(--surface); border: 1.5px solid var(--line); border-radius: 8px; padding: 8px 10px; width: 100%; min-width: 0;
+}
+textarea { resize: vertical; line-height: 1.5; }
+input:focus, select:focus, textarea:focus { border-color: var(--accent); outline: none; }
+.btn { border: 1.5px solid var(--accent); background: var(--accent); color: var(--accent-ink); border-radius: 8px; padding: 8px 14px; cursor: pointer; font-family: var(--display); font-size: .9rem; }
+.btn.ghost { background: transparent; color: var(--accent); }
+.btn.quiet { border-color: var(--line); background: var(--surface); color: var(--ink); }
+.btn.danger { border-color: var(--bad); background: transparent; color: var(--bad); }
+.btn:hover { filter: brightness(1.05); }
+
+.banner { background: var(--accent-soft); border-radius: var(--r); padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.banner p { flex: 1 1 280px; }
+
+.pathways { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 10px; }
+.pathways label { border: 1.5px solid var(--line); border-radius: var(--r); padding: 12px 14px; cursor: pointer; display: grid; gap: 4px; }
+.pathways label:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.pathways input { position: absolute; opacity: 0; }
+.pathways b { font-family: var(--display); font-weight: 500; }
+.days { display: flex; flex-wrap: wrap; gap: 6px; }
+.days label { border: 1.5px solid var(--line); border-radius: 99px; padding: 4px 12px; cursor: pointer; }
+.days label:has(input:checked) { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.days input { position: absolute; opacity: 0; }
+
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: .8rem; padding: 2px 9px; border-radius: 99px; background: var(--sunk); border: 1px solid var(--line); white-space: nowrap; }
+.chip.k-session { background: color-mix(in srgb, var(--a1) 14%, var(--surface)); border-color: color-mix(in srgb, var(--a1) 40%, var(--line)); }
+.chip.k-approach { background: color-mix(in srgb, var(--a3) 14%, var(--surface)); border-color: color-mix(in srgb, var(--a3) 40%, var(--line)); }
+.chip.k-review { background: color-mix(in srgb, var(--a8) 14%, var(--surface)); border-color: color-mix(in srgb, var(--a8) 40%, var(--line)); }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex: none; display: inline-block; background: var(--c, var(--muted)); }
+mark { background: var(--hl); color: var(--hl-ink); border-radius: 3px; padding: 0 2px; }
+
+.stats { display: flex; flex-wrap: wrap; gap: 8px 22px; }
+.stat b { font-family: var(--display); font-size: 1.5rem; font-weight: 500; display: block; font-variant-numeric: tabular-nums; }
+.stat span { font-size: .82rem; color: var(--muted); }
+
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+th { font-family: var(--display); font-weight: 500; font-size: .8rem; color: var(--muted); background: var(--sunk); position: sticky; top: 0; }
+tr:last-child td { border-bottom: 0; }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.prov td select, .prov td input { padding: 5px 7px; font-size: .88rem; }
+.prov td input[type=number] { width: 5.2em; }
+.prov td.text { min-width: 260px; }
+.prov td.text input { width: 100%; }
+.prov .src { margin-top: 6px; font-size: .86rem; color: var(--muted); }
+
+.areas { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr)); gap: 14px; }
+.area { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.area header { display: flex; align-items: center; gap: 10px; }
+.area header h3 { flex: 1; }
+.area ul { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; }
+.area li { max-width: 68ch; }
+.tag-f { font-size: .72rem; font-family: var(--display); background: var(--hl); color: var(--hl-ink); padding: 1px 6px; border-radius: 4px; margin-right: 4px; }
+.tag-e { font-size: .72rem; font-family: var(--display); background: var(--accent-soft); color: var(--ink); padding: 1px 6px; border-radius: 4px; margin-right: 4px; }
+
+.tt { min-width: 640px; table-layout: fixed; }
+.tt th:first-child, .tt td:first-child { width: 78px; }
+.tt td { padding: 6px; }
+.cell { width: 100%; text-align: left; border: 1px solid var(--line); border-radius: 8px; padding: 8px 9px; cursor: pointer; display: grid; gap: 3px; min-height: 84px; align-content: start;
+  background: color-mix(in srgb, var(--c) 10%, var(--surface)); }
+.cell:hover { border-color: var(--c); }
+.cell[aria-pressed="true"] { outline: 2.5px solid var(--c); outline-offset: 1px; }
+.cell .t { font-family: var(--display); font-size: .84rem; font-weight: 500; display: block; }
+.cell .t .dot { margin-right: 6px; vertical-align: 0; }
+.cell .o { font-size: .78rem; color: var(--muted); line-height: 1.35; }
+.cell .st { font-size: .72rem; }
+.time { font-variant-numeric: tabular-nums; font-size: .8rem; color: var(--muted); }
+.breakrow td { font-size: .78rem; color: var(--muted); text-align: center; padding: 3px; background: var(--sunk); }
+
+.lesson { display: grid; gap: 12px; }
+.lesson dl { display: grid; grid-template-columns: minmax(110px, 160px) 1fr; gap: 8px 16px; margin: 0; }
+.lesson dt { font-family: var(--display); font-size: .82rem; color: var(--muted); }
+.lesson dd { margin: 0; min-width: 0; }
+@media (max-width: 560px) { .lesson dl { grid-template-columns: 1fr; } .lesson dd { margin-bottom: 6px; } }
+
+.pill { font-size: .78rem; padding: 2px 9px; border-radius: 99px; font-family: var(--display); white-space: nowrap; }
+.pill.ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, var(--surface)); }
+.pill.warn { color: var(--warn); background: color-mix(in srgb, var(--warn) 16%, var(--surface)); }
+.pill.bad { color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, var(--surface)); }
+
+.log-day { display: grid; gap: 8px; }
+.log-item { display: grid; grid-template-columns: 70px minmax(0, 1fr) 140px 150px minmax(0, 1.2fr); gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+@media (max-width: 820px) { .log-item { grid-template-columns: 1fr 1fr; } .log-item .what { grid-column: 1 / -1; } .log-item .time { grid-column: 1 / -1; } .log-item input[type=text] { grid-column: 1 / -1; } }
+
+details > summary { cursor: pointer; font-family: var(--display); }
+details { border-top: 1px solid var(--line); padding-top: 10px; }
+.info { font-size: .92rem; display: grid; gap: 8px; }
+.info p { max-width: 80ch; }
+footer { padding-block: 0 40px; font-size: .85rem; color: var(--muted); }
+
+@media print {
+  header.top nav, .no-print, .banner, footer { display: none !important; }
+  header.top { background: none; color: #000; }
+  body { background: #fff; color: #000; font-size: 11pt; }
+  .panel, .area, .tbl-wrap { border-color: #bbb; break-inside: avoid; }
+  .tt { min-width: 0; }
+  .cell { min-height: 0; }
+  main { padding: 0; }
+}
+@media (prefers-reduced-motion: no-preference) { .cell, .btn { transition: border-color .15s, filter .15s; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <h1>EOTAS Scheme Planner</h1>
+    <p>A scheme of work built on the EQUALS curriculum pathways that follows what Section F of the EHCP says must happen.</p>
+    <nav class="tabs" id="tabs" role="tablist" aria-label="Planner sections"></nav>
+  </div>
+</header>
+<main class="wrap" id="main" aria-live="polite"></main>
+<footer class="wrap">
+  <p>Everything stays in this browser. Nothing you type is uploaded. Use <b>Save a backup</b> on the first tab to keep a copy. This planner uses the structure of the EQUALS pathways with its own example objectives. It is not made by or connected to EQUALS, and it is not legal advice.</p>
+</footer>
+<script>
+"use strict";
+/* ---------- Curriculum data ---------- */
+const PATHWAYS = {
+  pre: {
+    label: "Informal (pre-formal)", who: "Profound and multiple learning difficulties, or very early developmental stages. Learning is sensory, relational and repeated.",
+    evidence: "Photo or short video of the response, with the prompt level and how long attention lasted.",
+    areas: [
+      { id: "pf-comm", name: "My Communication", c: 1, tags: ["comm", "social"], w: 3,
+        obj: ["Shows a consistent response (stilling, smiling, vocalising) to a familiar voice or song", "Anticipates a familiar event in a routine ('ready, steady… go')", "Uses an intentional action (reach, look, sound) to ask for 'more'", "Takes turns in a back-and-forth exchange of sounds or movements", "Responds to an object of reference that signals what happens next", "Makes a choice between two items by looking or reaching"],
+        act: ["Turn-taking exchange: copy {name}'s sounds and movements, then pause and wait. Use a {theme} object ({word}) as the shared focus.", "'Ready, steady… go!' games with {sensory}. Build a long pause before 'go' and watch for anticipation.", "Hold up two {theme} items wide apart. Treat any look or reach as a choice and name it: '{word}!'", "Give the object of reference for the session at the start and sing the same hello song every time."] },
+      { id: "pf-play", name: "My Sensory Play", c: 2, tags: ["cognition", "play", "literacy", "maths"], w: 3,
+        obj: ["Notices and tracks a moving object or light", "Repeats an action that made something happen (cause and effect)", "Searches for an object that has been partly hidden", "Explores objects in different ways (shaking, banging, squeezing)", "Uses a switch to make a toy, light or music start", "Shows delight in a familiar game and asks for it again"],
+        act: ["Switch play: {name} presses a switch to start a {interest} clip or a {theme} sound. Pause and wait for the next press.", "Hide a {word} under a scarf in a tray of {sensory}. Partly, then fully, hide it and watch for searching.", "Tracking in a dark den with torches and shiny {theme} objects.", "Treasure basket of {theme} objects. Note which objects hold attention and how each is explored."] },
+      { id: "pf-phys", name: "My Physical Wellbeing", c: 5, tags: ["motor", "sensory", "regulation"], w: 3,
+        obj: ["Tolerates and enjoys a range of positions (lying, supported sitting or standing)", "Reaches for and grasps an object", "Releases an object into a container", "Bears weight through arms or legs with support", "Stays calm and engaged in a sensory activity for a short time", "Shows signs of regulation after a movement or sensory routine"],
+        act: ["Stretch and positioning routine to music, then reach for {theme} objects at different heights.", "Sensory circuit: alerting (bouncing), organising (crawling through a tunnel), calming (heavy blanket).", "Post {theme} objects into a tin that makes a satisfying noise.", "Massage story about {theme} with different pressures and textures ({sensory})."] },
+      { id: "pf-ind", name: "My Independence", c: 3, tags: ["selfcare", "life"], w: 2,
+        obj: ["Cooperates with a care routine (changing, hand washing)", "Shows a preference for a food or drink", "Helps with dressing by pushing an arm through a sleeve", "Brings food or a spoon to the mouth", "Tolerates hand and face washing", "Anticipates a routine from a cue (song or object)"],
+        act: ["Snack time with {theme} foods: offer two choices and wait for a signal for 'more'.", "Hand washing with the same song every time; add bubbles at the end.", "Dressing-up box of {theme} hats and coats: push arms through, help pull on.", "Care routine introduced with its object of reference and finished with a favourite song."] },
+      { id: "pf-cre", name: "My Creativity", c: 6, tags: ["creative"], w: 1.5,
+        obj: ["Responds to music by stilling, moving or vocalising", "Explores paint or textures with hands or feet", "Makes a sound with an instrument", "Shows a preference for particular sounds or music", "Moves to music with or without support", "Makes marks in a sensory material"],
+        act: ["Sensory story about {theme} with sounds, smells and textures ({sensory}).", "Hand and foot painting on a big sheet; name the colours.", "Instrument play (drum, shaker, chime): stop and start with the music.", "Make marks in shaving foam, sand or paint with fingers."] },
+      { id: "pf-out", name: "My Outdoor School", c: 7, tags: ["outdoor", "community", "science"], w: 1.5,
+        obj: ["Tolerates being outdoors in different weather", "Notices natural sounds, smells and textures", "Explores natural materials (leaves, mud, water)", "Enjoys a swing, roundabout or wheeled toy", "Anticipates the routine of going out (coat, shoes, door)", "Responds to a new outdoor place"],
+        act: ["Short outdoor walk with a {theme} focus. Collect things for a feely bag.", "Swing or roller: stop and wait for a signal to go again.", "Mud kitchen or water play in the garden.", "Visit: {outing}. Keep it short and use the same arrival routine each time."] },
+    ]
+  },
+  semi: {
+    label: "Semi-formal", who: "Severe learning difficulties, often autistic or minimally verbal. Learning is functional, play-based and linked to real life.",
+    evidence: "Photo, video or work sample, with the prompt level (full physical, partial physical, gesture, verbal, independent).",
+    areas: [
+      { id: "sf-comm", name: "My Communication", c: 1, tags: ["comm", "literacy"], w: 3,
+        obj: ["Requests a wanted item using a sign, symbol, word or AAC", "Follows a one-key-word instruction in a familiar routine", "Follows a two-key-word instruction ('get the cup and the spoon')", "Comments on something of interest ('look, bus!')", "Answers 'what' and 'who' questions with a word, sign or symbol", "Joins in with the repeated line of a familiar story", "Recognises own name and familiar symbols", "Makes marks on purpose and says what they are"],
+        act: ["Shared {theme} story: pause before the repeated line so {name} can join in using {mode}.", "Barrier game with {theme} objects ({words}): one-key-word, then two-key-word instructions.", "Communication temptation: put a {interest} item in a clear jar that needs help to open.", "Make a {theme} talking book from this week's photos. Use it to comment and answer 'what is it?'"] },
+      { id: "sf-think", name: "My Thinking and Problem Solving", c: 2, tags: ["cognition", "maths"], w: 2.5,
+        obj: ["Matches identical objects and pictures", "Sorts objects by one feature (colour, size, type)", "Counts objects to 3, then 5, touching each one", "Understands 'more', 'all gone', 'same' and 'different'", "Copies and continues a simple pattern", "Solves a simple practical problem (opening, reaching, fitting)", "Understands first-then and a simple sequence of events"],
+        act: ["Match and sort {theme} objects into baskets ({words}).", "Counting song with {theme} props; {name} counts out the objects.", "Problem-solving box: a {interest} toy inside a box with a lid, clip or bag to open.", "Put a three-photo sequence of a {theme} activity in order."] },
+      { id: "sf-ind", name: "My Independence", c: 3, tags: ["selfcare", "life", "regulation"], w: 2,
+        obj: ["Washes and dries hands with fewer prompts", "Puts on and takes off coat and shoes", "Uses a spoon or fork independently at snack", "Makes choices from a choice board", "Follows a visual timetable to move between activities", "Shows how they feel with a symbol or Zones board", "Helps prepare a simple snack", "Asks for a break when needed"],
+        act: ["Make a simple {theme} snack from a visual recipe. {name} does every step they can.", "Coat-and-shoes practice before {outing}, using backward chaining.", "Feelings check-in with symbols at the start and end, then choose a calming tool.", "Shop for {theme} items with a symbol shopping list."] },
+      { id: "sf-play", name: "My Play and Leisure", c: 4, tags: ["play", "social"], w: 2,
+        obj: ["Plays alongside an adult and copies actions", "Takes turns in a simple game with an adult", "Uses toys for their purpose (feeds a doll, pushes a car)", "Joins in a short pretend-play sequence", "Shares an activity with a sibling or another child", "Chooses a leisure activity and stays with it for five minutes"],
+        act: ["Set up a {theme} play scene and model a two- or three-step pretend sequence.", "Turn-taking game with {interest} pieces and a 'my turn / your turn' card.", "Small-world {theme} play in sand or water.", "Meet-up with another child (home-ed group or play date) with one shared game planned in advance."] },
+      { id: "sf-phys", name: "My Physical Wellbeing", c: 5, tags: ["motor", "sensory"], w: 2,
+        obj: ["Holds a pencil or crayon with an emerging tripod grip", "Snips with scissors, then cuts along a line", "Threads large beads or laces", "Balances, jumps and climbs with confidence", "Throws and catches a large ball", "Follows a sensory diet to stay regulated"],
+        act: ["Dough Disco to music, then make {theme} shapes in dough.", "Obstacle course with {theme} stations: crawl, jump, balance.", "Fine-motor tray: threading, pegs and tweezers with {theme} items.", "Ball skills in the garden or park: throw, catch, kick."] },
+      { id: "sf-cre", name: "My Creativity", c: 6, tags: ["creative"], w: 1.5,
+        obj: ["Explores art materials with intent", "Joins in with songs and actions", "Plays an instrument loud and quiet, fast and slow", "Makes a picture or model and shows it to someone", "Moves to music, copying an adult", "Responds to a story or drama with actions"],
+        act: ["{theme} art: printing, collage or painting with {sensory}.", "Action songs about {theme}; stop and go with instruments.", "Act out a {theme} story with props and costumes.", "Build a junk model of something from {theme} or {interest}."] },
+      { id: "sf-out", name: "My Outdoor School", c: 7, tags: ["outdoor"], w: 1.5,
+        obj: ["Explores natural materials and talks about them", "Follows safety rules outside (stop, wait, hold hands)", "Plants and cares for a plant", "Uses playground equipment safely", "Takes part in a scavenger hunt", "Builds with natural materials alongside an adult"],
+        act: ["Forest-school style session: collect {theme} treasures and make a nature picture.", "Scavenger hunt with symbol cards for {words}.", "Gardening or water play outside linked to {theme}.", "Park session: practise stop and wait with a visual card."] },
+      { id: "sf-world", name: "The World About Me", c: 8, tags: ["community", "science"], w: 1,
+        obj: ["Notices changes in the weather and seasons", "Recognises people who help us", "Watches what happens when materials change (melting, mixing)", "Recognises own home and familiar local places", "Follows simple rules in a public place", "Greets familiar people and says or signs 'please', 'thank you' and 'help'"],
+        act: ["Community visit: {outing}. Practise greeting and waiting.", "People-who-help-us role play linked to {theme}.", "'What happens if…?' experiment with {sensory}.", "Read a social story about a local place, then visit it."] },
+    ]
+  },
+  formal: {
+    label: "Formal", who: "Moderate learning difficulties. Subject-based learning, taught in small steps with lots of practical work.",
+    evidence: "Work samples, photos and a short self-assessment ('I can…').",
+    areas: [
+      { id: "f-lit", name: "My Communication and Literacy", c: 1, tags: ["comm", "literacy"], w: 3,
+        obj: ["Reads and blends CVC words using phonics", "Reads common exception words in context", "Retells a familiar story in order", "Writes a simple sentence with a capital letter and full stop", "Answers who, what and where questions about a text", "Uses describing words when speaking and writing", "Writes for a real purpose (list, card, label)"],
+        act: ["Short phonics session, then read a decodable book linked to {theme}.", "Shared reading of a {theme} text; answer who/what/where questions with sentence strips.", "Write a real {theme} text: a shopping list, invitation, label or postcard.", "Retell a story with a story map and props, and record it on a tablet."] },
+      { id: "f-maths", name: "My Maths", c: 2, tags: ["maths", "cognition"], w: 3,
+        obj: ["Counts, reads and writes numbers to 20", "Adds and subtracts within 10 using objects", "Recognises and uses coins in a shop", "Tells the time to the hour and half hour", "Measures and compares length or weight", "Recognises 2D and 3D shapes around them", "Collects and shows simple data"],
+        act: ["Number work with {theme} objects, recorded with Numicon or a number line.", "Shop role play: price {theme} items up to 10p or 20p.", "Measure and compare {theme} items: longest, heaviest.", "Shape and data hunt around the house or park, then make a pictogram."] },
+      { id: "f-world", name: "The World About Me", c: 8, tags: ["science", "community"], w: 1.5,
+        obj: ["Observes and describes changes (materials, seasons, growth)", "Asks a simple question and finds out the answer", "Sorts materials by their properties", "Puts events from own past in order", "Recognises features of the local area", "Uses a simple map of a familiar place"],
+        act: ["{theme} investigation: predict, test and record with photos.", "Find out the answer to one {theme} question from a book or video and present it.", "Draw a map of the route to {outing}, then use it on the walk.", "Make a timeline of {name}'s own life or of a {theme} sequence."] },
+      { id: "f-ind", name: "My Independence", c: 3, tags: ["selfcare", "life"], w: 1.5,
+        obj: ["Plans and cooks a simple meal from a recipe", "Manages personal hygiene with visual prompts", "Pays for items and checks the change", "Plans a journey using a timetable", "Keeps safe crossing roads and in public", "Manages a weekly routine with a planner"],
+        act: ["Shop for and cook a {theme}-linked meal from a visual recipe.", "Travel training on {outing}: plan, budget and make the journey.", "Budget for a {theme} item and pay for it.", "Plan tomorrow's timetable together."] },
+      { id: "f-pshe", name: "My Wellbeing and Citizenship", c: 4, tags: ["regulation", "social"], w: 1.5,
+        obj: ["Names feelings and says what helps", "Uses a strategy to regulate (Zones, breathing, a break)", "Understands personal safety and consent", "Works cooperatively with others", "Understands rules and fairness", "Knows how to stay safe online"],
+        act: ["Zones of Regulation lesson: name the zones and choose tools, linked to {theme}.", "Talk through a {theme} scenario: what is fair, and what would you do?", "Cooperative project with a sibling or home-ed group.", "Online safety: safe apps and who to tell."] },
+      { id: "f-phys", name: "My Physical Wellbeing", c: 5, tags: ["motor", "sensory", "play"], w: 1.5,
+        obj: ["Forms letters consistently", "Uses scissors and tools accurately", "Builds stamina and coordination in a sport", "Swims a short distance", "Follows a personal fitness or sensory plan", "Understands healthy food and exercise"],
+        act: ["Handwriting warm-up and practice using {theme} words.", "PE: ball skills, swimming or a fitness circuit.", "Sort {theme} foods and plan a healthy snack.", "Fine-motor practice: tools, cutting and construction."] },
+      { id: "f-cre", name: "My Creativity", c: 6, tags: ["creative"], w: 1,
+        obj: ["Plans and makes art using a technique", "Composes a simple rhythm or tune", "Performs a song, dance or drama", "Says what went well and what to improve", "Explores the work of an artist or musician", "Designs and makes a product"],
+        act: ["Look at an artist linked to {theme} and make a piece in their style.", "Compose and record a rhythm or song about {theme}.", "Design, make and test a {theme} product.", "Act out a {theme} story or scenario."] },
+      { id: "f-out", name: "My Outdoor School", c: 7, tags: ["outdoor"], w: 1,
+        obj: ["Uses simple tools safely outdoors with an adult", "Identifies common plants, trees and minibeasts", "Builds a den or shelter with others", "Records nature observations over time", "Plans and leads an outdoor activity", "Takes managed risks outdoors"],
+        act: ["Forest school: den building and nature identification linked to {theme}.", "Keep a nature diary with photos and notes.", "Orienteering or treasure hunt with a map.", "Visit: {outing}."] },
+    ]
+  }
+};
+
+const THEMES = [
+  { name: "All about me", words: ["me", "face", "hands", "family", "home"], sensory: "mirrors, photos and hand-print paint", outing: "a photo walk round your street" },
+  { name: "Food", words: ["eat", "drink", "more", "apple", "finished"], sensory: "a tasting tray and food smells", outing: "a café or supermarket" },
+  { name: "Animals", words: ["dog", "cat", "duck", "big", "little"], sensory: "fur fabric, feathers and animal sounds", outing: "a farm or pet shop" },
+  { name: "Water", words: ["water", "splash", "wet", "pour", "boat"], sensory: "water, ice and bubbles", outing: "the swimming pool or a river walk" },
+  { name: "Transport", words: ["car", "bus", "train", "go", "stop"], sensory: "wheels, vibration and engine sounds", outing: "a bus ride or the train station" },
+  { name: "Weather and seasons", words: ["rain", "sun", "wind", "cold", "coat"], sensory: "fans, spray bottles and leaves", outing: "a puddle walk" },
+  { name: "Shopping", words: ["buy", "money", "bag", "pay", "shop"], sensory: "real coins and shopping bags", outing: "the local shop" },
+  { name: "Growing", words: ["seed", "plant", "soil", "water", "grow"], sensory: "soil, seeds and cress", outing: "a garden centre" },
+  { name: "Space and light", words: ["moon", "star", "dark", "light", "rocket"], sensory: "torches, glow sticks and a dark den", outing: "an evening walk to see the moon" },
+  { name: "Celebrations", words: ["party", "cake", "present", "happy", "candle"], sensory: "wrapping paper, bells and candles (unlit)", outing: "shopping for a party" },
+  { name: "People who help us", words: ["doctor", "police", "fire engine", "help", "hurt"], sensory: "role-play costumes and a doctor's kit", outing: "the library or fire station open day" },
+  { name: "Music and sound", words: ["loud", "quiet", "drum", "sing", "dance"], sensory: "instruments and vibrations", outing: "a music group" },
+];
+
+/* ---------- Reading Section F ---------- */
+const TAG_RX = {
+  comm: /\b(speech|language|communicat\w*|sa?lt|slt|vocabular\w*|signs?|signing|makaton|pecs|aac|symbols?|talker|intensive interaction|attention autism|colourful semantics|request\w*|listening|attention|understanding|expressive|receptive|commenting|words?)\b/i,
+  literacy: /\b(read\w*|phonic\w*|literacy|writ(e|ing)|letters?|books?|story|stories)\b/i,
+  maths: /\b(maths?|numbers?|numeracy|count\w*|numicon|money|coins|shapes?|measur\w*)\b/i,
+  cognition: /\b(cognit\w*|problem[- ]solving|memory|match\w*|sort\w*|cause and effect|precision teaching|teacch|workstation|learning|concepts?)\b/i,
+  selfcare: /\b(toilet\w*|dress\w*|eating|feeding|drinking|self[- ]care|hand[- ]washing|washing|hygiene|teeth|chaining)\b/i,
+  life: /\b(independen\w*|life skills?|cook\w*|travel\w*|road safety|shopping|choices?|routines?|visual timetable|now[- ]and[- ]next)\b/i,
+  motor: /\b(motor|occupational therap\w*|ot|physio\w*|handwriting|pencil|grip|balance|co-?ordination|swim\w*|trampolin\w*|rebound|posture|exercise|cutting|scissors|dough disco|pe)\b/i,
+  sensory: /\b(sensory|proprioceptive|vestibular|ear defenders|low[- ]arousal|movement breaks?|deep pressure)\b/i,
+  regulation: /\b(emotion\w*|regulat\w*|zones|anxiety|anxious|calm\w*|feelings|behaviour|self[- ]esteem|social stor\w*|wellbeing|semh|transitions?|meltdowns?|breaks?)\b/i,
+  social: /\b(social|peers?|turn[- ]taking|sharing|friend\w*|lego|groups?)\b/i,
+  play: /\b(play|playing|leisure|imaginat\w*|pretend|toys?)\b/i,
+  creative: /\b(music\w*|art|arts|sing\w*|drama|messy|craft\w*|danc\w*|paint\w*)\b/i,
+  outdoor: /\b(outdoors?|outside|forest school|nature|garden\w*|park)\b/i,
+  community: /\b(community|visits?|outings?|shops?|library|caf[eé]|people who help)\b/i,
+  science: /\b(science|experiment\w*|materials|weather|seasons?|plants?|growing)\b/i,
+};
+const HEADINGS = [
+  { rx: /communication and interaction|speech,? language/i, tags: ["comm", "social"] },
+  { rx: /cognition and learning|learning and cognition/i, tags: ["cognition", "literacy", "maths"] },
+  { rx: /social,? emotional|semh|mental health/i, tags: ["regulation", "social"] },
+  { rx: /sensory|physical/i, tags: ["sensory", "motor"] },
+  { rx: /independen|self[- ]care|preparing for adulthood|life skills/i, tags: ["selfcare", "life"] },
+];
+const STRATEGIES = [
+  { id: "aac", label: "AAC / talker", rx: /\baac\b|communication aid|talker|voice output|speech generating|proloquo|\bvoca\b/i, global: true, embed: "Model on the AAC device as you talk: point to the symbols for {words}." },
+  { id: "makaton", label: "Makaton / signing", rx: /makaton|signalong|\bsigns?\b|\bsigning\b|\bbsl\b/i, global: true, embed: "Sign this week's key words: {words}." },
+  { id: "pecs", label: "PECS", rx: /\bpecs\b|picture exchange/i, tags: ["comm"], embed: "Keep the PECS book in reach and plan at least five chances to request." },
+  { id: "tc", label: "Total communication", rx: /total communication/i, global: true, embed: "Use speech, signs, symbols and objects together." },
+  { id: "ii", label: "Intensive Interaction", rx: /intensive interaction/i, tags: ["comm", "social", "play"], embed: "Start with a few minutes of Intensive Interaction, following {name}'s lead." },
+  { id: "aa", label: "Attention Autism", rx: /attention autism|bucket time/i, tags: ["comm", "cognition"], embed: "Open with an Attention Autism bucket of {theme} objects." },
+  { id: "cs", label: "Colourful Semantics", rx: /colourful semantics/i, tags: ["comm", "literacy"], embed: "Build who / doing / what sentences about {theme} with Colourful Semantics cards." },
+  { id: "oor", label: "Objects of reference", rx: /objects? of reference/i, global: true, embed: "Hand over the object of reference for the session at the start." },
+  { id: "vt", label: "Visual timetable", rx: /visual timetable|visual schedule|now[- ](and[- ])?next|first[- ](and[- ])?then/i, global: true, embed: "Show this session on the visual timetable and use a now-and-next board." },
+  { id: "lang", label: "Reduced language", rx: /reduced language|simplified language|processing time|short instructions/i, global: true, embed: "Say less and wait: allow up to 10 seconds of processing time." },
+  { id: "choice", label: "Choice boards", rx: /choice boards?|choosing boards?|making choices/i, global: true, embed: "Offer choices on a choice board." },
+  { id: "zones", label: "Zones of Regulation", rx: /zones of regulation|\bzones\b|emotion check|feelings check/i, global: true, embed: "Check in on the Zones board at the start and end." },
+  { id: "breaks", label: "Movement breaks", rx: /movement breaks?|sensory breaks?|brain breaks?|regular breaks/i, global: true, embed: "Plan a movement break about every 15–20 minutes." },
+  { id: "lowa", label: "Low-arousal space", rx: /low[- ]arousal|quiet space|calm space|ear defenders|reduced noise|distraction[- ]free/i, global: true, embed: "Keep the space low-arousal, with ear defenders to hand." },
+  { id: "rewards", label: "Motivators", rx: /motivat\w+|rewards?|token (board|system)|preferred (items?|activit\w+)/i, global: true, embed: "Use a token board with {interest} as the reward." },
+  { id: "ss", label: "Social stories", rx: /social stor(y|ies)|comic strip conversation/i, tags: ["regulation", "community", "life", "outdoor"], embed: "Read the social story before any change or outing." },
+  { id: "sc", label: "Sensory circuit / diet", rx: /sensory circuit|sensory diet|sensory programme/i, tags: ["motor", "sensory"], embed: "Follow the sensory diet: alerting, organising, then calming activities." },
+  { id: "si", label: "Deep pressure / heavy work", rx: /sensory integration|weighted|deep pressure|heavy work/i, tags: ["sensory", "motor", "regulation"], embed: "Offer heavy work or deep pressure before seated tasks." },
+  { id: "teacch", label: "TEACCH workstation", rx: /teacch|workstation|structured teaching/i, tags: ["cognition", "maths", "literacy", "life"], embed: "Set tasks out left to right in a workstation, with a finished box." },
+  { id: "pt", label: "Precision teaching", rx: /precision teaching/i, tags: ["cognition", "literacy", "maths"], embed: "Do a one-minute precision teaching probe and chart the score." },
+  { id: "numicon", label: "Numicon", rx: /numicon/i, tags: ["maths", "cognition"], embed: "Use Numicon shapes for any number work." },
+  { id: "chain", label: "Backward chaining", rx: /chaining|task analysis/i, tags: ["selfcare", "life"], embed: "Teach by backward chaining: {name} does the last step, then the last two." },
+  { id: "fm", label: "Fine-motor programme", rx: /fine motor|dough disco|handwriting|pencil grip|funky fingers/i, tags: ["motor", "literacy", "creative"], embed: "Warm up hands first with Dough Disco or a fine-motor tray." },
+  { id: "lego", label: "LEGO-based therapy", rx: /\blego\b/i, tags: ["social", "play"], embed: "Use LEGO-based therapy roles (engineer, supplier, builder) with a sibling or friend." },
+  { id: "peer", label: "Time with other children", rx: /\bpeers?\b|social (skills )?groups?|small group|other (children|pupils)/i, tags: ["social", "play", "community"], embed: "Plan time with other children: a home-ed group, club or play date." },
+];
+const WHO = [
+  ["SaLT", /speech (and|&) language therap\w*|\bsa?lt\b|\bslt\b/i],
+  ["OT", /occupational therap\w*|\bot\b/i],
+  ["Physio", /\bphysio\w*/i],
+  ["Ed Psych", /educational psycholog\w*|\bep\b/i],
+  ["Specialist teacher", /specialist teach\w*|advisory teach\w*|teacher of the (deaf|visually impaired)|\bqt[vh]i\b/i],
+  ["Music therapist", /music therap\w*/i],
+  ["Play therapist", /play therap\w*/i],
+  ["Psychologist / CAMHS", /\bcamhs\b|clinical psycholog\w*/i],
+  ["Trained adult", /trained adult|teaching assistant|\bta\b|\b1:1\b|one[- ]to[- ]one|support staff|key worker|\badults?\b/i],
+];
+const NUMW = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, once: 1, twice: 2, thrice: 3 };
+const NUM = "(\\d+(?:\\.\\d+)?|one|two|three|four|five|six|seven|eight|nine|ten|once|twice|thrice)";
+const UNIT = "(day|week|fortnight|month|half[- ]?term|term|year)";
+const ADV = "(daily|weekly|fortnightly|monthly|half[- ]?termly|termly|annually|yearly)";
+const RX = {
+  cxd: new RegExp("\\b" + NUM + "\\s*(?:x|×|times)\\s*(\\d+(?:\\.\\d+)?)[- ]?(minutes?|mins?|hours?|hrs?)\\b", "i"),
+  dur: /(?<!every\s)(?<![\d.])\b(\d+(?:\.\d+)?|half an|an|one)[- ]?(minutes?|mins?|hours?|hrs?)\b/i,
+  cu: new RegExp("\\b" + NUM + "\\s*(?:x|×|times)?\\s*(?:(?:sessions?|lessons?|visits?|blocks?|days?)\\s+)?(?:per|a|an|each|every)\\s+" + UNIT + "\\b", "i"),
+  cadv: new RegExp("\\b" + NUM + "\\s*(?:x|×|times)?\\s*" + ADV + "\\b", "i"),
+  unit: new RegExp("\\b(?:per|a|an|each|every)\\s+" + UNIT + "\\b|\\b" + ADV + "\\b", "i"),
+  total: /\b(\d+(?:\.\d+)?)\s*(hours?|hrs?)\s*(?:per|a|each)\s*week/i,
+  review: /review\w*\s+(?:\w+\s+){0,3}?(termly|half[- ]?termly|annually|yearly|each term|every term|each half[- ]?term|every half[- ]?term|at the annual review)/i,
+};
+const num = s => { s = String(s).toLowerCase(); return NUMW[s] ?? parseFloat(s); };
+const toMins = (n, u) => /^h/i.test(u) ? Math.round(n * 60) : Math.round(n);
+const durVal = s => /half/i.test(s) ? 0.5 : /^(an|one)$/i.test(s) ? 1 : parseFloat(s);
+const normUnit = u => {
+  u = (u || "").toLowerCase().replace(/[- ]/g, "");
+  return ({ daily: "day", weekly: "week", fortnightly: "fortnight", monthly: "month", termly: "term", halftermly: "halfterm", annually: "year", yearly: "year" })[u] || u;
+};
+
+function splitLines(text) {
+  const raw = String(text || "").replace(/\t+/g, " — ").split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  let lines = [];
+  raw.forEach(l => {
+    const isBullet = /^([-•*·▪●◦–]|\d+[.)]|[a-z][.)])\s+/i.test(l);
+    const clean = l.replace(/^([-•*·▪●◦–]|\d+[.)]|[a-z][.)])\s+/i, "");
+    if (!isBullet && lines.length && /^[a-z(]/.test(clean)) lines[lines.length - 1] += " " + clean;
+    else lines.push(clean);
+  });
+  if (lines.length <= 2 && lines.join(" ").length > 300) lines = lines.join(" ").split(/(?<=[.;])\s+(?=[A-Z])/);
+  return lines;
+}
+function tagsOf(text) { return Object.keys(TAG_RX).filter(k => TAG_RX[k].test(text)); }
+
+function parseSectionF(text, s) {
+  const out = []; let ctx = [];
+  const D = activeDays(s).length || 5;
+  splitLines(text).forEach(line => {
+    const head = HEADINGS.find(h => h.rx.test(line));
+    const looksHeading = line.length < 70 && !/\d/.test(line) && !/[.;]$/.test(line) && (head || /:$/.test(line));
+    if (looksHeading) { ctx = head ? head.tags : []; return; }
+    if (line.length < 12 || /^(section f|special educational provision|provision|outcomes?|frequency|who|by whom|resources?|staffing)\b.{0,20}$/i.test(line)) return;
+    out.push(parseItem(line, ctx, s, D));
+  });
+  return out;
+}
+
+function parseItem(text, ctx, s, D) {
+  const t = text.replace(/every\s+\d+\s*(minutes?|mins?)/gi, " ");
+  let count = null, mins = null, unit = null, explicit = false, m;
+  if ((m = t.match(RX.cxd))) { count = num(m[1]); mins = toMins(parseFloat(m[2]), m[3]); explicit = true; }
+  if (mins == null && (m = t.match(RX.dur))) mins = toMins(durVal(m[1]), m[2]);
+  if ((m = t.match(RX.cu))) { if (!explicit) { count = num(m[1]); explicit = true; } unit = normUnit(m[2]); }
+  else if ((m = t.match(RX.cadv))) { if (!explicit) { count = num(m[1]); explicit = true; } unit = normUnit(m[2]); }
+  else if (/every\s+(other|second|2|two)\s+weeks?/i.test(t)) unit = "fortnight";
+  else if ((m = t.match(RX.unit))) unit = normUnit(m[1] || m[2]);
+  if (count == null) count = 1;
+  if (!explicit && mins && RX.total.test(t) && mins > s.slotMins) { count = Math.ceil(mins / s.slotMins); mins = Math.round(mins / count); }
+
+  const support = /\b(1:1|one[- ]to[- ]one|full[- ]time|adult support|teaching assistant|learning support)\b/i.test(t) && (RX.total.test(t) || /throughout|all day|full[- ]time|across the (school )?day/i.test(t));
+  const reviewish = /\b(review\w*|reports?|assess\w*|monitor\w*|consult\w*)\b/i.test(t);
+  const approachish = /\b(use of|access to|throughout|all adults|all staff|consistent\w*|environment|processing time|reduced language|as needed|as required|when needed|available|opportunit\w*|embedded|modelled)\b/i.test(t);
+  let kind, perWeek = 0;
+  if (support) kind = "approach";
+  else if (unit === "term" || unit === "halfterm" || unit === "year") {
+    if (explicit && count >= 2 && !/^\s*(\w+\s+){0,3}(to\s+)?review/i.test(t)) {
+      kind = "session"; perWeek = count / (unit === "term" ? 2 * s.weeks : unit === "halfterm" ? s.weeks : 6 * s.weeks);
+    } else kind = "review";
+  } else if (["day", "week", "fortnight", "month"].includes(unit) || (mins && !approachish)) {
+    if (approachish && !mins && !explicit) kind = "approach";
+    else {
+      kind = "session";
+      perWeek = unit === "day" ? count * D : unit === "fortnight" ? count / 2 : unit === "month" ? count / 4 : count;
+    }
+  } else kind = reviewish ? "review" : "approach";
+  perWeek = Math.round(perWeek * 100) / 100;
+
+  const who = WHO.filter(([, rx]) => rx.test(t)).map(([n]) => n);
+  const pros = who.filter(w => w !== "Trained adult");
+  const byAdult = /(delivered|carried out|implemented|run|led|supported) by (a |an |the )?(trained|teaching|support|adult|staff|ta\b|parent|key)/i.test(t) || /set by|devised by|designed by|written by|following (the )?\w+'?s? (programme|advice|sensory diet|plan)|programme/i.test(t) || who.includes("Trained adult");
+  const by = pros.length ? (byAdult ? "You, following the " + pros.join(" / ") + " programme" : pros.join(" / ")) : "You";
+  const rv = t.match(RX.review);
+  const review = rv ? rv[1] : (kind === "review" ? (unit ? ({ term: "termly", halfterm: "half-termly", year: "annually" })[unit] || "as stated" : "as stated") : "");
+  return {
+    id: uid(), text, kind, perWeek, mins: kind === "session" ? (mins || s.slotMins) : (mins || null), assumedMins: kind === "session" && !mins,
+    who, by, review, tags: tagsOf(text), ctx: ctx.slice(), strategies: STRATEGIES.filter(x => x.rx.test(text)).map(x => x.id),
+    first: /before (seated|learning|lessons|work)|start of (the )?day|first thing|each morning|on arrival/i.test(text), area: ""
+  };
+}
+
+function parseOutcomes(text) {
+  return splitLines(text).filter(l => l.length >= 12 && !/^(section e|outcomes?)\b.{0,20}$/i.test(l)).map(l => ({ id: uid(), text: l, tags: tagsOf(l), area: "" }));
+}
+
+/* ---------- State ---------- */
+const KEY = "eotas-scheme-v1";
+const EXAMPLE_F = `Communication and interaction
+- Direct speech and language therapy from a qualified Speech and Language Therapist: 6 x 45 minute sessions per term, to set and review targets.
+- A speech and language programme set by the SaLT and delivered by a trained adult, 3 x 20 minutes per week.
+- Attention Autism sessions daily for 15 minutes.
+- Consistent use of his AAC talker and Makaton signs, modelled by all adults throughout the day.
+- A visual timetable and now-and-next board used throughout the day.
+- Adults to use reduced language and allow 10 seconds of processing time.
+Cognition and learning
+- Individual work in a TEACCH-style workstation, 4 x 20 minutes per week.
+- Precision teaching of key vocabulary, 3 x 10 minutes per week.
+Social, emotional and mental health
+- Zones of Regulation check-ins at the start and end of each session.
+- Social stories to prepare for changes and new places, as needed.
+- Access to a low-arousal space and planned movement breaks every 20 minutes.
+Sensory and physical
+- Sensory circuit daily, 15 minutes, before seated learning, following the OT's sensory diet.
+- Fine motor programme set by the Occupational Therapist, 2 x 30 minutes per week; OT to review termly.
+- Weekly swimming session (1 hour).
+Independence
+- Daily opportunities to practise self-care skills (hand washing, dressing) using backward chaining.`;
+const EXAMPLE_E = `By the end of Key Stage 2, Sam will use his AAC talker to make requests and comments of 3 symbols across settings.
+By the end of the year, Sam will follow a visual timetable to move between activities with no more than gestural prompts.
+Sam will use a Zones board to show how he feels and choose a calming strategy with support.
+Sam will put on his coat and shoes independently.
+Sam will count objects to 10, touching each one.`;
+
+function nextMonday() { const d = new Date(); d.setDate(d.getDate() + ((8 - d.getDay()) % 7 || 7)); return iso(d); }
+function iso(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+function defaults() {
+  return { v: 1, example: true, name: "Sam", interests: "trains, Bluey, bubbles", pathway: "semi",
+    start: nextMonday(), halfTerms: 6, weeks: 6, days: [true, true, true, true, true], perDay: 4, slotMins: 40, startTime: "09:30",
+    themes: ["All about me", "Food", "Animals", "Water", "Transport", "Growing"],
+    fText: EXAMPLE_F, eText: EXAMPLE_E, provisions: [], outcomes: [], custom: {}, log: {}, tab: "ehcp", ht: 0, wk: 0, sel: null };
+}
+let S;
+try { S = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { S = null; }
+if (!S || S.v !== 1) { S = defaults(); S.provisions = parseSectionF(S.fText, S); S.outcomes = parseOutcomes(S.eText); }
+S = Object.assign(defaults(), S);
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } }
+
+/* ---------- Helpers ---------- */
+function uid() { return Math.random().toString(36).slice(2, 9); }
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+function activeDays(s = S) { return s.days.map((on, i) => on ? i : -1).filter(i => i >= 0); }
+const P = () => PATHWAYS[S.pathway];
+const areaById = id => P().areas.find(a => a.id === id);
+const color = a => `var(--a${a ? a.c : 1})`;
+const childName = () => (S.name || "").trim() || "your child";
+function themeOf(h) {
+  const n = (S.themes[h] || "").trim() || THEMES[h % THEMES.length].name;
+  return THEMES.find(t => t.name.toLowerCase() === n.toLowerCase()) || { name: n, words: ["look", "more", "help", "again", "finished"], sensory: "objects linked to " + n.toLowerCase(), outing: "a visit linked to " + n.toLowerCase() };
+}
+function interests() { return (S.interests || "").split(/[,;]/).map(s => s.trim()).filter(Boolean); }
+function commMode(strats) {
+  const m = [];
+  if (strats.has("aac")) m.push("the talker"); if (strats.has("pecs")) m.push("PECS"); if (strats.has("makaton")) m.push("signs");
+  return m.length ? m.join(", ") + " or words" : "words, signs or symbols";
+}
+function fill(tpl, h, w, k = 0) {
+  const th = themeOf(h), ints = interests(), strats = allStrategies();
+  const s = tpl.replace(/\{(\w+)\}/g, (_, v) => ({
+    theme: th.name.toLowerCase(), word: th.words[(w + k) % th.words.length], words: th.words.slice(0, 4).join(", "),
+    sensory: th.sensory, outing: th.outing, interest: ints.length ? ints[(h + w + k) % ints.length] : th.name.toLowerCase(),
+    name: childName(), mode: commMode(strats)
+  })[v] ?? _);
+  return s.replace(/(^|[.!?]\s+)([a-z])/g, (m0, a, b) => a + b.toUpperCase());
+}
+function scoreArea(item) {
+  const areas = P().areas;
+  if (item.area && areaById(item.area)) return areaById(item.area);
+  let best = null, bestScore = 0;
+  areas.forEach(a => {
+    let sc = 0; a.tags.forEach(t => { if (item.tags.includes(t)) sc += 2; if ((item.ctx || []).includes(t)) sc += 1; });
+    if (sc > bestScore) { best = a; bestScore = sc; }
+  });
+  return best || areas[0];
+}
+function allStrategies() { const set = new Set(); S.provisions.forEach(p => p.strategies.forEach(x => set.add(x))); return set; }
+function strategiesFor(area) {
+  const set = allStrategies();
+  return STRATEGIES.filter(x => set.has(x.id) && (x.global || (area && x.tags.some(t => area.tags.includes(t)))));
+}
+function objectivesFor(a) {
+  const custom = (S.custom[a.id] || "").split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  return custom.length ? custom : a.obj;
+}
+function objFor(a, h, w) {
+  const list = objectivesFor(a), half = Math.ceil(S.weeks / 2), second = w >= half ? 1 : 0;
+  const idx = (2 * h + second) % list.length, start = second ? half : 0, len = second ? S.weeks - half : half;
+  const stage = ["Introduce", "Practise", "Generalise"][Math.min(2, Math.floor((w - start) * 3 / Math.max(1, len)))];
+  return { text: list[idx], stage };
+}
+function weekDate(h, w) {
+  const d = new Date(S.start + "T12:00:00"); d.setDate(d.getDate() + (h * (S.weeks + 1) + w) * 7); return d;
+}
+const fmtDate = d => d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+function slotTimes() {
+  const [hh, mm] = (S.startTime || "09:30").split(":").map(Number);
+  let t = hh * 60 + mm; const out = [];
+  const lunchAfter = S.perDay >= 4 ? Math.ceil(S.perDay / 2) - 1 : -1;
+  for (let i = 0; i < S.perDay; i++) {
+    out.push({ start: t, end: t + S.slotMins, breakAfter: i === lunchAfter ? "Lunch" : i < S.perDay - 1 ? "Break" : "" });
+    t += S.slotMins + (i === lunchAfter ? 45 : 15);
+  }
+  return out;
+}
+const hm = m => String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
+const perWeekLabel = n => !n ? "—" : n === 0.5 ? "Fortnightly" : n === 0.25 ? "Monthly" : n < 1 ? n + " a week" : n === 1 ? "Weekly" : n + " a week";
+
+/* ---------- Timetable builder ---------- */
+function buildWeek() {
+  const days = activeDays(), D = days.length, N = S.perDay, half = S.slotMins / 2;
+  const grid = days.map(() => Array.from({ length: N }, () => ({ main: null, starters: [] })));
+  const placed = {}, unplaced = [];
+  const sessions = S.provisions.filter(p => p.kind === "session" && p.perWeek > 0);
+  const long = sessions.filter(p => (p.mins || S.slotMins) > half);
+  const short = sessions.filter(p => (p.mins || S.slotMins) <= half).sort((a, b) => b.perWeek - a.perWeek);
+  if (!D || !N) return { grid, placed, unplaced: sessions.map(p => ({ p, missing: Math.ceil(p.perWeek) })), days };
+
+  long.forEach((p, pi) => {
+    const n = Math.ceil(p.perWeek); placed[p.id] = 0;
+    for (let k = 0; k < n; k++) {
+      const pref = (Math.floor(k * D / n) + pi) % D; let done = false;
+      for (let j = 0; j < D && !done; j++) {
+        const d = (pref + j) % D;
+        if (grid[d].some(c => c.main && c.main.pid === p.id)) continue;
+        const order = p.first ? [...Array(N).keys()] : [...Array(N).keys()].slice(1).concat(0);
+        for (const sIdx of order) if (!grid[d][sIdx].main) { grid[d][sIdx].main = { type: "prov", pid: p.id }; placed[p.id]++; done = true; break; }
+      }
+      if (!done) { unplaced.push({ p, missing: n - k }); break; }
+    }
+  });
+
+  // Share the remaining slots between curriculum areas, weighted by what the EHCP stresses
+  const areas = P().areas;
+  const empties = grid.flat().filter(c => !c.main).length;
+  const fCount = {}, wt = {};
+  areas.forEach(a => { fCount[a.id] = 0; wt[a.id] = a.w; });
+  long.forEach(p => { fCount[scoreArea(p).id] += placed[p.id] || 0; });
+  S.provisions.forEach(p => { const a = scoreArea(p); wt[a.id] += p.kind === "approach" ? 0.4 : p.kind === "session" ? 0.6 : 0.2; });
+  S.outcomes.forEach(o => { wt[scoreArea(o).id] += 1; });
+  const sumW = areas.reduce((t, a) => t + wt[a.id], 0), total = empties + Object.values(fCount).reduce((a, b) => a + b, 0);
+  let need = areas.map(a => ({ a, v: Math.max(0, total * wt[a.id] / sumW - fCount[a.id]) }));
+  const sumNeed = need.reduce((t, x) => t + x.v, 0) || 1;
+  need.forEach(x => { x.v = x.v * empties / sumNeed; x.n = Math.floor(x.v); x.r = x.v - x.n; });
+  let left = empties - need.reduce((t, x) => t + x.n, 0);
+  need.slice().sort((a, b) => b.r - a.r).forEach(x => { if (left > 0) { x.n++; left--; } });
+  if (empties >= areas.length) need.forEach(x => {
+    if (x.n + fCount[x.a.id] === 0) { const donor = need.slice().sort((a, b) => b.n - a.n)[0]; if (donor.n > 1) { donor.n--; x.n++; } }
+  });
+  const tokens = []; const maxN = Math.max(0, ...need.map(x => x.n));
+  const byPriority = need.slice().sort((a, b) => wt[b.a.id] - wt[a.a.id]);
+  for (let r = 0; r < maxN; r++) byPriority.forEach(x => { if (x.n > r) tokens.push(x.a.id); });
+  for (let sIdx = 0; sIdx < N; sIdx++) for (let d = 0; d < D; d++) {
+    if (grid[d][sIdx].main || !tokens.length) continue;
+    let i = tokens.findIndex(id => !grid[d].some(c => c.main && c.main.aid === id));
+    if (i < 0) i = 0;
+    grid[d][sIdx].main = { type: "area", aid: tokens.splice(i, 1)[0] };
+  }
+
+  // Short Section F sessions sit inside lessons, matched to the right area where possible
+  const used = (d, sIdx) => grid[d][sIdx].starters.reduce((t, id) => t + (S.provisions.find(p => p.id === id)?.mins || 0), 0);
+  short.forEach((p, pi) => {
+    const n = Math.ceil(p.perWeek), area = scoreArea(p); placed[p.id] = 0;
+    for (let k = 0; k < n; k++) {
+      const pref = (Math.floor(k * D / n) + pi) % D; let spot = null;
+      for (let j = 0; j < D && !spot; j++) {
+        const d = (pref + j) % D;
+        if (grid[d].some(c => c.starters.includes(p.id))) continue;
+        const fits = sIdx => used(d, sIdx) + p.mins <= S.slotMins * 0.75;
+        const idx = [...Array(N).keys()];
+        const cand = p.first ? idx.filter(i => i === 0 && fits(i)) : [];
+        const match = idx.filter(i => fits(i) && grid[d][i].main && ((grid[d][i].main.aid || scoreArea(S.provisions.find(x => x.id === grid[d][i].main.pid)).id) === area.id));
+        const any = idx.filter(fits).sort((a, b) => used(d, a) - used(d, b));
+        const pick = cand[0] ?? match[0] ?? any[0];
+        if (pick != null) spot = [d, pick];
+      }
+      if (!spot) { unplaced.push({ p, missing: n - k }); break; }
+      grid[spot[0]][spot[1]].starters.push(p.id); placed[p.id]++;
+    }
+  });
+
+  const occ = {};
+  for (let d = 0; d < D; d++) for (let sIdx = 0; sIdx < N; sIdx++) {
+    const c = grid[d][sIdx]; if (!c.main) continue;
+    const aid = c.main.aid || scoreArea(S.provisions.find(x => x.id === c.main.pid)).id;
+    c.aid = aid; c.occ = occ[aid] = (occ[aid] ?? -1) + 1;
+  }
+  return { grid, placed, unplaced, days };
+}
+
+function lessonFor(week, h, w, d, sIdx) {
+  const c = week.grid[d][sIdx], a = areaById(c.aid), o = objFor(a, h, w);
+  const prov = c.main.type === "prov" ? S.provisions.find(p => p.id === c.main.pid) : null;
+  const th = themeOf(h);
+  let activity;
+  if (prov && prov.by !== "You" && !/^You/.test(prov.by)) activity = `Session led by ${prov.by}. Share this week's ${th.name.toLowerCase()} words (${th.words.slice(0, 4).join(", ")}) so they can be used in the session, and ask for one thing to practise at home.`;
+  else activity = fill(a.act[(w + c.occ) % a.act.length], h, w, c.occ);
+  const starters = c.starters.map(id => S.provisions.find(p => p.id === id)).filter(Boolean);
+  const outcomes = S.outcomes.filter(x => scoreArea(x).id === a.id);
+  return { a, o, prov, activity, starters, outcomes, strategies: strategiesFor(a), th };
+}
+
+/* ---------- Rendering ---------- */
+const TABS = [["setup", "About you"], ["ehcp", "EHCP"], ["long", "Long-term plan"], ["half", "Half-term plan"], ["week", "Weekly timetable"], ["check", "Provision check"], ["log", "Delivery log"]];
+const framed = (() => { try { return window.self !== window.top; } catch (e) { return true; } })();
+
+function renderTabs() {
+  document.getElementById("tabs").innerHTML = TABS.map(([id, label], i) =>
+    `<button role="tab" data-tab="${id}" aria-selected="${S.tab === id}"><span class="n">${i + 1}</span>${label}</button>`).join("");
+}
+function render() {
+  renderTabs();
+  const m = document.getElementById("main");
+  const banner = S.example ? `<div class="banner no-print"><p><b>Example data loaded.</b> Sam and his EHCP are made up so you can see how the planner works. Paste your son's Section F on the EHCP tab, or start blank.</p><button class="btn" data-act="blank">Start with a blank plan</button></div>` : "";
+  m.innerHTML = banner + ({ setup: vSetup, ehcp: vEhcp, long: vLong, half: vHalf, week: vWeek, check: vCheck, log: vLog })[S.tab]();
+}
+function areaDot(a) { return `<span class="dot" style="--c:${color(a)}"></span>`; }
+function htWeekPickers(withWeek) {
+  const ht = Array.from({ length: S.halfTerms }, (_, i) => `<option value="${i}" ${i === S.ht ? "selected" : ""}>Half term ${i + 1}: ${esc(themeOf(i).name)}</option>`).join("");
+  const wk = Array.from({ length: S.weeks }, (_, i) => `<option value="${i}" ${i === S.wk ? "selected" : ""}>Week ${i + 1} (w/c ${fmtDate(weekDate(S.ht, i))})</option>`).join("");
+  return `<div class="row no-print"><label class="f"><span>Half term</span><select id="pick-ht" data-set="ht">${ht}</select></label>${withWeek ? `<label class="f"><span>Week</span><select id="pick-wk" data-set="wk">${wk}</select></label>` : ""}<span class="sp"></span>${framed ? "" : `<button class="btn quiet" data-act="print">Print this page</button>`}</div>`;
+}
+
+function vSetup() {
+  const P0 = PATHWAYS;
+  const pw = Object.keys(P0).map(k => `<label><input type="radio" name="pathway" id="pw-${k}" value="${k}" ${S.pathway === k ? "checked" : ""} data-set="pathway"><b>${P0[k].label}</b><span class="small muted">${P0[k].who}</span><span class="small">${P0[k].areas.map(a => a.name).join(" · ")}</span></label>`).join("");
+  const days = DAY_NAMES.slice(0, 5).map((d, i) => `<label><input type="checkbox" id="day-${i}" data-day="${i}" ${S.days[i] ? "checked" : ""}>${d.slice(0, 3)}</label>`).join("");
+  const themes = Array.from({ length: S.halfTerms }, (_, i) => `<label class="f"><span>Half term ${i + 1}</span><input type="text" id="theme-${i}" list="theme-list" data-theme="${i}" value="${esc(S.themes[i] || THEMES[i % THEMES.length].name)}"></label>`).join("");
+  const custom = P().areas.map(a => `<details><summary>${areaDot(a)} ${esc(a.name)} ${S.custom[a.id] ? '<span class="chip">Your objectives</span>' : ""}</summary><div class="stack" style="padding-top:10px"><label class="f">One objective per line. Leave empty to use the built-in examples below.<textarea id="custom-${a.id}" rows="5" data-custom="${a.id}" placeholder="${esc(a.obj.slice(0, 3).join("\n"))}">${esc(S.custom[a.id] || "")}</textarea></label></div></details>`).join("");
+  return `
+  <section class="panel"><h2>Your child</h2>
+    <div class="grid2">
+      <label class="f"><span>First name</span><input type="text" id="name" data-set="name" value="${esc(S.name)}" placeholder="Used in lesson ideas"></label>
+      <label class="f"><span>Interests and motivators</span><input type="text" id="interests" data-set="interests" value="${esc(S.interests)}" placeholder="e.g. trains, water, a favourite programme">Separate with commas. They are worked into activities and rewards.</label>
+    </div>
+    <h3>EQUALS pathway</h3>
+    <div class="pathways">${pw}</div>
+  </section>
+  <section class="panel"><h2>Your teaching week</h2>
+    <div class="stack"><span class="small"><b>Teaching days</b></span><div class="days">${days}</div></div>
+    <div class="grid3">
+      <label class="f"><span>Sessions per day</span><input type="number" id="perDay" min="1" max="7" data-set="perDay" data-num value="${S.perDay}"></label>
+      <label class="f"><span>Session length (minutes)</span><input type="number" id="slotMins" min="15" max="90" step="5" data-set="slotMins" data-num value="${S.slotMins}"></label>
+      <label class="f"><span>First session starts</span><input type="time" id="startTime" data-set="startTime" value="${esc(S.startTime)}"></label>
+      <label class="f"><span>Start date</span><input type="date" id="start" data-set="start" value="${esc(S.start)}"></label>
+      <label class="f"><span>Half terms to plan</span><input type="number" id="halfTerms" min="1" max="6" data-set="halfTerms" data-num value="${S.halfTerms}"></label>
+      <label class="f"><span>Weeks per half term</span><input type="number" id="weeks" min="2" max="8" data-set="weeks" data-num value="${S.weeks}"></label>
+    </div>
+    <p class="small muted">${activeDays().length * S.perDay} sessions a week, about ${(activeDays().length * S.perDay * S.slotMins / 60).toFixed(1)} hours of planned teaching. Dates assume a one-week break between half terms; change the start date to match your own calendar.</p>
+  </section>
+  <section class="panel"><h2>Topics for each half term</h2>
+    <p class="small muted">Pick from the list or type your own. Topics give each half term its vocabulary, sensory materials and outings.</p>
+    <div class="grid3">${themes}</div>
+    <datalist id="theme-list">${THEMES.map(t => `<option value="${esc(t.name)}"></option>`).join("")}</datalist>
+  </section>
+  <section class="panel"><h2>Your own EQUALS objectives</h2>
+    <p class="small muted">EQUALS schemes of work are licensed to members, so this planner ships with its own example objectives. If you have the EQUALS documents, paste the objectives you want to work on here and the plans will use them instead. Scheme names can differ slightly between versions of EQUALS.</p>
+    <div class="stack">${custom}</div>
+  </section>
+  <section class="panel no-print"><h2>Save and restore</h2>
+    <p class="small muted">Your plan is kept in this browser only. Save a backup file now and then, especially before clearing browser data.</p>
+    <div class="row">
+      ${framed ? `<button class="btn" data-act="copy-backup">Copy backup text</button>` : `<button class="btn" data-act="download">Save a backup</button>`}
+      <label class="btn quiet" for="restore">Load a backup<input type="file" id="restore" accept=".json,application/json,text/plain" hidden></label>
+      <span class="sp"></span>
+      <button class="btn danger" data-act="reset" id="reset-btn">Clear everything</button>
+    </div>
+    <p class="small" id="backup-msg" role="status"></p>
+  </section>
+  <section class="panel info"><h2>EOTAS and Section F</h2>
+    <p>EOTAS means education otherwise than at school. Under section 61 of the Children and Families Act 2014, the local authority can arrange the special educational provision in an EHCP outside school when it would be inappropriate in school. The provision stays in Section F, and under section 42 the local authority stays responsible for making sure it happens, even when you deliver some of it.</p>
+    <p>Elective home education is different. If you choose it, the local authority's duty to secure the Section F provision usually stops, because you have made your own arrangements (section 42(5)). Check which route you are on before you agree to anything.</p>
+    <p>Section F should say exactly what will happen, how often, for how long and who will do it. The provision check and delivery log in this planner help you show what has been delivered, and spot anything vague that should be made specific at the next review. For advice, contact <a href="https://www.ipsea.org.uk" target="_blank" rel="noopener">IPSEA</a> or your local SENDIASS. This planner is not legal advice.</p>
+  </section>`;
+}
+
+function highlight(text) {
+  const rxs = [RX.cxd, RX.dur, RX.cu, RX.cadv, RX.unit].map(r => new RegExp(r.source, "gi"));
+  const ranges = [];
+  rxs.forEach(r => { let m; while ((m = r.exec(text))) { ranges.push([m.index, m.index + m[0].length]); if (!m[0].length) r.lastIndex++; } });
+  ranges.sort((a, b) => a[0] - b[0]);
+  const merged = []; ranges.forEach(r => { const l = merged[merged.length - 1]; if (l && r[0] <= l[1]) l[1] = Math.max(l[1], r[1]); else merged.push(r.slice()); });
+  let out = "", i = 0; merged.forEach(([a, b]) => { out += esc(text.slice(i, a)) + "<mark>" + esc(text.slice(a, b)) + "</mark>"; i = b; });
+  return out + esc(text.slice(i));
+}
+
+function vEhcp() {
+  const ps = S.provisions, strats = [...allStrategies()].map(id => STRATEGIES.find(x => x.id === id)).filter(Boolean);
+  const counts = { session: ps.filter(p => p.kind === "session").length, approach: ps.filter(p => p.kind === "approach").length, review: ps.filter(p => p.kind === "review").length };
+  const fMins = ps.filter(p => p.kind === "session").reduce((t, p) => t + p.perWeek * (p.mins || 0), 0);
+  const areaOpts = (p) => `<option value="">Auto: ${esc(scoreArea({ ...p, area: "" }).name)}</option>` + P().areas.map(a => `<option value="${a.id}" ${p.area === a.id ? "selected" : ""}>${esc(a.name)}</option>`).join("");
+  const rows = ps.map(p => `<tr data-pid="${p.id}">
+    <td class="text"><input type="text" id="pt-${p.id}" value="${esc(p.text)}" data-pf="text" aria-label="Provision wording"><div class="src">${highlight(p.text)}</div>
+      <div class="row small" style="margin-top:6px">${p.who.length ? `<span class="chip">By: ${esc(p.by)}</span>` : ""}${p.review ? `<span class="chip k-review">Review ${esc(p.review)}</span>` : ""}${p.assumedMins ? `<span class="chip">Length not stated: assumed ${p.mins} min</span>` : ""}</div></td>
+    <td><select id="pk-${p.id}" data-pf="kind" aria-label="Type"><option value="session" ${p.kind === "session" ? "selected" : ""}>Timetabled session</option><option value="approach" ${p.kind === "approach" ? "selected" : ""}>Daily approach</option><option value="review" ${p.kind === "review" ? "selected" : ""}>Review / advice</option></select></td>
+    <td><select id="pa-${p.id}" data-pf="area" aria-label="Curriculum area">${areaOpts(p)}</select></td>
+    <td class="num">${p.kind === "session" ? `<input type="number" id="pw-${p.id}" min="0" step="0.5" value="${p.perWeek}" data-pf="perWeek" aria-label="Sessions per week"> <span class="small muted">a week</span>` : '<span class="muted">—</span>'}</td>
+    <td class="num">${p.kind === "session" ? `<input type="number" id="pm-${p.id}" min="5" step="5" value="${p.mins || ""}" data-pf="mins" aria-label="Minutes"> <span class="small muted">min</span>` : '<span class="muted">—</span>'}</td>
+    <td><button class="btn quiet" data-act="del-prov" aria-label="Remove this line">Remove</button></td></tr>`).join("");
+  const outs = S.outcomes.map(o => `<li>${areaDot(scoreArea(o))} ${esc(o.text)} <span class="small muted">→ ${esc(scoreArea(o).name)}</span></li>`).join("");
+  return `
+  <section class="panel">
+    <h2>Section F: special educational provision</h2>
+    <p class="small muted">Paste Section F exactly as it appears in the EHCP. Headings such as "Communication and interaction" help the planner sort each line. Tables pasted from Word or a PDF work too.</p>
+    <textarea id="fText" rows="12" data-set="fText">${esc(S.fText)}</textarea>
+    <h3>Section E: outcomes <span class="small muted">(optional)</span></h3>
+    <textarea id="eText" rows="5" data-set="eText" placeholder="One outcome per line">${esc(S.eText)}</textarea>
+    <div class="row"><button class="btn" data-act="parse">Read the EHCP and build the plan</button><span class="small muted">This replaces any changes you made in the table below.</span></div>
+  </section>
+  <section class="panel">
+    <div class="row"><h2>What Section F asks for</h2></div>
+    <div class="stats">
+      <div class="stat"><b>${counts.session}</b><span>timetabled sessions</span></div>
+      <div class="stat"><b>${counts.approach}</b><span>daily approaches</span></div>
+      <div class="stat"><b>${counts.review}</b><span>reviews and advice</span></div>
+      <div class="stat"><b>${(fMins / 60).toFixed(1)} h</b><span>of sessions a week</span></div>
+    </div>
+    ${strats.length ? `<div class="row"><span class="small"><b>Approaches the plan will build in:</b></span>${strats.map(x => `<span class="chip">${esc(x.label)}</span>`).join("")}</div>` : ""}
+    <p class="small muted">Highlighted words are how often and how long. Check each line and correct anything the planner misread: the type, the curriculum area, how often and how long. Every change updates the plans straight away.</p>
+    <div class="tbl-wrap"><table class="prov"><thead><tr><th>Provision</th><th>Type</th><th>Curriculum area</th><th>How often</th><th>Length</th><th></th></tr></thead><tbody>${rows || `<tr><td colspan="6" class="muted">No provision yet. Paste Section F above and press Read.</td></tr>`}</tbody></table></div>
+    <div class="row no-print"><button class="btn ghost" data-act="add-prov">Add a line</button></div>
+  </section>
+  ${S.outcomes.length ? `<section class="panel"><h2>Outcomes and where they are taught</h2><ul class="stack" style="padding-left:1.1em;margin:0">${outs}</ul><p class="small muted">Each outcome becomes a target in the matching area of every half-term plan, and gives that area a little more time on the timetable.</p></section>` : ""}`;
+}
+
+function areaSummary(a) {
+  const fs = S.provisions.filter(p => scoreArea(p).id === a.id);
+  return { sessions: fs.filter(p => p.kind === "session"), approaches: fs.filter(p => p.kind === "approach"), outcomes: S.outcomes.filter(o => scoreArea(o).id === a.id) };
+}
+
+function vLong() {
+  const areas = P().areas, week = buildWeek();
+  const perArea = {}; week.grid.flat().forEach(c => { if (c.aid) perArea[c.aid] = (perArea[c.aid] || 0) + 1; });
+  const head = `<tr><th>Half term</th>${areas.map(a => `<th>${areaDot(a)} ${esc(a.name)}<div class="small" style="font-weight:400">${perArea[a.id] || 0} a week</div></th>`).join("")}</tr>`;
+  const rows = Array.from({ length: S.halfTerms }, (_, h) => `<tr><td><b>${h + 1}. ${esc(themeOf(h).name)}</b><div class="small muted">from ${fmtDate(weekDate(h, 0))}</div></td>${areas.map(a => {
+    const o1 = objFor(a, h, 0).text, o2 = objFor(a, h, S.weeks - 1).text;
+    return `<td class="small">${esc(o1)}${o2 !== o1 ? `<div class="muted" style="margin-top:6px">then: ${esc(o2)}</div>` : ""}</td>`;
+  }).join("")}</tr>`).join("");
+  const targets = areas.map(a => { const s = areaSummary(a); return s.outcomes.length || s.sessions.length ? `<li>${areaDot(a)} <b>${esc(a.name)}</b>: ${[...s.outcomes.map(o => `<span class="tag-e">E</span>${esc(o.text)}`), ...s.sessions.map(p => `<span class="tag-f">F</span>${esc(p.text)}`)].join("; ")}</li>` : ""; }).join("");
+  return `${htWeekPickers(false).replace(/<label class="f">.*?<\/label>/, "")}
+  <section class="panel"><h2>Long-term plan: ${esc(P().label)} pathway</h2>
+    <p class="small muted">${S.halfTerms} half terms of ${S.weeks} weeks for ${esc(childName())}. Each area works on two objectives per half term, and the topic changes each half term so skills are practised in new contexts.</p>
+    <div class="tbl-wrap"><table style="min-width:${180 + areas.length * 170}px">${head}${rows}</table></div>
+  </section>
+  ${targets ? `<section class="panel"><h2>Running through every half term</h2><p class="small muted">These come from the EHCP and are worked on all year, whatever the topic.</p><ul class="stack" style="margin:0;padding-left:1.1em">${targets}</ul></section>` : ""}`;
+}
+
+function vHalf() {
+  const h = S.ht, th = themeOf(h), week = buildWeek();
+  const perArea = {}; week.grid.flat().forEach(c => { if (c.aid) perArea[c.aid] = (perArea[c.aid] || 0) + 1; });
+  const glob = strategiesFor(null);
+  const half = Math.ceil(S.weeks / 2);
+  const cards = P().areas.map(a => {
+    const s = areaSummary(a), o1 = objFor(a, h, 0).text, o2 = objFor(a, h, S.weeks - 1).text;
+    const local = strategiesFor(a).filter(x => !x.global);
+    return `<article class="area" style="--c:${color(a)}"><header>${areaDot(a)}<h3>${esc(a.name)}</h3><span class="chip">${perArea[a.id] || 0} a week</span></header>
+      <div class="stack"><h4>Objectives</h4><ul><li>${esc(o1)} <span class="small muted">(weeks 1–${half})</span></li>${o2 !== o1 ? `<li>${esc(o2)} <span class="small muted">(weeks ${half + 1}–${S.weeks})</span></li>` : ""}</ul></div>
+      ${s.outcomes.length ? `<div class="stack"><h4>EHCP outcomes this serves</h4><ul>${s.outcomes.map(o => `<li><span class="tag-e">E</span>${esc(o.text)}</li>`).join("")}</ul></div>` : ""}
+      ${s.sessions.length || s.approaches.length ? `<div class="stack"><h4>Section F delivered here</h4><ul>${s.sessions.map(p => `<li><span class="tag-f">F</span>${esc(p.text)} <span class="small muted">(${perWeekLabel(p.perWeek)}, ${p.mins} min, ${esc(p.by)})</span></li>`).join("")}${s.approaches.map(p => `<li><span class="tag-f">F</span>${esc(p.text)}</li>`).join("")}</ul></div>` : ""}
+      <div class="stack"><h4>Activity ideas</h4><ul>${a.act.map((t, k) => `<li>${esc(fill(t, h, k, 0))}</li>`).join("")}</ul></div>
+      ${local.length ? `<div class="stack"><h4>Build in</h4><ul>${local.map(x => `<li>${esc(fill(x.embed, h, 0))}</li>`).join("")}</ul></div>` : ""}
+      <p class="small muted"><b>Evidence:</b> ${esc(P().evidence)}</p>
+    </article>`;
+  }).join("");
+  return `${htWeekPickers(false)}
+  <section class="panel"><h2>Half term ${h + 1}: ${esc(th.name)}</h2>
+    <p class="small muted">${S.weeks} weeks from ${fmtDate(weekDate(h, 0))}. ${esc(P().label)} pathway.</p>
+    <div class="grid3">
+      <div class="stack"><h4>Key words</h4><p>${th.words.map(esc).join(", ")}</p></div>
+      <div class="stack"><h4>Sensory materials</h4><p>${esc(th.sensory)}</p></div>
+      <div class="stack"><h4>Outing</h4><p>${esc(th.outing)}</p></div>
+    </div>
+    ${glob.length ? `<div class="stack"><h4>In every session (from Section F)</h4><ul style="margin:0;padding-left:1.1em">${glob.map(x => `<li>${esc(fill(x.embed, h, 0))}</li>`).join("")}</ul></div>` : ""}
+  </section>
+  <div class="areas">${cards}</div>`;
+}
+
+function vWeek() {
+  const h = S.ht, w = S.wk, week = buildWeek(), times = slotTimes(), days = week.days;
+  if (!days.length) return `<section class="panel"><p>Choose at least one teaching day on the About you tab.</p></section>`;
+  const head = `<tr><th>Time</th>${days.map(d => `<th>${DAY_NAMES[d]}</th>`).join("")}</tr>`;
+  let body = "";
+  times.forEach((t, sIdx) => {
+    body += `<tr><td class="time">${hm(t.start)}<br>${hm(t.end)}</td>${days.map((_, d) => {
+      const c = week.grid[d][sIdx];
+      if (!c.main) return `<td><div class="small muted">Free</div></td>`;
+      const L = lessonFor(week, h, w, d, sIdx), sel = S.sel === `${d}-${sIdx}`;
+      const title = L.prov ? esc(shortText(L.prov.text)) : esc(L.a.name);
+      return `<td><button class="cell" style="--c:${color(L.a)}" data-cell="${d}-${sIdx}" aria-pressed="${sel}"><span class="t">${areaDot(L.a)}${L.prov ? '<span class="tag-f">F</span>' : ""}${title}</span><span class="o">${esc(L.o.text)}</span>${L.starters.map(p => `<span class="st"><span class="tag-f">F</span>${esc(shortText(p.text, 34))} · ${p.mins}m</span>`).join("")}${L.prov && L.prov.perWeek < 1 ? `<span class="st muted">${perWeekLabel(L.prov.perWeek)}</span>` : ""}</button></td>`;
+    }).join("")}</tr>`;
+    if (t.breakAfter) body += `<tr class="breakrow"><td colspan="${days.length + 1}">${t.breakAfter}</td></tr>`;
+  });
+  let detail = `<p class="muted">Tap a session to see its lesson plan.</p>`;
+  if (S.sel) {
+    const [d, sIdx] = S.sel.split("-").map(Number);
+    if (week.grid[d] && week.grid[d][sIdx] && week.grid[d][sIdx].main) detail = lessonHtml(lessonFor(week, h, w, d, sIdx), DAY_NAMES[days[d]], times[sIdx]);
+  }
+  const unpl = week.unplaced.length ? `<div class="banner" style="background:color-mix(in srgb, var(--bad) 12%, var(--surface))"><p><b>Not everything in Section F fits this week.</b> ${week.unplaced.map(u => `${esc(shortText(u.p.text, 60))} (${u.missing} session${u.missing > 1 ? "s" : ""} short)`).join("; ")}. Add sessions or days on the About you tab.</p></div>` : "";
+  return `${htWeekPickers(true)}${unpl}
+  <section class="panel"><h2>Week ${w + 1} of half term ${h + 1}: ${esc(themeOf(h).name)}</h2>
+    <p class="small muted">Sessions marked <span class="tag-f">F</span> come straight from Section F. The rest of the week is shared between the EQUALS areas, with more time for the areas the EHCP stresses.</p>
+    <div class="tbl-wrap"><table class="tt">${head}${body}</table></div>
+  </section>
+  <section class="panel lesson" id="lesson">${detail}</section>`;
+}
+function shortText(t, n = 48) { t = t.replace(/\s*[,:;(].*$/, "").trim() || t; return t.length > n ? t.slice(0, n - 1) + "…" : t; }
+function lessonHtml(L, day, t) {
+  const sess = L.prov ? `<dt>Section F session</dt><dd><span class="tag-f">F</span>${esc(L.prov.text)}<div class="small muted">${perWeekLabel(L.prov.perWeek)} · ${L.prov.mins} min · ${esc(L.prov.by)}</div></dd>` : "";
+  return `<div class="row">${areaDot(L.a)}<h2>${esc(L.a.name)}</h2><span class="sp"></span><span class="chip">${day} ${hm(t.start)}–${hm(t.end)}</span></div>
+  <dl>
+    <dt>Learning objective</dt><dd>${esc(L.o.text)} <span class="chip">${L.o.stage}</span></dd>
+    ${L.outcomes.length ? `<dt>Towards EHCP outcome</dt><dd>${L.outcomes.map(o => `<div><span class="tag-e">E</span>${esc(o.text)}</div>`).join("")}</dd>` : ""}
+    ${sess}
+    ${L.starters.length ? `<dt>Short Section F sessions</dt><dd>${L.starters.map(p => `<div><span class="tag-f">F</span>${esc(p.text)} <span class="small muted">(${p.mins} min, ${esc(p.by)})</span></div>`).join("")}</dd>` : ""}
+    <dt>Main activity</dt><dd>${esc(L.activity)}</dd>
+    ${L.strategies.length ? `<dt>Build in</dt><dd><ul style="margin:0;padding-left:1.1em">${L.strategies.map(x => `<li>${esc(fill(x.embed, S.ht, S.wk))}</li>`).join("")}</ul></dd>` : ""}
+    <dt>Evidence</dt><dd>${esc(P().evidence)}</dd>
+  </dl>`;
+}
+
+function vCheck() {
+  const week = buildWeek(), D = week.days.length;
+  const sessions = S.provisions.filter(p => p.kind === "session");
+  const rows = sessions.map(p => {
+    const placed = week.placed[p.id] || 0, need = p.perWeek * (p.mins || 0), got = Math.min(placed, p.perWeek) * (p.mins || 0);
+    const st = !need ? ["warn", "No amount given"] : got + 0.01 >= need ? ["ok", "Planned"] : got > 0 ? ["warn", "Partly planned"] : ["bad", "Not planned"];
+    return `<tr><td>${areaDot(scoreArea(p))} ${esc(p.text)}</td><td>${esc(p.by)}</td><td class="num">${perWeekLabel(p.perWeek)} × ${p.mins} min</td><td class="num">${Math.round(need)} min</td><td class="num">${Math.round(got)} min</td><td><span class="pill ${st[0]}">${st[1]}</span></td></tr>`;
+  }).join("");
+  const appr = S.provisions.filter(p => p.kind === "approach");
+  const revs = S.provisions.filter(p => p.review);
+  const termEnds = Array.from({ length: S.halfTerms }, (_, h) => h).filter(h => h % 2 === 1 || h === S.halfTerms - 1).map(h => fmtDate(weekDate(h, S.weeks - 1)));
+  const vague = S.provisions.filter(p => p.kind === "session" && p.assumedMins || p.kind === "approach" && /as needed|as required|when needed|access to|opportunit/i.test(p.text));
+  const avail = D * S.perDay * S.slotMins, fNeed = sessions.reduce((t, p) => t + p.perWeek * (p.mins || 0), 0);
+  return `<div class="row no-print"><span class="sp"></span>${framed ? "" : `<button class="btn quiet" data-act="print">Print this page</button>`}</div>
+  <section class="panel"><h2>Is everything in Section F planned?</h2>
+    <div class="stats">
+      <div class="stat"><b>${(fNeed / 60).toFixed(1)} h</b><span>Section F sessions a week</span></div>
+      <div class="stat"><b>${(avail / 60).toFixed(1)} h</b><span>teaching time you have planned</span></div>
+      <div class="stat"><b>${sessions.filter(p => Math.min(week.placed[p.id] || 0, p.perWeek) * p.mins + 0.01 >= p.perWeek * p.mins).length} of ${sessions.length}</b><span>sessions fully planned</span></div>
+    </div>
+    <div class="tbl-wrap"><table><thead><tr><th>Provision</th><th>Delivered by</th><th>Section F says</th><th>Needed a week</th><th>Planned a week</th><th>Status</th></tr></thead><tbody>${rows || `<tr><td colspan="6" class="muted">No timetabled sessions found in Section F.</td></tr>`}</tbody></table></div>
+    <p class="small muted">Sessions led by a therapist still need the local authority to arrange the therapist under EOTAS. The timetable keeps a slot free for them.</p>
+  </section>
+  <section class="panel"><h2>Daily approaches</h2><p class="small muted">These are written into every lesson plan, under "Build in".</p>
+    <ul class="stack" style="margin:0;padding-left:1.1em">${appr.map(p => `<li>${esc(p.text)} <span class="pill ok">In every session</span></li>`).join("") || '<li class="muted">None found.</li>'}</ul></section>
+  <section class="panel"><h2>Reviews to put in the diary</h2>
+    <ul class="stack" style="margin:0;padding-left:1.1em">${revs.map(p => `<li>${esc(p.text)} <span class="chip k-review">${esc(p.review)}</span></li>`).join("") || '<li class="muted">None found.</li>'}</ul>
+    ${revs.some(p => /term/i.test(p.review)) && termEnds.length ? `<p class="small">Termly reviews fall around: ${termEnds.join(" · ")}.</p>` : ""}
+  </section>
+  ${vague.length ? `<section class="panel"><h2>Wording to tighten at the next review</h2><p class="small muted">Section F should be specific and quantified. These lines leave how often, how long or who unclear.</p><ul class="stack" style="margin:0;padding-left:1.1em">${vague.map(p => `<li>${esc(p.text)}</li>`).join("")}</ul></section>` : ""}`;
+}
+
+function vLog() {
+  const h = S.ht, w = S.wk, week = buildWeek(), times = slotTimes(), key = `${h}-${w}`, log = S.log[key] || {};
+  const opt = (v, cur) => `<option value="${v}" ${v === cur ? "selected" : ""}>`;
+  const statusSel = (k, cur) => `<select id="ls-${key}-${k}" data-log="${k}" data-lf="st" aria-label="Did it happen?">${opt("", cur)}Not recorded</option>${opt("done", cur)}Done</option>${opt("part", cur)}Partly done</option>${opt("missed", cur)}Missed</option></select>`;
+  const promptSel = (k, cur) => `<select id="lp-${key}-${k}" data-log="${k}" data-lf="pr" aria-label="Prompt level">${opt("", cur)}Prompt level…</option>${["Full physical", "Partial physical", "Modelling", "Gesture", "Verbal", "Independent"].map(x => opt(x, cur) + x + "</option>").join("")}</select>`;
+  const days = week.days.map((dn, d) => {
+    const items = [];
+    times.forEach((t, sIdx) => {
+      const c = week.grid[d][sIdx]; if (!c.main) return;
+      const L = lessonFor(week, h, w, d, sIdx), mk = `${d}-${sIdx}-m`, e = log[mk] || {};
+      items.push(`<div class="log-item"><span class="time">${hm(t.start)}</span><span class="what">${areaDot(L.a)} ${L.prov ? `<span class="tag-f">F</span>${esc(shortText(L.prov.text))}` : esc(L.a.name)}<div class="small muted">${esc(L.o.text)}</div></span>${statusSel(mk, e.st || "")}${promptSel(mk, e.pr || "")}<input type="text" id="ln-${key}-${mk}" data-log="${mk}" data-lf="note" placeholder="What happened" value="${esc(e.note || "")}"></div>`);
+      L.starters.forEach(p => {
+        const k = `${d}-${sIdx}-${p.id}`, e2 = log[k] || {};
+        items.push(`<div class="log-item"><span class="time"></span><span class="what"><span class="tag-f">F</span>${esc(shortText(p.text, 60))} <span class="small muted">${p.mins} min</span></span>${statusSel(k, e2.st || "")}${promptSel(k, e2.pr || "")}<input type="text" id="ln-${key}-${k}" data-log="${k}" data-lf="note" placeholder="What happened" value="${esc(e2.note || "")}"></div>`);
+      });
+    });
+    return `<div class="log-day"><h3>${DAY_NAMES[dn]} <span class="small muted">${fmtDate(new Date(weekDate(h, w).getTime() + dn * 864e5))}</span></h3>${items.join("")}</div>`;
+  }).join("");
+  const tot = logTotals();
+  const sumRows = S.provisions.filter(p => p.kind === "session").map(p => { const t = tot[p.id] || { done: 0, part: 0, missed: 0, mins: 0 }; return `<tr><td>${esc(shortText(p.text, 70))}</td><td class="num">${t.done}</td><td class="num">${t.part}</td><td class="num">${t.missed}</td><td class="num">${(t.mins / 60).toFixed(1)} h</td></tr>`; }).join("");
+  return `${htWeekPickers(true)}
+  <section class="panel"><div class="row"><h2>Delivery log: week ${w + 1}</h2><span class="sp"></span><button class="btn quiet no-print" data-act="copy-report">Copy week report</button></div>
+    <p class="small muted">Record what happened each session. Keep the notes factual. A record like this is useful evidence at reviews and if provision is not being arranged.</p>
+    <p class="small" id="report-msg" role="status"></p>
+    ${days}
+  </section>
+  <section class="panel"><h2>Section F delivered so far</h2><p class="small muted">Across all ${Object.keys(S.log).length} week(s) with a record.</p>
+    <div class="tbl-wrap"><table><thead><tr><th>Provision</th><th>Done</th><th>Partly</th><th>Missed</th><th>Time delivered</th></tr></thead><tbody>${sumRows || `<tr><td colspan="5" class="muted">No timetabled sessions.</td></tr>`}</tbody></table></div>
+  </section>`;
+}
+function logTotals() {
+  const out = {};
+  const add = (pid, st) => { const p = S.provisions.find(x => x.id === pid); if (!p) return; const t = out[pid] = out[pid] || { done: 0, part: 0, missed: 0, mins: 0 }; if (st === "done") { t.done++; t.mins += p.mins; } else if (st === "part") { t.part++; t.mins += p.mins / 2; } else if (st === "missed") t.missed++; };
+  const week = buildWeek();
+  Object.values(S.log).forEach(wk => Object.entries(wk).forEach(([k, e]) => {
+    if (!e.st) return; const [d, s, tail] = k.split("-");
+    if (tail === "m") { const c = week.grid[+d] && week.grid[+d][+s]; if (c && c.main && c.main.type === "prov") add(c.main.pid, e.st); }
+    else add(tail, e.st);
+  }));
+  return out;
+}
+function weekReport() {
+  const h = S.ht, w = S.wk, week = buildWeek(), log = S.log[`${h}-${w}`] || {}, times = slotTimes();
+  const label = { done: "Done", part: "Partly done", missed: "Missed", "": "Not recorded" };
+  let out = `Home education record for ${childName()}\nWeek of ${fmtDate(weekDate(h, w))} (half term ${h + 1}, week ${w + 1}, topic: ${themeOf(h).name})\n`;
+  week.days.forEach((dn, d) => {
+    out += `\n${DAY_NAMES[dn]}\n`;
+    times.forEach((t, sIdx) => {
+      const c = week.grid[d][sIdx]; if (!c.main) return;
+      const L = lessonFor(week, h, w, d, sIdx), e = log[`${d}-${sIdx}-m`] || {};
+      out += `- ${hm(t.start)} ${L.prov ? "[Section F] " + L.prov.text : L.a.name}: ${label[e.st || ""]}${e.pr ? ", " + e.pr : ""}${e.note ? ". " + e.note : ""}\n`;
+      L.starters.forEach(p => { const e2 = log[`${d}-${sIdx}-${p.id}`] || {}; out += `  - [Section F] ${p.text}: ${label[e2.st || ""]}${e2.pr ? ", " + e2.pr : ""}${e2.note ? ". " + e2.note : ""}\n`; });
+    });
+  });
+  return out;
+}
+
+/* ---------- Events ---------- */
+async function copyText(text, msgEl) {
+  try { await navigator.clipboard.writeText(text); if (msgEl) msgEl.textContent = "Copied."; }
+  catch (e) {
+    const ta = document.createElement("textarea"); ta.value = text; ta.rows = 8; ta.style.width = "100%"; ta.readOnly = true;
+    if (msgEl) { msgEl.textContent = "Copying is blocked here. Select the text below and copy it."; msgEl.after(ta); ta.select(); }
+  }
+}
+function reparse() { S.provisions = parseSectionF(S.fText, S); S.outcomes = parseOutcomes(S.eText); S.sel = null; }
+let resetArmed = false;
+document.addEventListener("click", e => {
+  const tab = e.target.closest("[data-tab]");
+  if (tab) { S.tab = tab.dataset.tab; save(); render(); window.scrollTo(0, 0); return; }
+  const cell = e.target.closest("[data-cell]");
+  if (cell) { S.sel = cell.dataset.cell; save(); render(); document.getElementById("lesson")?.scrollIntoView({ block: "nearest", behavior: "smooth" }); return; }
+  const btn = e.target.closest("[data-act]"); if (!btn) return;
+  const act = btn.dataset.act, pid = btn.closest("[data-pid]")?.dataset.pid;
+  if (act === "parse") { reparse(); save(); render(); }
+  else if (act === "blank") { Object.assign(S, { example: false, name: "", interests: "", fText: "", eText: "", provisions: [], outcomes: [], log: {}, sel: null, tab: "setup" }); save(); render(); }
+  else if (act === "del-prov") { S.provisions = S.provisions.filter(p => p.id !== pid); save(); render(); }
+  else if (act === "add-prov") { S.provisions.push({ id: uid(), text: "New provision", kind: "session", perWeek: 1, mins: S.slotMins, who: [], by: "You", review: "", tags: [], ctx: [], strategies: [], first: false, area: "" }); save(); render(); }
+  else if (act === "print") window.print();
+  else if (act === "download") {
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(S, null, 1)], { type: "application/json" }));
+    a.download = `scheme-of-work-${iso(new Date())}.json`; document.body.appendChild(a); a.click(); a.remove();
+    document.getElementById("backup-msg").textContent = "Backup saved to your downloads.";
+  }
+  else if (act === "copy-backup") copyText(JSON.stringify(S), document.getElementById("backup-msg"));
+  else if (act === "copy-report") copyText(weekReport(), document.getElementById("report-msg"));
+  else if (act === "reset") {
+    if (!resetArmed) { resetArmed = true; btn.textContent = "Tap again to clear everything"; setTimeout(() => { resetArmed = false; if (btn.isConnected) btn.textContent = "Clear everything"; }, 4000); }
+    else { resetArmed = false; S = defaults(); S.example = false; S.name = ""; S.interests = ""; S.fText = ""; S.eText = ""; save(); render(); }
+  }
+});
+document.addEventListener("change", e => {
+  const t = e.target;
+  if (t.id === "restore" && t.files[0]) {
+    const r = new FileReader();
+    r.onload = () => { try { const d = JSON.parse(r.result); if (d.v !== 1) throw 0; S = Object.assign(defaults(), d); save(); render(); } catch (err) { document.getElementById("backup-msg").textContent = "That file isn't a backup from this planner. Choose the .json file you saved."; } };
+    r.readAsText(t.files[0]); return;
+  }
+  if (t.dataset.set) {
+    const k = t.dataset.set; let v = t.value;
+    if (t.dataset.num || k === "ht" || k === "wk") { v = Math.max(+t.min || 0, Math.min(+t.max || 999, parseInt(v, 10) || 0)); }
+    S[k] = v;
+    if (k === "ht" || k === "wk") S.sel = S.sel;
+    if (k === "halfTerms" && S.ht >= v) S.ht = 0;
+    if (k === "weeks" && S.wk >= v) S.wk = 0;
+    if (k === "fText" || k === "eText") { save(); return; }
+    save(); render(); return;
+  }
+  if (t.dataset.day) { S.days[+t.dataset.day] = t.checked; save(); render(); return; }
+  if (t.dataset.theme) { S.themes[+t.dataset.theme] = t.value; save(); render(); return; }
+  if (t.dataset.pf) {
+    const p = S.provisions.find(x => x.id === t.closest("[data-pid]").dataset.pid); const f = t.dataset.pf;
+    if (f === "perWeek" || f === "mins") { p[f] = Math.max(0, parseFloat(t.value) || 0); if (f === "mins") p.assumedMins = false; }
+    else if (f === "text") { p.text = t.value; p.tags = tagsOf(t.value); p.strategies = STRATEGIES.filter(x => x.rx.test(t.value)).map(x => x.id); }
+    else { p[f] = t.value; if (f === "kind" && t.value === "session" && !p.perWeek) { p.perWeek = 1; p.mins = p.mins || S.slotMins; } }
+    save(); render(); return;
+  }
+  if (t.dataset.log) {
+    const key = `${S.ht}-${S.wk}`; S.log[key] = S.log[key] || {}; const e2 = S.log[key][t.dataset.log] = S.log[key][t.dataset.log] || {};
+    e2[t.dataset.lf] = t.value; save(); if (t.dataset.lf !== "note") render(); return;
+  }
+});
+document.addEventListener("input", e => {
+  const t = e.target;
+  if (t.dataset.custom) { S.custom[t.dataset.custom] = t.value; save(); }
+  if (t.dataset.set === "fText" || t.dataset.set === "eText") { S[t.dataset.set] = t.value; save(); }
+});
+render();
+</script>
+</body>
+</html>

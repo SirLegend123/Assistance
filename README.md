@@ -44,3 +44,17 @@ A picture talking board (AAC) for a pre-verbal child. Tap a symbol and the table
 - Works without Wi-Fi once it has been opened, and can be added to the home screen like an app.
 - Symbols only, no photos. The board's words live in `talker/board.json`.
 - **Save for everyone:** on the owner's own device, add a GitHub key in Settings (a fine-grained token with *Contents: read and write* on this repository only). Changes made in grown-up mode can then be saved to `board.json`, and every other device picks them up within a few minutes when online. On devices without the key, changes stay on that device only.
+
+---
+
+# EOTAS Scheme Planner
+
+A scheme of work for teaching at home under EOTAS, built on the EQUALS curriculum pathways (informal, semi-formal, formal) and shaped by Section F of the EHCP.
+
+**Open the app:** https://sirlegend123.github.io/Assistance/scheme/
+
+- Paste Section F (and optionally Section E). Each line is sorted into timetabled sessions, daily approaches and reviews, with how often, how long and who reads from the wording. Every line can be corrected.
+- Builds a long-term plan, half-term plans by curriculum area, and a weekly timetable. Section F sessions are placed first, and named approaches (AAC, Makaton, Attention Autism, Zones, sensory circuits and more) are written into every lesson.
+- A provision check shows whether everything in Section F fits the week, and a delivery log records what happened, with a copyable weekly report for reviews.
+- Paste your own licensed EQUALS objectives to use them instead of the built-in examples. Not made by or connected to EQUALS. Not legal advice.
+- Everything stays in the browser; save a backup file from the first tab.
