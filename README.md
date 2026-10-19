@@ -59,3 +59,18 @@ A scheme of work for teaching at home under EOTAS, built on the EQUALS curriculu
 - A provision check shows whether everything in Section F fits the week, and a delivery log records what happened, with a copyable weekly report for reviews.
 - Paste your own licensed EQUALS objectives to use them instead of the built-in examples. Not made by or connected to EQUALS. Not legal advice.
 - Everything stays in the browser; save a backup file from the first tab.
+
+---
+
+# UDL Class Planner
+
+For mainstream subject teachers: turns a scheme of work and a class's SEND information into whole-class, small-group and individual adjustments, using Universal Design for Learning.
+
+**Open the app:** https://sirlegend123.github.io/Assistance/udl/
+
+- Upload or paste a scheme of work (Word, Excel, PDF or text). It is split into lessons and each lesson's activities are recognised (extended writing, group work, practicals, tests, video and more).
+- Upload EHCPs and pupil passports (several at once), or paste lines from the SEN register. Each pupil is stored by initials, with needs grouped by the four broad areas of the SEND Code of Practice.
+- Adjustments are sorted into three tiers: whole-class universal design (grouped by the UDL principles of Engagement, Representation, and Action and Expression), small groups, and individual reasonable adjustments. Adjustments taken from a plan are marked separately from those suggested from a need.
+- Each lesson shows the barriers to plan for and which adjustments apply.
+- Download an adapted scheme of work (Word) and an adjustments tracker (Excel) for the assess, plan, do, review cycle.
+- Everything is read and kept in the browser. Use initials, and check with your school's data protection lead before using real plans.

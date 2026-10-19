@@ -1,0 +1,1162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>UDL Class Planner</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+/* Layout: a teacher's planning file. Header band, step tabs, one working column that widens for tables. UDL principle colours mark every adjustment. */
+:root {
+  --paper: #f4f6f9; --surface: #ffffff; --sunk: #eceff4; --ink: #1a2230; --muted: #566174; --line: #d5dbe5;
+  --accent: #2b4878; --accent-ink: #ffffff; --accent-soft: #dfe7f4;
+  --eng: #2f7d4f; --rep: #7b4fa8; --ae: #2c6aa8;
+  --ok: #2c7a4b; --warn: #a86a12; --bad: #b0413a; --hl: #f8e07a; --hl-ink: #1a2230;
+  --display: "Lexend", "Segoe UI", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --r: 10px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #10141b; --surface: #181e28; --sunk: #0c1016; --ink: #e3e8f0; --muted: #9aa5b8; --line: #2b3444;
+  --accent: #8fb0e6; --accent-ink: #0d1626; --accent-soft: #1e2b42;
+  --eng: #6cc792; --rep: #bf98e8; --ae: #79b3ec;
+  --ok: #63c08a; --warn: #e2aa4c; --bad: #ea8077; --hl: #77651f; --hl-ink: #fff7d6;
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --paper: #10141b; --surface: #181e28; --sunk: #0c1016; --ink: #e3e8f0; --muted: #9aa5b8; --line: #2b3444;
+  --accent: #8fb0e6; --accent-ink: #0d1626; --accent-soft: #1e2b42;
+  --eng: #6cc792; --rep: #bf98e8; --ae: #79b3ec;
+  --ok: #63c08a; --warn: #e2aa4c; --bad: #ea8077; --hl: #77651f; --hl-ink: #fff7d6;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.55 var(--body); }
+h1, h2, h3, h4 { font-family: var(--display); font-weight: 500; line-height: 1.2; text-wrap: balance; margin: 0; }
+h1 { font-size: 1.6rem; letter-spacing: -0.01em; }
+h2 { font-size: 1.3rem; }
+h3 { font-size: 1.05rem; }
+h4 { font-size: .8rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 500; }
+p { margin: 0; max-width: 70ch; }
+a { color: var(--accent); }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.top { background: var(--accent); color: var(--accent-ink); }
+header.top .wrap { padding-block: 22px 0; display: grid; gap: 4px; }
+header.top p { opacity: .88; font-size: .95rem; }
+.title-row { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; }
+nav.tabs { display: flex; gap: 2px; overflow-x: auto; margin-top: 16px; scrollbar-width: none; }
+nav.tabs button { flex: none; border: 0; background: transparent; color: var(--accent-ink); opacity: .82; padding: 10px 14px; border-radius: 10px 10px 0 0; cursor: pointer; font-family: var(--display); font-size: .92rem; display: flex; gap: 8px; align-items: center; }
+nav.tabs button .n { font-size: .72rem; border: 1.5px solid currentColor; border-radius: 99px; width: 20px; height: 20px; display: inline-grid; place-items: center; }
+nav.tabs button[aria-selected="true"] { background: var(--paper); color: var(--ink); opacity: 1; }
+main { padding-block: 24px 64px; display: grid; gap: 20px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 20px; display: grid; gap: 14px; min-width: 0; }
+.panel.start { border: 2px solid var(--accent); }
+.panel.confirm { border: 2px solid var(--bad); }
+.stack { display: grid; gap: 10px; min-width: 0; align-content: start; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 16px; }
+.grid4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: 12px; }
+.muted { color: var(--muted); }
+.small { font-size: .88rem; }
+.sp { flex: 1; }
+ul.plain { margin: 0; padding-left: 1.15em; display: grid; gap: 6px; }
+ul.plain li { max-width: 75ch; }
+label.f { display: grid; gap: 4px; font-size: .9rem; color: var(--muted); min-width: 0; }
+label.f > span { font-weight: 700; color: var(--ink); }
+input[type=text], input[type=number], select, textarea { background: var(--surface); border: 1.5px solid var(--line); border-radius: 8px; padding: 8px 10px; width: 100%; min-width: 0; }
+textarea { resize: vertical; line-height: 1.5; }
+input:focus, select:focus, textarea:focus { border-color: var(--accent); outline: none; }
+.btn { border: 1.5px solid var(--accent); background: var(--accent); color: var(--accent-ink); border-radius: 8px; padding: 8px 14px; cursor: pointer; font-family: var(--display); font-size: .9rem; display: inline-flex; align-items: center; gap: 6px; }
+.btn.ghost { background: transparent; color: var(--accent); }
+.btn.quiet { border-color: var(--line); background: var(--surface); color: var(--ink); }
+.btn.danger { border-color: var(--bad); background: transparent; color: var(--bad); }
+.btn.small { padding: 4px 10px; font-size: .82rem; }
+.btn.on-accent { background: transparent; color: var(--accent-ink); border-color: var(--accent-ink); }
+.banner { background: var(--accent-soft); border-radius: var(--r); padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.banner p { flex: 1 1 280px; }
+.drop { border: 2px dashed var(--line); border-radius: var(--r); padding: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center; background: var(--sunk); }
+.drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: .8rem; padding: 2px 9px; border-radius: 99px; background: var(--sunk); border: 1px solid var(--line); white-space: nowrap; }
+.chip.need { background: var(--accent-soft); border-color: transparent; }
+.chip.src-stated { background: color-mix(in srgb, var(--ok) 14%, var(--surface)); border-color: transparent; }
+.chip.src-suggested { background: color-mix(in srgb, var(--warn) 15%, var(--surface)); border-color: transparent; }
+.chip.src-added { background: color-mix(in srgb, var(--accent) 14%, var(--surface)); border-color: transparent; }
+.chip button { border: 0; background: none; padding: 0 0 0 2px; cursor: pointer; color: var(--muted); font-size: .95rem; line-height: 1; }
+.pr { display: inline-flex; align-items: center; gap: 6px; font-size: .74rem; font-family: var(--display); padding: 1px 8px; border-radius: 99px; color: var(--c); background: color-mix(in srgb, var(--c) 14%, var(--surface)); white-space: nowrap; }
+.pr-eng { --c: var(--eng); } .pr-rep { --c: var(--rep); } .pr-ae { --c: var(--ae); }
+.stats { display: flex; flex-wrap: wrap; gap: 8px 26px; }
+.stat b { font-family: var(--display); font-size: 1.6rem; font-weight: 500; display: block; font-variant-numeric: tabular-nums; }
+.stat span { font-size: .82rem; color: var(--muted); }
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+th { font-family: var(--display); font-weight: 500; font-size: .8rem; color: var(--muted); background: var(--sunk); }
+tr:last-child td { border-bottom: 0; }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.principles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; }
+.principle { border: 1px solid var(--line); border-top: 4px solid var(--c); border-radius: var(--r); background: var(--surface); padding: 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.principle h3 { color: var(--c); }
+.adj { display: grid; gap: 3px; padding-top: 10px; border-top: 1px solid var(--line); }
+.adj b { font-family: var(--display); font-weight: 500; }
+.who { font-size: .82rem; color: var(--muted); }
+.pupils { display: grid; gap: 8px; }
+.pupil-row { display: grid; grid-template-columns: 70px 110px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); cursor: pointer; text-align: left; width: 100%; }
+.pupil-row[aria-expanded="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.pupil-row .lbl { font-family: var(--display); font-weight: 600; }
+@media (max-width: 640px) { .pupil-row { grid-template-columns: 60px minmax(0, 1fr); } .pupil-row .needs { grid-column: 1 / -1; } }
+.editor { border: 2px solid var(--accent); border-radius: var(--r); padding: 18px; display: grid; gap: 14px; background: var(--surface); }
+.needs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 12px; }
+.needs-grid fieldset { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px 10px; margin: 0; display: grid; gap: 4px; }
+.needs-grid legend { font-family: var(--display); font-size: .82rem; color: var(--muted); padding: 0 4px; }
+.needs-grid label { display: flex; gap: 8px; align-items: center; font-size: .9rem; }
+.lesson { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; display: grid; gap: 12px; min-width: 0; }
+.lesson header { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: baseline; }
+.lesson .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 14px; }
+.barrier { background: color-mix(in srgb, var(--hl) 35%, var(--surface)); border-radius: 8px; padding: 10px 12px; display: grid; gap: 4px; }
+.sow-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: start; border-top: 1px solid var(--line); padding-top: 10px; }
+.sow-item input { font-weight: 700; }
+details > summary { cursor: pointer; font-family: var(--display); }
+footer { padding-block: 0 40px; font-size: .85rem; color: var(--muted); }
+@media print {
+  header.top nav, .no-print, .banner, footer { display: none !important; }
+  header.top { background: none; color: #000; }
+  body { background: #fff; color: #000; font-size: 11pt; }
+  .panel, .lesson, .principle { break-inside: avoid; }
+}
+@media (prefers-reduced-motion: no-preference) { .btn, .pupil-row { transition: border-color .15s, filter .15s; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="title-row"><h1>UDL Class Planner</h1><button class="btn on-accent no-print" data-act="ask-clear">Clear app</button></div>
+    <p>Add your scheme of work and your class's SEND information. The planner finds the adjustments the whole class can share, then the ones only some pupils need.</p>
+    <nav class="tabs" id="tabs" role="tablist" aria-label="Planner steps"></nav>
+  </div>
+</header>
+<main class="wrap" id="main" aria-live="polite"></main>
+<footer class="wrap"><p>Files are read in this browser and never uploaded. Pupil information is kept only in this browser until you clear it. Use initials, not names, and check with your school's data protection lead before using real plans. Based on CAST's Universal Design for Learning Guidelines 3.0 and the SEND Code of Practice. Not affiliated with CAST.</p></footer>
+<script>
+"use strict";
+// Shared with the EOTAS Scheme Planner (../scheme): Section F reading and EHCP file extraction.
+/* ---------- Reading Section F ---------- */
+const TAG_RX = {
+  comm: /\b(speech|language|communicat\w*|sa?lt|slt|vocabular\w*|signs?|signing|makaton|pecs|aac|symbols?|talker|intensive interaction|attention autism|colourful semantics|request\w*|listening|attention|understanding|expressive|receptive|commenting|words?)\b/i,
+  literacy: /\b(read\w*|phonic\w*|literacy|writ(e|ing)|letters?|books?|story|stories)\b/i,
+  maths: /\b(maths?|numbers?|numeracy|count\w*|numicon|money|coins|shapes?|measur\w*)\b/i,
+  cognition: /\b(cognit\w*|problem[- ]solving|memory|match\w*|sort\w*|cause and effect|precision teaching|teacch|workstation|learning|concepts?)\b/i,
+  selfcare: /\b(toilet\w*|dress\w*|eating|feeding|drinking|self[- ]care|hand[- ]washing|washing|hygiene|teeth|chaining)\b/i,
+  life: /\b(independen\w*|life skills?|cook\w*|travel\w*|road safety|shopping|choices?|routines?|visual timetable|now[- ]and[- ]next)\b/i,
+  motor: /\b(motor|occupational therap\w*|ot|physio\w*|handwriting|pencil|grip|balance|co-?ordination|swim\w*|trampolin\w*|rebound|posture|exercise|cutting|scissors|dough disco|pe)\b/i,
+  sensory: /\b(sensory|proprioceptive|vestibular|ear defenders|low[- ]arousal|movement breaks?|deep pressure)\b/i,
+  regulation: /\b(emotion\w*|regulat\w*|zones|anxiety|anxious|calm\w*|feelings|behaviour|self[- ]esteem|social stor\w*|wellbeing|semh|transitions?|meltdowns?|breaks?)\b/i,
+  social: /\b(social|peers?|turn[- ]taking|sharing|friend\w*|lego|groups?)\b/i,
+  play: /\b(play|playing|leisure|imaginat\w*|pretend|toys?)\b/i,
+  creative: /\b(music\w*|art|arts|sing\w*|drama|messy|craft\w*|danc\w*|paint\w*)\b/i,
+  outdoor: /\b(outdoors?|outside|forest school|nature|garden\w*|park)\b/i,
+  community: /\b(community|visits?|outings?|shops?|library|caf[eé]|people who help)\b/i,
+  science: /\b(science|experiment\w*|materials|weather|seasons?|plants?|growing)\b/i,
+};
+const HEADINGS = [
+  { rx: /communication and interaction|speech,? language/i, tags: ["comm", "social"] },
+  { rx: /cognition and learning|learning and cognition/i, tags: ["cognition", "literacy", "maths"] },
+  { rx: /social,? emotional|semh|mental health/i, tags: ["regulation", "social"] },
+  { rx: /sensory|physical/i, tags: ["sensory", "motor"] },
+  { rx: /independen|self[- ]care|preparing for adulthood|life skills/i, tags: ["selfcare", "life"] },
+];
+const STRATEGIES = [
+  { id: "aac", label: "AAC / talker", rx: /\baac\b|communication aid|talker|voice output|speech generating|proloquo|\bvoca\b/i, global: true, embed: "Model on the AAC device as you talk: point to the symbols for {words}." },
+  { id: "makaton", label: "Makaton / signing", rx: /makaton|signalong|\bsigns?\b|\bsigning\b|\bbsl\b/i, global: true, embed: "Sign this week's key words: {words}." },
+  { id: "pecs", label: "PECS", rx: /\bpecs\b|picture exchange/i, tags: ["comm"], embed: "Keep the PECS book in reach and plan at least five chances to request." },
+  { id: "tc", label: "Total communication", rx: /total communication/i, global: true, embed: "Use speech, signs, symbols and objects together." },
+  { id: "ii", label: "Intensive Interaction", rx: /intensive interaction/i, tags: ["comm", "social", "play"], embed: "Start with a few minutes of Intensive Interaction, following {name}'s lead." },
+  { id: "aa", label: "Attention Autism", rx: /attention autism|bucket time/i, tags: ["comm", "cognition"], embed: "Open with an Attention Autism bucket of {theme} objects." },
+  { id: "cs", label: "Colourful Semantics", rx: /colourful semantics/i, tags: ["comm", "literacy"], embed: "Build who / doing / what sentences about {theme} with Colourful Semantics cards." },
+  { id: "oor", label: "Objects of reference", rx: /objects? of reference/i, global: true, embed: "Hand over the object of reference for the session at the start." },
+  { id: "vt", label: "Visual timetable", rx: /visual timetable|visual schedule|now[- ](and[- ])?next|first[- ](and[- ])?then/i, global: true, embed: "Show this session on the visual timetable and use a now-and-next board." },
+  { id: "lang", label: "Reduced language", rx: /reduced language|simplified language|processing time|short instructions/i, global: true, embed: "Say less and wait: allow up to 10 seconds of processing time." },
+  { id: "choice", label: "Choice boards", rx: /choice boards?|choosing boards?|making choices/i, global: true, embed: "Offer choices on a choice board." },
+  { id: "zones", label: "Zones of Regulation", rx: /zones of regulation|\bzones\b|emotion check|feelings check/i, global: true, embed: "Check in on the Zones board at the start and end." },
+  { id: "breaks", label: "Movement breaks", rx: /movement breaks?|sensory breaks?|brain breaks?|regular breaks/i, global: true, embed: "Plan a movement break about every 15–20 minutes." },
+  { id: "lowa", label: "Low-arousal space", rx: /low[- ]arousal|quiet space|calm space|ear defenders|reduced noise|distraction[- ]free/i, global: true, embed: "Keep the space low-arousal, with ear defenders to hand." },
+  { id: "rewards", label: "Motivators", rx: /motivat\w+|rewards?|token (board|system)|preferred (items?|activit\w+)/i, global: true, embed: "Use a token board with {interest} as the reward." },
+  { id: "ss", label: "Social stories", rx: /social stor(y|ies)|comic strip conversation/i, tags: ["regulation", "community", "life", "outdoor"], embed: "Read the social story before any change or outing." },
+  { id: "sc", label: "Sensory circuit / diet", rx: /sensory circuit|sensory diet|sensory programme/i, tags: ["motor", "sensory"], embed: "Follow the sensory diet: alerting, organising, then calming activities." },
+  { id: "si", label: "Deep pressure / heavy work", rx: /sensory integration|weighted|deep pressure|heavy work/i, tags: ["sensory", "motor", "regulation"], embed: "Offer heavy work or deep pressure before seated tasks." },
+  { id: "teacch", label: "TEACCH workstation", rx: /teacch|workstation|structured teaching/i, tags: ["cognition", "maths", "literacy", "life"], embed: "Set tasks out left to right in a workstation, with a finished box." },
+  { id: "pt", label: "Precision teaching", rx: /precision teaching/i, tags: ["cognition", "literacy", "maths"], embed: "Do a one-minute precision teaching probe and chart the score." },
+  { id: "numicon", label: "Numicon", rx: /numicon/i, tags: ["maths", "cognition"], embed: "Use Numicon shapes for any number work." },
+  { id: "chain", label: "Backward chaining", rx: /chaining|task analysis/i, tags: ["selfcare", "life"], embed: "Teach by backward chaining: {name} does the last step, then the last two." },
+  { id: "fm", label: "Fine-motor programme", rx: /fine motor|dough disco|handwriting|pencil grip|funky fingers/i, tags: ["motor", "literacy", "creative"], embed: "Warm up hands first with Dough Disco or a fine-motor tray." },
+  { id: "lego", label: "LEGO-based therapy", rx: /\blego\b/i, tags: ["social", "play"], embed: "Use LEGO-based therapy roles (engineer, supplier, builder) with a sibling or friend." },
+  { id: "peer", label: "Time with other children", rx: /\bpeers?\b|social (skills )?groups?|small group|other (children|pupils)/i, tags: ["social", "play", "community"], embed: "Plan time with other children: a home-ed group, club or play date." },
+];
+const WHO = [
+  ["SaLT", /speech (and|&) language therap\w*|\bsa?lt\b|\bslt\b/i],
+  ["OT", /occupational therap\w*|\bot\b/i],
+  ["Physio", /\bphysio\w*/i],
+  ["Ed Psych", /educational psycholog\w*|\bep\b/i],
+  ["Specialist teacher", /specialist teach\w*|advisory teach\w*|teacher of the (deaf|visually impaired)|\bqt[vh]i\b/i],
+  ["Music therapist", /music therap\w*/i],
+  ["Play therapist", /play therap\w*/i],
+  ["Psychologist / CAMHS", /\bcamhs\b|clinical psycholog\w*/i],
+  ["Trained adult", /trained adult|teaching assistant|\bta\b|\b1:1\b|one[- ]to[- ]one|support staff|key worker|\badults?\b/i],
+];
+const NUMW = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, once: 1, twice: 2, thrice: 3 };
+const NUM = "(\\d+(?:\\.\\d+)?|one|two|three|four|five|six|seven|eight|nine|ten|once|twice|thrice)";
+const UNIT = "(day|week|fortnight|month|half[- ]?term|term|year)";
+const ADV = "(daily|weekly|fortnightly|monthly|half[- ]?termly|termly|annually|yearly)";
+const RX = {
+  cxd: new RegExp("\\b" + NUM + "\\s*(?:x|×|times)\\s*(\\d+(?:\\.\\d+)?)[- ]?(minutes?|mins?|hours?|hrs?)\\b", "i"),
+  dur: /(?<!every\s)(?<![\d.])\b(\d+(?:\.\d+)?|half an|an|one)[- ]?(minutes?|mins?|hours?|hrs?)\b/i,
+  cu: new RegExp("\\b" + NUM + "\\s*(?:x|×|times)?\\s*(?:(?:sessions?|lessons?|visits?|blocks?|days?)\\s+)?(?:per|a|an|each|every)\\s+" + UNIT + "\\b", "i"),
+  cadv: new RegExp("\\b" + NUM + "\\s*(?:x|×|times)?\\s*" + ADV + "\\b", "i"),
+  unit: new RegExp("\\b(?:per|a|an|each|every)\\s+" + UNIT + "\\b|\\b" + ADV + "\\b", "i"),
+  total: /\b(\d+(?:\.\d+)?)\s*(hours?|hrs?)\s*(?:per|a|each)\s*week/i,
+  review: /review\w*\s+(?:\w+\s+){0,3}?(termly|half[- ]?termly|annually|yearly|each term|every term|each half[- ]?term|every half[- ]?term|at the annual review)/i,
+};
+const num = s => { s = String(s).toLowerCase(); return NUMW[s] ?? parseFloat(s); };
+const toMins = (n, u) => /^h/i.test(u) ? Math.round(n * 60) : Math.round(n);
+const durVal = s => /half/i.test(s) ? 0.5 : /^(an|one)$/i.test(s) ? 1 : parseFloat(s);
+const normUnit = u => {
+  u = (u || "").toLowerCase().replace(/[- ]/g, "");
+  return ({ daily: "day", weekly: "week", fortnightly: "fortnight", monthly: "month", termly: "term", halftermly: "halfterm", annually: "year", yearly: "year" })[u] || u;
+};
+
+function splitLines(text) {
+  const raw = String(text || "").replace(/\t+/g, " — ").split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  let lines = [];
+  raw.forEach(l => {
+    const isBullet = /^([-•*·▪●◦–]|\d+[.)]|[a-z][.)])\s+/i.test(l);
+    const clean = l.replace(/^([-•*·▪●◦–]|\d+[.)]|[a-z][.)])\s+/i, "");
+    if (!isBullet && lines.length && /^[a-z(]/.test(clean)) lines[lines.length - 1] += " " + clean;
+    else lines.push(clean);
+  });
+  if (lines.length <= 2 && lines.join(" ").length > 300) lines = lines.join(" ").split(/(?<=[.;])\s+(?=[A-Z])/);
+  return lines;
+}
+function tagsOf(text) { return Object.keys(TAG_RX).filter(k => TAG_RX[k].test(text)); }
+
+function parseSectionF(text, s) {
+  const out = []; let ctx = [];
+  const D = activeDays(s).length || 5;
+  splitLines(text).forEach(line => {
+    const head = HEADINGS.find(h => h.rx.test(line));
+    const looksHeading = line.length < 70 && !/\d/.test(line) && !/[.;]$/.test(line) && (head || /:$/.test(line));
+    const shortLabel = line.length < 40 && line.split(/\s+/).length <= 4 && !/[\d.;,]/.test(line);
+    if (looksHeading || shortLabel) { ctx = head ? head.tags : shortLabel ? tagsOf(line) : []; return; }
+    if (line.length < 12 || /^(section f|special educational provision|provision|outcomes?|frequency|who|by whom|resources?|staffing)\b.{0,20}$/i.test(line)) return;
+    out.push(parseItem(line, ctx, s, D));
+  });
+  return out;
+}
+
+function parseItem(text, ctx, s, D) {
+  const t = text.replace(/every\s+\d+\s*(minutes?|mins?)/gi, " ");
+  let count = null, mins = null, unit = null, explicit = false, m;
+  if ((m = t.match(RX.cxd))) { count = num(m[1]); mins = toMins(parseFloat(m[2]), m[3]); explicit = true; }
+  if (mins == null && (m = t.match(RX.dur))) mins = toMins(durVal(m[1]), m[2]);
+  if ((m = t.match(RX.cu))) { if (!explicit) { count = num(m[1]); explicit = true; } unit = normUnit(m[2]); }
+  else if ((m = t.match(RX.cadv))) { if (!explicit) { count = num(m[1]); explicit = true; } unit = normUnit(m[2]); }
+  else if (/every\s+(other|second|2|two)\s+weeks?/i.test(t)) unit = "fortnight";
+  else if ((m = t.match(RX.unit))) unit = normUnit(m[1] || m[2]);
+  if (count == null) count = 1;
+  if (!explicit && mins && RX.total.test(t) && mins > s.slotMins) { count = Math.ceil(mins / s.slotMins); mins = Math.round(mins / count); }
+
+  const support = /\b(1:1|one[- ]to[- ]one|full[- ]time|adult support|teaching assistant|learning support)\b/i.test(t) && (RX.total.test(t) || /throughout|all day|full[- ]time|across the (school )?day/i.test(t));
+  const reviewish = /\b(review\w*|reports?|assess\w*|monitor\w*|consult\w*)\b/i.test(t);
+  const approachish = /\b(use of|access to|throughout|all adults|all staff|consistent\w*|environment|processing time|reduced language|as needed|as required|when needed|available|opportunit\w*|embedded|modelled)\b/i.test(t);
+  let kind, perWeek = 0;
+  if (support) kind = "approach";
+  else if (unit === "term" || unit === "halfterm" || unit === "year") {
+    if (explicit && count >= 2 && !/^\s*(\w+\s+){0,3}(to\s+)?review/i.test(t)) {
+      kind = "session"; perWeek = count / (unit === "term" ? 2 * s.weeks : unit === "halfterm" ? s.weeks : 6 * s.weeks);
+    } else kind = "review";
+  } else if (["day", "week", "fortnight", "month"].includes(unit) || (mins && !approachish)) {
+    if (approachish && !mins && !explicit) kind = "approach";
+    else {
+      kind = "session";
+      perWeek = unit === "day" ? count * D : unit === "fortnight" ? count / 2 : unit === "month" ? count / 4 : count;
+    }
+  } else kind = reviewish ? "review" : "approach";
+  perWeek = Math.round(perWeek * 100) / 100;
+
+  const who = WHO.filter(([, rx]) => rx.test(t)).map(([n]) => n);
+  const pros = who.filter(w => w !== "Trained adult");
+  const byAdult = /(delivered|carried out|implemented|run|led|supported) by (a |an |the )?(trained|teaching|support|adult|staff|ta\b|parent|key)/i.test(t) || /set by|devised by|designed by|written by|following (the )?\w+'?s? (programme|advice|sensory diet|plan)|programme/i.test(t) || who.includes("Trained adult");
+  const by = pros.length ? (byAdult ? "You, following the " + pros.join(" / ") + " programme" : pros.join(" / ")) : "You";
+  const rv = t.match(RX.review);
+  const review = rv ? rv[1] : (kind === "review" ? (unit ? ({ term: "termly", halfterm: "half-termly", year: "annually" })[unit] || "as stated" : "as stated") : "");
+  return {
+    id: uid(), text, kind, perWeek, mins: kind === "session" ? (mins || s.slotMins) : (mins || null), assumedMins: kind === "session" && !mins,
+    who, by, review, tags: tagsOf(text), ctx: ctx.slice(), strategies: STRATEGIES.filter(x => x.rx.test(text)).map(x => x.id),
+    first: /before (seated|learning|lessons|work)|start of (the )?day|first thing|each morning|on arrival/i.test(text), area: ""
+  };
+}
+
+function parseOutcomes(text) {
+  return splitLines(text).filter(l => l.length >= 12 && !/^(section e|outcomes?)\b.{0,20}$/i.test(l)).map(l => ({ id: uid(), text: l, tags: tagsOf(l), area: "" }));
+}
+
+/* ---------- Reading an uploaded EHCP ---------- */
+// The PDF reader and text recognition are shared with Read Aloud Notes (../pdf, ../ocr). Nothing leaves the device.
+const PDF_CDN = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+function loadScript(src) {
+  return new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = () => { s.remove(); rej(new Error("load " + src)); }; document.head.append(s); });
+}
+let libBase = null;
+async function findBase() {
+  if (libBase !== null) return libBase;
+  for (const b of ["../", "./"]) {
+    try { await loadScript(b + "pdf/pdf.min.js"); if (window.pdfjsLib) return (libBase = b); } catch (e) { }
+  }
+  return (libBase = "");
+}
+let pdfjsPromise = null;
+function getPdfjs() {
+  if (pdfjsPromise) return pdfjsPromise;
+  pdfjsPromise = (async () => {
+    await findBase();
+    if (!window.pdfjsLib) await loadScript(PDF_CDN + "pdf.min.js");
+    pdfjsLib.GlobalWorkerOptions.workerSrc = libBase ? new URL(libBase + "pdf/pdf.worker.min.js", location.href).href
+      : URL.createObjectURL(new Blob([`importScripts("${PDF_CDN}pdf.worker.min.js")`], { type: "text/javascript" }));
+    return pdfjsLib;
+  })();
+  pdfjsPromise.catch(() => { pdfjsPromise = null; });
+  return pdfjsPromise;
+}
+let ocrPromise = null;
+function getOcr() {
+  if (ocrPromise) return ocrPromise;
+  ocrPromise = (async () => {
+    const b = await findBase();
+    if (!b) throw new Error("ocr-unavailable");
+    if (!window.Tesseract) await loadScript(b + "ocr/tesseract.min.js");
+    const base = new URL(b + "ocr/", location.href).href;
+    return Tesseract.createWorker("eng", 1, { workerPath: base + "boot-worker.js", corePath: base, langPath: base, workerBlobURL: false });
+  })();
+  ocrPromise.catch(() => { ocrPromise = null; });
+  return ocrPromise;
+}
+async function ocrCanvas(canvas) {
+  const worker = await getOcr();
+  const { data } = await worker.recognize(canvas);
+  return (data.text || "").replace(/(\w)-\n(\w)/g, "$1$2").replace(/[|¦]/g, "I").split(/\n/).map(s => s.trim()).filter(Boolean);
+}
+function upStatus(msg) { const el = document.getElementById("up-status"); if (el) el.textContent = msg; }
+
+// Rebuild lines from a PDF page's text pieces. A wide gap between pieces is a table column, marked with " — ".
+function linesFromItems(items) {
+  const rows = [];
+  items.forEach(it => {
+    if (!it.str || !it.str.trim()) return;
+    const x = it.transform[4], y = it.transform[5], h = Math.abs(it.transform[3]) || 10;
+    let r = rows.find(r => Math.abs(r.y - y) < Math.max(r.h, h) * 0.5);
+    if (!r) rows.push(r = { y, h, items: [] });
+    r.items.push({ x, w: it.width || 0, h, str: it.str });
+  });
+  rows.sort((a, b) => b.y - a.y);
+  return rows.map(r => {
+    r.items.sort((a, b) => a.x - b.x);
+    let s = "", end = null;
+    r.items.forEach(it => {
+      if (end !== null) { const gap = it.x - end; if (gap > it.h * 2.5) s += " — "; else if (gap > it.h * 0.15 && !/\s$/.test(s) && !/^\s/.test(it.str)) s += " "; }
+      s += it.str; end = it.x + it.w;
+    });
+    return s.replace(/\s+/g, " ").trim();
+  }).filter(Boolean);
+}
+async function pdfToPages(buf) {
+  const lib = await getPdfjs();
+  const doc = await lib.getDocument({ data: buf }).promise;
+  const pages = []; let chars = 0;
+  for (let i = 1; i <= doc.numPages; i++) {
+    upStatus(`Reading page ${i} of ${doc.numPages}…`);
+    const lines = linesFromItems((await (await doc.getPage(i)).getTextContent()).items);
+    chars += lines.join("").length; pages.push(lines);
+  }
+  if (chars > 40 * doc.numPages) return pages;
+  // Scanned pages have no text layer, so read the words from the page images instead.
+  const ocrPages = [];
+  for (let i = 1; i <= doc.numPages; i++) {
+    upStatus(`This EHCP is scanned. Reading the words on page ${i} of ${doc.numPages} (about 5 seconds a page)…`);
+    const page = await doc.getPage(i), vp = page.getViewport({ scale: 2 });
+    const c = document.createElement("canvas"); c.width = vp.width; c.height = vp.height;
+    await page.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
+    ocrPages.push(await ocrCanvas(c));
+  }
+  return ocrPages;
+}
+async function unzipEntry(buf, name) {
+  const dv = new DataView(buf), dec = new TextDecoder();
+  let eocd = -1;
+  for (let i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 66000); i--) if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  if (eocd < 0) throw new Error("not-zip");
+  let p = dv.getUint32(eocd + 16, true);
+  for (let k = 0, n = dv.getUint16(eocd + 10, true); k < n; k++) {
+    const method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true), nlen = dv.getUint16(p + 28, true), elen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true), loff = dv.getUint32(p + 42, true);
+    if (dec.decode(new Uint8Array(buf, p + 46, nlen)) === name) {
+      const start = loff + 30 + dv.getUint16(loff + 26, true) + dv.getUint16(loff + 28, true), data = new Uint8Array(buf, start, csize);
+      if (method === 0) return dec.decode(data);
+      return await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).text();
+    }
+    p += 46 + nlen + elen + clen;
+  }
+  throw new Error("not-docx");
+}
+async function docxToLines(buf, splitCells = true) {
+  const W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+  const doc = new DOMParser().parseFromString(await unzipEntry(buf, "word/document.xml"), "application/xml");
+  const pText = p => { let s = ""; for (const el of p.getElementsByTagNameNS(W, "*")) { if (el.localName === "t") s += el.textContent; else if (el.localName === "tab") s += " "; else if (el.localName === "br" || el.localName === "cr") s += "\n"; } return s; };
+  const paras = el => (el.localName === "p" ? [el] : [...el.getElementsByTagNameNS(W, "p")]).map(p => (p.getElementsByTagNameNS(W, "numPr").length ? "- " : "") + pText(p).trim()).filter(s => s.replace(/^- /, ""));
+  const lines = [];
+  const body = doc.getElementsByTagNameNS(W, "body")[0];
+  for (const el of body ? body.children : []) {
+    if (el.localName === "p") lines.push(...paras(el).flatMap(s => s.split("\n")));
+    else if (el.localName === "tbl") {
+      for (const tr of el.getElementsByTagNameNS(W, "tr")) {
+        const cells = [...tr.getElementsByTagNameNS(W, "tc")].map(paras);
+        // A cell holding a list of provision becomes one line per item; a simple row stays one line.
+        if (splitCells && Math.max(0, ...cells.map(c => c.length)) >= 3) cells.forEach(c => lines.push(...c));
+        else { const row = cells.map(c => c.join("; ")).filter(Boolean).join(" — "); if (row) lines.push(row); }
+      }
+    }
+  }
+  return lines;
+}
+function cleanPages(pages) {
+  const norm = l => l.toLowerCase().replace(/\d+/g, "#").replace(/\s+/g, " ").trim();
+  if (pages.length >= 3) {
+    const cnt = {}; pages.forEach(pg => new Set(pg.map(norm)).forEach(n => { cnt[n] = (cnt[n] || 0) + 1; }));
+    const thr = Math.max(3, pages.length * 0.4), seen = new Set();
+    pages = pages.map(pg => pg.filter(l => {
+      const n = norm(l);
+      if (cnt[n] < thr || l.length > 120) return true;
+      if (seen.has(n)) return false; // repeated page header or footer
+      seen.add(n); return /section\s+[a-k]\b/i.test(l);
+    }));
+  }
+  return pages.flat().filter(l => !/^(page\s*)?\d+(\s*(of|\/)\s*\d+)?$/i.test(l.trim()));
+}
+const SECTION_TITLES = {
+  A: /views|interests|aspirations|about me/i, B: /special educational needs|\bsen\b/i, C: /health needs/i, D: /social care needs/i,
+  E: /outcomes/i, F: /special educational provision/i, G: /health provision/i, H: /social care provision/i,
+  I: /placement|name of (school|setting|institution)|type of (school|setting)/i, J: /personal budget|direct payment/i, K: /advice and information|appendi/i,
+};
+function headingLetters(line) {
+  const l = line.trim();
+  if (l.length > 100 || /\.{4,}|…{2,}|\s\d{1,3}$/.test(l)) return null; // contents page line
+  let m = l.match(/^\W*section\s*([A-K])\d?\b(?:\s*(?:&|and|\/)\s*(?:section\s*)?([A-K])\b)?/i);
+  if (m) return [m[1].toUpperCase(), m[2] && m[2].toUpperCase()].filter(Boolean);
+  m = l.match(/\(section\s*([A-K])\d?\)\s*:?$/i); if (m) return [m[1].toUpperCase()];
+  m = l.match(/^([A-K])\d?\s*[:.\-–—)]\s*(.{3,70})$/);
+  if (m && SECTION_TITLES[m[1]].test(m[2])) return [m[1]];
+  if (l.length < 60) for (const k of ["F", "B", "E"]) if (new RegExp("^\\W*" + SECTION_TITLES[k].source + "\\W*$", "i").test(l)) return [k];
+  return null;
+}
+const HEADER_ROW = /^(provision|frequency|who|outcomes?|by whom|staff\w*|resources?|ratio|needs?|area( of need)?|delivered by|duration|how often|detail|description|intensity|group size)$/i;
+function extractEhcp(lines) {
+  const sec = {}; let cur = null;
+  lines.forEach(line => {
+    const letters = headingLetters(line);
+    if (letters) { cur = letters; const rest = line.replace(/^\W*section\s*[A-K]\d?\b[^:–—-]*[:–—-]?/i, "").trim(); return void (rest && rest.length > 60 && cur.forEach(k => { (sec[k] = sec[k] || []).push(rest); })); }
+    if (!cur) return;
+    if (line.split(/\s+—\s+/).every(c => HEADER_ROW.test(c.trim()))) return;
+    cur.forEach(k => { (sec[k] = sec[k] || []).push(line); });
+  });
+  const out = {}; Object.keys(sec).forEach(k => { const t = sec[k].join("\n").trim(); if (t.length > 20) out[k] = t; });
+  let name = "";
+  for (const l of lines.slice(0, 120)) {
+    if (/school|parent|carer|officer|co-?ordinator|worker|setting|author|contact/i.test(l)) continue;
+    const m = l.match(/^(?:child'?s|young person'?s|pupil'?s|learner'?s)?\s*(?:preferred\s+|first\s+|full\s+|given\s+)?name(?:\s+of (?:child|young person))?\s*[:\-–—]?\s+([A-Z][a-zA-Z'’-]{1,20})/i);
+    if (m && !/^(of|and|the|is|section)$/i.test(m[1])) { name = m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase(); break; }
+  }
+  return { sec: out, name, text: lines.join("\n") };
+}
+
+
+/* ---------- Needs and adjustments ---------- */
+const AREAS = { ci: "Communication and interaction", cl: "Cognition and learning", semh: "Social, emotional and mental health", sp: "Sensory and/or physical" };
+const PRINCIPLES = {
+  eng: { name: "Engagement", why: "The why of learning: interest, effort and self-regulation." },
+  rep: { name: "Representation", why: "The what of learning: how information is presented." },
+  ae: { name: "Action and Expression", why: "The how of learning: how pupils act and show what they know." },
+};
+const NEEDS = [
+  { id: "autism", label: "Autism", area: "ci", rx: /autis\w*|\basc\b|\basd\b|asperger/i, sug: ["routine", "warning", "visual", "chunk", "processing", "groupwork"] },
+  { id: "slcn", label: "Speech, language and communication (incl. DLD)", area: "ci", rx: /speech,? language (and|&) communication|\bslcn\b|\bdld\b|developmental language disorder|language disorder|receptive (and expressive )?language|expressive language|language delay|minimally verbal|non[- ]?verbal|pre[- ]?verbal|communication difficult\w*/i, sug: ["chunk", "visual", "processing", "wordbank", "preteach"] },
+  { id: "dyslexia", label: "Dyslexia", area: "cl", rx: /dyslexi\w*|specific learning difficult\w*|phonological|literacy difficult\w*|reading difficult\w*/i, sug: ["notes", "format", "wordbank", "frames", "altrec"] },
+  { id: "dyscalculia", label: "Dyscalculia", area: "cl", rx: /dyscalcul\w*|numeracy difficult\w*|maths difficult\w*/i, sug: ["concrete", "modelling"] },
+  { id: "mld", label: "Learning difficulties (moderate or severe)", area: "cl", rx: /moderate learning|severe learning|\bmld\b|\bsld\b|global (developmental )?delay|cognitive difficult\w*|(?<!specific )learning difficult\w*/i, sug: ["chunk", "modelling", "recap", "wordbank", "preteach"] },
+  { id: "memory", label: "Working memory or processing", area: "cl", rx: /working memory|processing speed|slow(er)? processing|short[- ]term memory/i, sug: ["chunk", "checklist", "recap", "processing"] },
+  { id: "adhd", label: "ADHD", area: "semh", rx: /adhd|attention deficit|hyperactiv\w*|impulsiv\w*/i, sug: ["chunk", "checklist", "movement", "routine"] },
+  { id: "anxiety", label: "Anxiety", area: "semh", rx: /anxi\w*|selective mutism|emotionally based school|school refus\w*|panic/i, sug: ["nocold", "warning", "routine"] },
+  { id: "semh", label: "Other social, emotional or mental health", area: "semh", rx: /\bsemh\b|social,? emotional|mental health|attachment|trauma|behaviour(al)? difficult\w*/i, sug: ["routine", "praise", "checkin"] },
+  { id: "hearing", label: "Hearing impairment", area: "sp", rx: /hearing (impair\w*|loss|aids?)|\bdeaf\w*|radio aid|cochlear|\bHI\b/, sug: ["facing", "subtitles", "visual"] },
+  { id: "vision", label: "Visual impairment", area: "sp", rx: /visual(ly)? impair\w*|vision impair\w*|low vision|partially sighted|\bblind\b|braille|\bVI\b/, sug: ["notes", "format"] },
+  { id: "dcd", label: "Dyspraxia / DCD", area: "sp", rx: /dyspraxi\w*|\bdcd\b|developmental co-?ordination|fine motor difficult\w*|handwriting difficult\w*|motor co-?ordination/i, sug: ["altrec", "reduced", "notes"] },
+  { id: "physical", label: "Physical disability", area: "sp", rx: /physical disabilit\w*|cerebral palsy|mobility|wheelchair|hypermobil\w*|muscular/i, sug: ["notes", "altrec"] },
+  { id: "sensory", label: "Sensory processing", area: "sp", rx: /sensory processing|sensory sensitiv\w*|sensitive to noise|noise sensitiv\w*|sensory needs?/i, sug: ["routine"] },
+  { id: "medical", label: "Medical condition", area: "sp", rx: /epilep\w*|diabet\w*|medical condition|chronic fatigue|asthma|healthcare plan/i, sug: [] },
+];
+const NEED = Object.fromEntries(NEEDS.map(n => [n.id, n]));
+// scope: universal = good for everyone, whole class once enough pupils need it; flexible = whole class only if many need it, else a group;
+// individual = always a personal reasonable adjustment. acts: the lesson activities it matters for (empty = every lesson).
+const ADJ = [
+  { id: "chunk", label: "Chunked instructions", p: "rep", g: "Language and symbols", scope: "universal", acts: [], rx: /chunk\w*|step[- ]by[- ]step|short(er)? instructions|one instruction at a time|simplified instructions|break(ing)? (down )?instructions/i, cls: "Give instructions one step at a time and keep the steps on the board as a numbered list.", ind: "Check understanding after each step before moving on." },
+  { id: "visual", label: "Visual supports", p: "rep", g: "Perception", scope: "universal", acts: [], rx: /visual (supports?|aids?|prompts?|cues?)|\bvisuals\b|\bsymbols\b|pictures to support/i, cls: "Pair key instructions and vocabulary with images, diagrams or symbols.", ind: "Give a personal visual prompt card for routines and tasks." },
+  { id: "routine", label: "Clear routines and lesson agenda", p: "eng", g: "Emotional capacity", scope: "universal", acts: [], rx: /\broutines?\b|structured lessons?|visual timetable|lesson (agenda|outline)|consisten(t|cy)|now[- ](and[- ])?next/i, cls: "Show the lesson agenda at the start and keep a consistent lesson structure.", ind: "Give a personal copy of the lesson agenda or a now-and-next card." },
+  { id: "processing", label: "Processing (wait) time", p: "rep", g: "Language and symbols", scope: "universal", acts: [], rx: /processing time|wait time|time to (process|respond|think)|take[- ]up time/i, cls: "Wait at least five seconds after a question and use think-pair-share before taking answers.", ind: "Ask, then come back for the answer. Repeat in the same words rather than rephrasing." },
+  { id: "checklist", label: "Task checklists and success criteria", p: "ae", g: "Strategy development", scope: "universal", acts: [], rx: /checklists?|task (boards?|planners?)|success criteria|to[- ]do lists?|break(ing)? (down )?tasks/i, cls: "Display success criteria and a tick-list of the task steps.", ind: "Give a personal task checklist to tick off." },
+  { id: "recap", label: "Retrieval and recap", p: "rep", g: "Building knowledge", scope: "universal", acts: [], rx: /over[- ]?learning|repetition|\brecap\b|revisit\w*|retrieval|memory aids?/i, cls: "Start with a short retrieval quiz and link new ideas to what pupils already know.", ind: "Provide a knowledge organiser to keep on the desk." },
+  { id: "modelling", label: "Modelling and worked examples", p: "rep", g: "Building knowledge", scope: "universal", acts: ["writing", "maths", "practical"], rx: /model(l)?ing|worked examples?|demonstrat\w*|i do,? we do,? you do/i, cls: "Model the task live, then do one together before independent work.", ind: "Leave the worked example on their desk." },
+  { id: "wordbank", label: "Word banks and knowledge organisers", p: "rep", g: "Language and symbols", scope: "universal", acts: ["writing", "reading", "assessment"], rx: /word banks?|key (words|vocabulary)|glossary|vocabulary (lists?|mats?|support)|knowledge organisers?/i, cls: "Provide a word bank of key terms, with pictures, for every reading or writing task.", ind: "Highlight the words this pupil needs most." },
+  { id: "preteach", label: "Pre-teach vocabulary", p: "rep", g: "Language and symbols", scope: "flexible", acts: ["reading", "lecture", "discussion"], rx: /pre[- ]?teach\w*|pre[- ]?learn\w*|vocabulary (in advance|before the lesson)/i, cls: "Teach new vocabulary explicitly at the start of the lesson.", ind: "Pre-teach this lesson's key words before the lesson (tutor time or intervention)." },
+  { id: "notes", label: "Slides and notes shared in advance", p: "rep", g: "Perception", scope: "universal", acts: ["lecture", "copying", "reading"], rx: /printed (notes|copies|slides)|copies of (the )?(slides|notes|powerpoint)|handouts?|(reduce|avoid|no|limit)\w* copying|copying from the board/i, cls: "Share slides digitally with everyone and avoid copying from the board.", ind: "Give a printed copy of the slides at the start of the lesson." },
+  { id: "format", label: "Accessible text formatting", p: "rep", g: "Perception", scope: "universal", acts: ["reading", "assessment"], rx: /dyslexia[- ]friendly|\bcream\b|pastel|sans[- ]serif|line spacing|uncluttered|clear font/i, cls: "Use a clear sans-serif font, 1.5 line spacing, a pale background and uncluttered slides.", ind: "Print on their preferred colour of paper." },
+  { id: "tts", label: "Text-to-speech or a reader", p: "rep", g: "Perception", scope: "flexible", acts: ["reading", "assessment"], rx: /text[- ]to[- ]speech|\breader\b|read aloud to|reading pen|immersive reader|audio ?books?/i, cls: "Turn on Immersive Reader or text-to-speech for digital texts, open to everyone.", ind: "Provide a reader or reading pen for texts and tests." },
+  { id: "subtitles", label: "Captions on video and audio", p: "rep", g: "Perception", scope: "universal", acts: ["video"], rx: /subtitles?|captions?|transcripts?/i, cls: "Turn on captions for every video and give a transcript for audio.", ind: "Give them the transcript before the lesson." },
+  { id: "facing", label: "Face the class and repeat answers", p: "rep", g: "Perception", scope: "universal", acts: ["lecture", "discussion"], rx: /face (the )?(class|pupil|student)|lip[- ]?read\w*|repeat (other )?(pupils'?|students'?) (answers|responses)|background noise/i, cls: "Face the class when speaking, cut background noise and repeat pupils' answers.", ind: "Seat them where they can see your face and the board." },
+  { id: "radio", label: "Radio aid or hearing technology", p: "rep", g: "Perception", scope: "individual", acts: [], rx: /radio aid|soundfield|hearing aids?|cochlear|fm system/i, ind: "Wear the radio aid transmitter and check it works at the start of the lesson." },
+  { id: "enlarged", label: "Enlarged or modified print", p: "rep", g: "Perception", scope: "individual", acts: ["reading", "assessment", "practical"], rx: /enlarged|large print|modified (large )?print|\ba3\b|font size \d+|magnif\w*/i, ind: "Provide enlarged copies, at the font size in their plan." },
+  { id: "overlay", label: "Coloured overlay or tinted paper", p: "rep", g: "Perception", scope: "individual", acts: ["reading"], rx: /overlays?|tinted|coloured paper/i, ind: "Have their overlay or tinted paper ready." },
+  { id: "concrete", label: "Concrete resources and number aids", p: "rep", g: "Building knowledge", scope: "flexible", acts: ["maths"], rx: /concrete (resources|apparatus)|manipulatives|numicon|\bcubes\b|counters|number lines?|multiplication (grid|square)|times tables? (grid|square|chart)|calculators?/i, cls: "Keep number lines, multiplication grids and calculators out for anyone to use.", ind: "Give a personal number facts grid or calculator." },
+  { id: "frames", label: "Writing frames and sentence starters", p: "ae", g: "Expression and communication", scope: "universal", acts: ["writing", "assessment"], rx: /writing frames?|sentence starters?|scaffold\w* writing|cloze|structure strips?|paragraph (frames?|planners?)/i, cls: "Offer writing frames and sentence starters as an option for everyone.", ind: "Give a partly completed frame." },
+  { id: "altrec", label: "Choice of how to record", p: "ae", g: "Expression and communication", scope: "universal", acts: ["writing", "assessment"], rx: /alternative (methods? of |ways? (of|to) )?record\w*|mind ?maps?|diagrams? instead|voice record\w*|record (answers|work) (orally|verbally)|ways to record/i, cls: "Let pupils show learning in different ways: bullet points, diagrams, tables or recorded talk.", ind: "Agree in advance how they will record this task." },
+  { id: "laptop", label: "Laptop or word processor", p: "ae", g: "Expression and communication", scope: "individual", acts: ["writing", "assessment"], rx: /laptop|word processor|touch[- ]typing|chromebook|\bipad\b|typed work/i, ind: "Have the laptop charged and ready for extended writing." },
+  { id: "stt", label: "Speech-to-text or scribe", p: "ae", g: "Expression and communication", scope: "individual", acts: ["writing", "assessment"], rx: /speech[- ]to[- ]text|dictat\w*|\bscribe\b/i, ind: "Arrange speech-to-text or a scribe for extended writing." },
+  { id: "reduced", label: "Reduced written output", p: "ae", g: "Expression and communication", scope: "flexible", acts: ["writing", "homework"], rx: /reduce\w* (written )?(output|amount|workload|homework|recording)|shorter tasks|fewer questions|quality (not|over) quantity/i, cls: "Set core and extension tasks so everyone can finish the core in the time.", ind: "Agree a shorter target for written work." },
+  { id: "grip", label: "Writing slope, grips or adapted equipment", p: "ae", g: "Interaction", scope: "individual", acts: ["writing", "practical"], rx: /pencil grips?|pen grips?|sloped (board|desk)|writing slope|wide[- ]lined|adapted (paper|scissors|equipment)|ergonomic/i, ind: "Put the writing slope and grip at their place before the lesson." },
+  { id: "extratime", label: "Extra time", p: "ae", g: "Strategy development", scope: "individual", acts: ["assessment", "timed"], rx: /extra time|additional time|\b25 ?%|more time to (complete|finish)/i, ind: "Give extra time in tests and timed tasks (check the amount in their plan)." },
+  { id: "access", label: "Exam access arrangements", p: "ae", g: "Strategy development", scope: "individual", acts: ["assessment"], rx: /access arrangements?|separate room|small(er)? room|rest breaks? (in|during) (tests?|exams?)/i, ind: "Apply their access arrangements in tests, including classroom tests." },
+  { id: "movement", label: "Movement and active tasks", p: "eng", g: "Sustaining effort and persistence", scope: "flexible", acts: [], rx: /movement breaks?|brain breaks?|move around|active (tasks|learning)/i, cls: "Build a stand-up or move-around task into each lesson.", ind: "Give them a planned movement job (handing out, collecting) mid-lesson." },
+  { id: "exitcard", label: "Time-out or exit card", p: "eng", g: "Emotional capacity", scope: "individual", acts: [], rx: /time[- ]out( card)?|exit card|leave the (room|class(room)?)|calm(ing)? (space|area|down)|safe space|break card/i, ind: "They can use their time-out card without explaining. Agree where they go." },
+  { id: "sensory", label: "Sensory tools", p: "eng", g: "Emotional capacity", scope: "individual", acts: [], rx: /fiddle|fidget (toy|tool)s?|wobble cushion|ear defenders|noise[- ]cancel\w*|chew\w*|sensory (tools?|aids?|breaks?)/i, ind: "Allow their sensory tools (fiddle tool, ear defenders, cushion)." },
+  { id: "seating", label: "Planned seating", p: "eng", g: "Emotional capacity", scope: "individual", acts: [], rx: /seat(ed|ing)|sit (near|at|by)|near the (front|teacher|board|door)|away from (the )?(window|door|distraction)/i, ind: "Seat them as agreed in their plan." },
+  { id: "warning", label: "Advance warning of changes", p: "eng", g: "Emotional capacity", scope: "flexible", acts: ["trip", "assessment"], rx: /(pre|advance)[- ]?warn\w*|warn\w* (of|about|before) (any )?changes?|prepare\w* for (any )?changes?|social stor\w*|cover (teacher|lessons?)/i, cls: "Tell the class about changes (cover, room, tests, trips) a lesson ahead and put them on the board.", ind: "Warn them personally about changes in advance." },
+  { id: "groupwork", label: "Structured group work with roles", p: "ae", g: "Interaction", scope: "flexible", acts: ["discussion", "practical"], rx: /structured (group|pair|talk|discussion)|group roles?|roles? in (the )?group|defined role|talk partners?|social communication/i, cls: "Give every group clear roles and a written task card.", ind: "Choose their group and role in advance." },
+  { id: "nocold", label: "No cold-calling; warning before speaking", p: "eng", g: "Emotional capacity", scope: "flexible", acts: ["speaking", "discussion", "reading"], rx: /cold[- ]call\w*|put on the spot|asked to (speak|read|answer) (aloud|in front)|read(ing)? aloud|warn\w* before (being )?(asked|speaking|answering)|selective mutism/i, cls: "Use mini-whiteboards or think-pair-share instead of cold-calling.", ind: "Don't ask them to read aloud or answer without warning. Agree a signal." },
+  { id: "checkin", label: "Key adult check-in", p: "eng", g: "Emotional capacity", scope: "individual", acts: [], rx: /check[- ]?ins?|key (adult|worker|person)|\bmentor\b|trusted adult/i, ind: "Do a quick check-in at the start of the lesson." },
+  { id: "choice", label: "Choice and links to interests", p: "eng", g: "Welcoming interests and identities", scope: "universal", acts: [], rx: /\bchoices?\b|motivat\w+/i, cls: "Offer a choice of task or context and link topics to pupils' interests.", ind: "Use their interests as the context for tasks." },
+  { id: "praise", label: "Specific praise and feedback", p: "eng", g: "Sustaining effort and persistence", scope: "universal", acts: [], rx: /\bpraise\b|rewards?|positive reinforcement/i, cls: "Praise effort and strategies specifically, not just outcomes.", ind: "Agree how they like to receive praise (some prefer it private)." },
+  { id: "ta", label: "Adult support", p: "ae", g: "Interaction", scope: "individual", acts: [], rx: /teaching assistant|\bta\b|learning support assistant|\blsa\b|adult support|\b1:1\b|one[- ]to[- ]one/i, ind: "Brief the supporting adult on the lesson goal and this pupil's targets." },
+];
+const ADJ_BY = Object.fromEntries(ADJ.map(a => [a.id, a]));
+const ACTS = [
+  ["lecture", "Teacher explanation", /explain\w*|explanation|introduc\w*|teacher[- ]led|direct instruction|\binput\b|lecture/i],
+  ["reading", "Reading", /\bread(ing)?\b|\btexts?\b|article|sources?\b|extract|comprehension|novel|poem|play script/i],
+  ["writing", "Extended writing", /\bwrit(e|ing|ten)\b|essay|paragraph|extended (answer|response)|\breport\b|letter|method and conclusion|conclusion/i],
+  ["copying", "Copying from the board", /\bcopy(ing)?\b|from the board/i],
+  ["discussion", "Group or pair work", /discuss\w*|debate|in groups|group work|in pairs|pair work|talk partners?|collaborat\w*|think[- ]pair[- ]share/i],
+  ["speaking", "Speaking to the class", /\bpresent(ation|s)?\b|perform\w*|speak\w*|\boral\b|role[- ]play|recite/i],
+  ["practical", "Practical work", /practical|experiment|investigat\w*|\blab\b|equipment|\bbuild\b|design and make|\bcook\w*|newton meters?|apparatus/i],
+  ["maths", "Calculations and data", /calculat\w*|equation|graphs?|formula|measur\w*|\bdata\b|fraction|algebra|percent\w*|÷|×/i],
+  ["video", "Video or audio", /video|clip|\bfilm\b|documentary|\bwatch\b|podcast|audio/i],
+  ["assessment", "Test or assessment", /\btest\b|quiz|assessment|\bexam\b|mock|end of unit/i],
+  ["timed", "Timed task", /timed|time limit|against the clock/i],
+  ["independent", "Independent work", /independent\w*|individually|on their own/i],
+  ["homework", "Homework", /homework|home ?learning/i],
+  ["trip", "Trip or fieldwork", /\btrip\b|\bvisit\b|fieldwork|outdoor/i],
+];
+const ACT_LABEL = Object.fromEntries(ACTS.map(a => [a[0], a[1]]));
+const BARRIERS = {
+  writing: ["dyslexia", "dcd", "physical", "mld", "slcn"], reading: ["dyslexia", "vision", "mld", "slcn"], copying: ["dyslexia", "dcd", "vision", "memory"],
+  discussion: ["autism", "anxiety", "slcn", "hearing"], speaking: ["anxiety", "slcn", "autism"], practical: ["sensory", "physical", "vision", "adhd", "dcd"],
+  assessment: ["anxiety", "dyslexia", "memory", "adhd"], timed: ["anxiety", "memory", "dyslexia", "dcd"], video: ["hearing", "vision"],
+  lecture: ["adhd", "hearing", "slcn", "memory"], maths: ["dyscalculia", "mld", "memory"], homework: ["adhd", "memory"], independent: ["adhd", "mld", "memory"],
+  trip: ["autism", "anxiety", "physical", "medical"],
+};
+function activitiesOf(text) { return ACTS.filter(([, , rx]) => rx.test(text)).map(a => a[0]); }
+
+/* ---------- Reading a scheme of work ---------- */
+async function xlsxToLines(buf) {
+  let shared = [];
+  try {
+    const d = new DOMParser().parseFromString(await unzipEntry(buf, "xl/sharedStrings.xml"), "application/xml");
+    shared = [...d.getElementsByTagName("si")].map(si => [...si.getElementsByTagName("t")].map(t => t.textContent).join(""));
+  } catch (e) { }
+  const d = new DOMParser().parseFromString(await unzipEntry(buf, "xl/worksheets/sheet1.xml"), "application/xml");
+  return [...d.getElementsByTagName("row")].map(r => [...r.getElementsByTagName("c")].map(c => {
+    const t = c.getAttribute("t"), v = c.getElementsByTagName("v")[0];
+    if (t === "s") return shared[+(v && v.textContent)] || "";
+    if (t === "inlineStr") return [...c.getElementsByTagName("t")].map(x => x.textContent).join("");
+    return v ? v.textContent : "";
+  }).map(s => s.trim()).filter(Boolean).join(" — ")).filter(Boolean);
+}
+async function fileToLines(file, opts = {}) {
+  const buf = await file.arrayBuffer();
+  if (/\.pdf$/i.test(file.name) || file.type === "application/pdf") return cleanPages(await pdfToPages(buf));
+  if (/\.docx$/i.test(file.name)) return docxToLines(buf, opts.splitCells !== false);
+  if (/\.xlsx$/i.test(file.name)) return xlsxToLines(buf);
+  if (/\.(doc|xls|ppt|pptx)$/i.test(file.name)) throw new Error("old-format");
+  if (/^image\//.test(file.type)) {
+    upStatus("Reading the words in the image on this device…");
+    const bmp = await createImageBitmap(file), scale = Math.min(3, Math.max(1, 1800 / bmp.width));
+    const c = document.createElement("canvas"); c.width = bmp.width * scale; c.height = bmp.height * scale; c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+    return ocrCanvas(c);
+  }
+  return new TextDecoder().decode(buf).split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+}
+function fileError(err) {
+  const m = String(err && err.message || err);
+  return m === "old-format" ? "This is an older Office format. Save it as .docx, .xlsx or PDF and upload that."
+    : m === "ocr-unavailable" ? "This file is scanned, and reading scanned pages needs the planner's text-recognition files, which aren't available here. Use the website version, or paste the text."
+    : /password/i.test(m) ? "This PDF is password-protected. Save an unprotected copy and upload that."
+    : "The planner couldn't read this file. Try a PDF, .docx or .xlsx version, or paste the text.";
+}
+const shortTitle = (t, n = 70) => { t = t.replace(/\s+—\s+.*$/, "").replace(/[.;:?!](\s.*)?$/, m => m[0] === "?" || m[0] === "!" ? m[0] : "").trim() || t; return t.length > n ? t.slice(0, n - 1) + "…" : t; };
+function parseSow(text) {
+  const raw = String(text || "");
+  const lines = raw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const lessons = []; let unit = "", cur = null;
+  const lessonRx = /^(?:lesson|les|session|week|wk|l)\s*(\d{1,2})\b\s*[:.\-–—)]?\s*(.*)$/i, rowRx = /^(\d{1,2})\s*(?:—|[:.)])\s*(.*)$/;
+  lines.forEach(line => {
+    if (/^(unit|topic|module|half[- ]?term|scheme of work)\b/i.test(line) && line.length < 90 && !lessonRx.test(line)) { unit = line.replace(/^(unit|topic|module|half[- ]?term|scheme of work)\s*\d*\s*[:.\-–—]?\s*/i, "").trim() || line; return; }
+    const m = line.match(lessonRx) || line.match(rowRx);
+    if (m) { cur = { id: uid(), unit, n: +m[1], title: shortTitle(m[2]) || "Lesson " + m[1], text: m[2] }; lessons.push(cur); return; }
+    if (cur) cur.text += (cur.text ? " " : "") + line;
+  });
+  if (lessons.length) return lessons.map((l, i) => ({ ...l, title: `Lesson ${l.n || i + 1}: ${l.title.replace(/^Lesson \d+:?\s*/i, "")}` }));
+  const blocks = raw.split(/\n\s*\n/).map(b => b.trim()).filter(b => b.length > 15);
+  const items = blocks.length >= 3 ? blocks : lines.filter(l => l.length >= 15 && !/^(lesson|week|objectives?|learning|activities|resources|assessment|outcomes?)\b[^\d]{0,40}$/i.test(l));
+  return items.map((b, i) => ({ id: uid(), unit, n: i + 1, title: `Lesson ${i + 1}: ${shortTitle(b.split("\n")[0])}`, text: b.replace(/\s*\n\s*/g, " ") }));
+}
+
+/* ---------- Pupils from documents ---------- */
+const PS = { slotMins: 50, weeks: 6, days: [true, true, true, true, true] };
+function activeDays() { return [0, 1, 2, 3, 4]; }
+function findInitials(lines) {
+  for (const l of lines.slice(0, 120)) {
+    if (/school|parent|carer|officer|co-?ordinator|worker|setting|author|contact|teacher/i.test(l)) continue;
+    // Labels are matched in any case; the name itself must start with a capital letter.
+    const lab = l.match(/^(?:(?:child|young person|pupil|learner|student)['’]?s?\s+)?(?:(?:preferred|first|full|legal)\s+)?name(?:\s+of\s+(?:the\s+)?(?:child|young person|pupil))?\s*[:\-–—]?\s+/i);
+    const m = lab && l.slice(lab[0].length).match(/^()([A-Z][a-zA-Z'’-]+)(?:\s+([A-Z][a-zA-Z'’-]+))?/);
+    if (m && !/^(of|and|the|is|section)$/i.test(m[2])) {
+      const last = m[3] && !/^(date|dob|d\.o\.b|age|year|born|upn)$/i.test(m[3]) ? m[3] : "";
+      return (m[2][0] + (last ? last[0] : "")).toUpperCase();
+    }
+  }
+  return "";
+}
+function detectNeeds(text) { return NEEDS.filter(n => n.rx.test(text)).map(n => n.id); }
+function newPupil(fields) {
+  const label = fields.label || nextLabel();
+  return Object.assign({ id: uid(), label, status: "support", needs: [], notes: "", f: "", e: "", b: "", off: [], add: [], source: "" }, fields, { label });
+}
+function nextLabel() { let i = S.pupils.length + 1; while (S.pupils.some(p => p.label === "Pupil " + i)) i++; return "Pupil " + i; }
+function uniqueLabel(l) { let x = l, i = 2; while (S.pupils.some(p => p.label === x)) x = l + i++; return x; }
+async function importPupilFile(file, kind) {
+  const lines = await fileToLines(file);
+  const ex = extractEhcp(lines), text = lines.join("\n");
+  const initials = findInitials(lines);
+  const isEhcp = kind === "ehcp" && (ex.sec.F || ex.sec.B);
+  const p = newPupil({
+    label: initials ? uniqueLabel(initials) : "", status: kind === "ehcp" ? "ehcp" : "support",
+    f: isEhcp ? (ex.sec.F || "") : "", e: isEhcp ? (ex.sec.E || "") : "", b: isEhcp ? (ex.sec.B || "") : "",
+    notes: isEhcp ? "" : text.slice(0, 6000), source: (kind === "ehcp" ? "EHCP" : "Pupil information") + (isEhcp || kind !== "ehcp" ? "" : " (sections not found, all text kept)"),
+  });
+  if (kind === "ehcp" && !isEhcp) p.notes = text.slice(0, 6000);
+  p.needs = detectNeeds([p.b, p.f, p.notes].join("\n"));
+  S.pupils.push(p);
+  return p;
+}
+function parseRegister(text) {
+  return String(text || "").split(/\r?\n/).map(s => s.trim()).filter(Boolean).map(line => {
+    const cells = line.split(/\t|,|;| — | - /).map(s => s.trim()).filter(Boolean);
+    // A line starts with initials or a code ("CD", "OP EHCP", "Y8-04"), never a need abbreviation like "ADHD".
+    const mm = (cells[0] || "").match(/^([A-Za-z]{1,3}\d{0,3}|[A-Za-z0-9]{1,4}-\d{1,3})(?:\s+(.*))?$/);
+    let label = "";
+    if (mm && !/^(adhd|add|asd|asc|dld|dcd|semh|mld|sld|hi|vi|msi|eal|ehcp|sen|ot)$/i.test(mm[1])) { label = mm[1]; if (mm[2]) cells[0] = mm[2]; else cells.shift(); }
+    const notes = cells.join(", ");
+    const p = newPupil({ label: label ? uniqueLabel(label.toUpperCase()) : "", status: /\behcp\b|\behc plan\b/i.test(line) ? "ehcp" : "support", notes, source: "SEN register" });
+    p.needs = detectNeeds(notes); S.pupils.push(p); return p;
+  });
+}
+
+/* ---------- Working out adjustments ---------- */
+function pupilText(p) { return [p.notes, p.b, p.f].filter(Boolean).join("\n"); }
+function fItems(p) { return p.f ? parseSectionF(p.f, PS) : []; }
+function pupilAdjustments(p) {
+  const text = pupilText(p), out = new Map();
+  ADJ.forEach(a => { if (a.rx.test(text)) out.set(a.id, "stated"); });
+  if (S.useSuggestions) p.needs.forEach(n => (NEED[n]?.sug || []).forEach(id => { if (!out.has(id)) out.set(id, "suggested"); }));
+  p.add.forEach(id => { if (!out.has(id)) out.set(id, "added"); });
+  p.off.forEach(id => out.delete(id));
+  return out;
+}
+// A Section F line only counts as provision if it says what will be done, not just what the need is.
+const PROVISION_WORDS = /\b(support\w*|provid\w*|access|use[ds]?|using|given|giv\w+|deliver\w*|adults?|programme|sessions?|interventions?|opportunit\w+|help\w*|resources?|check\w*|teach\w*|equipment|plan\w*|allow\w*|offer\w*|encourag\w*)\b/i;
+function pupilExtras(p) {
+  const items = fItems(p);
+  return {
+    interventions: items.filter(i => i.kind === "session").map(i => i.text),
+    other: items.filter(i => i.kind === "approach" && PROVISION_WORDS.test(i.text) && !ADJ.some(a => a.rx.test(i.text))).map(i => i.text),
+    outcomes: p.e ? splitLines(p.e).filter(l => l.length > 12) : [],
+  };
+}
+function analyse() {
+  const per = S.pupils.map(p => ({ p, adj: pupilAdjustments(p) }));
+  const flexWhole = Math.max(S.threshold, Math.ceil(S.classSize * 0.2));
+  const tiers = { whole: [], group: [], individual: {} };
+  S.pupils.forEach(p => { tiers.individual[p.id] = []; });
+  ADJ.forEach(a => {
+    const who = per.filter(x => x.adj.has(a.id)).map(x => ({ p: x.p, src: x.adj.get(a.id) }));
+    if (!who.length) return;
+    const n = who.length, item = { a, who };
+    if (a.scope === "universal" && n >= S.threshold) tiers.whole.push(item);
+    else if (a.scope === "flexible" && n >= flexWhole) tiers.whole.push(item);
+    else if (a.scope === "flexible" && n >= S.threshold) tiers.group.push(item);
+    else who.forEach(w => tiers.individual[w.p.id].push({ a, src: w.src, couldBeAll: a.scope !== "individual" }));
+  });
+  return { tiers, per, flexWhole };
+}
+const initialsList = who => who.map(w => w.p.label).join(", ");
+function needsSummary() {
+  const byArea = {}, byNeed = {};
+  S.pupils.forEach(p => {
+    new Set(p.needs.map(n => NEED[n].area)).forEach(a => { byArea[a] = (byArea[a] || 0) + 1; });
+    p.needs.forEach(n => { byNeed[n] = (byNeed[n] || 0) + 1; });
+  });
+  return { byArea, byNeed };
+}
+function lessonPlan(lesson, A) {
+  const acts = new Set(activitiesOf(lesson.text + " " + lesson.title));
+  const hits = a => a.acts.some(x => acts.has(x));
+  const barriers = [...acts].map(act => {
+    const who = S.pupils.filter(p => p.needs.some(n => (BARRIERS[act] || []).includes(n)));
+    return who.length ? { act, who: who.map(p => `${p.label} (${p.needs.filter(n => BARRIERS[act].includes(n)).map(n => NEED[n].label.split(" (")[0].toLowerCase()).join(", ")})`) } : null;
+  }).filter(Boolean);
+  const whole = A.tiers.whole.filter(x => hits(x.a));
+  const group = A.tiers.group.filter(x => !x.a.acts.length || hits(x.a));
+  const indiv = [];
+  S.pupils.forEach(p => A.tiers.individual[p.id].filter(x => hits(x.a)).forEach(x => indiv.push({ p, a: x.a })));
+  return { acts: [...acts], barriers, whole, group, indiv };
+}
+
+/* ---------- State ---------- */
+const KEY = "udl-class-v1";
+const EXAMPLE_SOW = `Unit: Forces and motion
+Lesson 1: What is a force? Teacher explanation of contact and non-contact forces with a short video clip. Pupils draw and label force diagrams.
+Lesson 2: Measuring forces. Practical in groups: use newton meters to measure the weight of objects and record results in a table.
+Lesson 3: Balanced and unbalanced forces. Read a text about tug of war and skydiving, answer comprehension questions, then class discussion.
+Lesson 4: Speed. Calculate speed = distance ÷ time using worked examples, then independent practice questions and a distance-time graph.
+Lesson 5: Investigating friction. Plan and carry out an investigation in groups, then write up the method and conclusion.
+Lesson 6: End of unit assessment. Timed written test, then each group presents one finding to the class.`;
+function examplePupils() {
+  const mk = (label, status, text, f) => { const p = newPupil({ label, status, notes: f ? "" : text, f: f ? text : "", b: f ? "Autism and speech, language and communication needs." : "", source: "Example" }); p.needs = detectNeeds(pupilText(p)); return p; };
+  return [
+    mk("AB", "ehcp", "Visual supports and a visual timetable.\nPre-warning of any changes to routine.\nInstructions given in short chunks with processing time.\nStructured group work with a defined role.\nSpeech and language therapy 6 x 30 minutes per term.", true),
+    mk("CD", "support", "Dyslexia. Printed copies of slides, no copying from the board. Word banks and writing frames. Extra time in tests. Laptop for extended writing."),
+    mk("EF", "support", "ADHD. Movement breaks, a task checklist, seated away from the door, chunked instructions."),
+    mk("GH", "support", "Moderate hearing loss; wears hearing aids and uses a radio aid. Teacher to face the class when speaking. Subtitles on all videos. Seated near the front."),
+    mk("IJ", "support", "Anxiety. Not to be cold-called or asked to read aloud; warning before being asked to speak. Time-out card. Check-in with key adult."),
+    mk("KL", "support", "Dyspraxia. Writing slope and pencil grip. Reduced written output and alternative ways to record, such as diagrams."),
+  ];
+}
+function blank() { return { v: 1, example: false, tab: "sow", subject: "", year: "", className: "", classSize: 30, threshold: 2, useSuggestions: true, sowText: "", lessons: [], pupils: [], sel: null }; }
+let S;
+try { S = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { S = null; }
+if (!S || S.v !== 1) {
+  S = Object.assign(blank(), { example: true, subject: "Science", year: "Year 8", className: "8X2", sowText: EXAMPLE_SOW });
+  S.lessons = parseSow(EXAMPLE_SOW); S.pupils = examplePupils();
+}
+S = Object.assign(blank(), S);
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } }
+function uid() { return Math.random().toString(36).slice(2, 9); }
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const framed = (() => { try { return window.self !== window.top; } catch (e) { return true; } })();
+const classTitle = () => [S.subject, S.className || S.year].filter(Boolean).join(" · ") || "Your class";
+
+/* ---------- Rendering ---------- */
+const TABS = [["sow", "Scheme of work"], ["pupils", "SEND information"], ["class", "Class adjustments"], ["lessons", "Lesson plans"], ["export", "Download and track"]];
+let confirmClear = false, clearedMsg = false, busy = false, statusMsg = "";
+function render() {
+  document.getElementById("tabs").innerHTML = TABS.map(([id, label], i) => `<button role="tab" data-tab="${id}" aria-selected="${S.tab === id}"><span class="n">${i + 1}</span>${label}</button>`).join("");
+  const banner = S.example ? `<div class="banner no-print"><p><b>Showing an example.</b> A made-up Year 8 science class with six pupils, so you can see how the planner works.</p><button class="btn ghost" data-act="clear-example">Start my own class</button></div>` : "";
+  const view = ({ sow: vSow, pupils: vPupils, class: vClass, lessons: vLessons, export: vExport })[S.tab]();
+  document.getElementById("main").innerHTML = clearHtml() + banner + view;
+}
+function clearHtml() {
+  if (confirmClear) return `<section class="panel confirm no-print" role="alertdialog" aria-labelledby="clear-h"><h2 id="clear-h">Clear everything?</h2>
+    <p>This deletes the scheme of work, every pupil, all EHCP information and the plans from this browser. It can't be undone.</p>
+    <p class="small muted">Download the Word plan and Excel tracker first if you want to keep them.</p>
+    <div class="row"><button class="btn danger" data-act="do-clear" id="do-clear">Yes, clear everything</button><button class="btn quiet" data-act="cancel-clear">Cancel</button></div></section>`;
+  if (clearedMsg) return `<div class="banner no-print" role="status"><p><b>Cleared.</b> No pupil information is stored in this browser now.</p></div>`;
+  return "";
+}
+const prChip = id => `<span class="pr pr-${id}">${PRINCIPLES[id].name}</span>`;
+const srcChip = src => `<span class="chip src-${src}">${{ stated: "In their plan", suggested: "Suggested from need", added: "Added by you" }[src]}</span>`;
+const dropZone = (id, label, accept, multiple) => `<div class="drop" data-drop="${id}"><label class="btn" for="${id}">${label}</label><input type="file" id="${id}" accept="${accept}" ${multiple ? "multiple" : ""} hidden><span class="small muted">or drag ${multiple ? "files" : "a file"} here</span></div>`;
+const statusLine = () => `<p id="up-status" class="small" role="status">${esc(statusMsg)}</p>`;
+
+function vSow() {
+  const items = S.lessons.map(l => `<div class="sow-item" data-lid="${l.id}"><div class="stack"><input type="text" id="lt-${l.id}" data-lf="title" value="${esc(l.title)}" aria-label="Lesson title"><textarea id="lx-${l.id}" rows="2" data-lf="text" aria-label="Lesson details">${esc(l.text)}</textarea><div class="row">${activitiesOf(l.text + " " + l.title).map(a => `<span class="chip">${ACT_LABEL[a]}</span>`).join("") || '<span class="small muted">No activities recognised. Add words like "practical", "write", "discussion" or "test".</span>'}</div></div><button class="btn quiet small" data-act="del-lesson">Remove</button></div>`).join("");
+  return `<section class="panel start">
+    <h2>Start here: your class and scheme of work</h2>
+    <div class="grid4">
+      <label class="f"><span>Subject</span><input type="text" id="subject" data-set="subject" value="${esc(S.subject)}" placeholder="e.g. Science"></label>
+      <label class="f"><span>Year group</span><input type="text" id="year" data-set="year" value="${esc(S.year)}" placeholder="e.g. Year 8"></label>
+      <label class="f"><span>Class</span><input type="text" id="className" data-set="className" value="${esc(S.className)}" placeholder="e.g. 8X2"></label>
+      <label class="f"><span>Pupils in the class</span><input type="number" id="classSize" min="1" max="60" data-set="classSize" data-num value="${S.classSize}"></label>
+    </div>
+    <p class="small muted">Upload the scheme of work for one unit or half term (Word, Excel, PDF or text), or paste it below. The planner splits it into lessons and spots activities such as extended writing, group work, practicals and tests.</p>
+    ${dropZone("sow-file", "Upload the scheme of work", ".pdf,.docx,.xlsx,.txt,.doc,.xls", false)}
+    ${statusLine()}
+    <label class="f"><span>Scheme of work</span><textarea id="sowText" rows="8" data-set="sowText" placeholder="Lesson 1: …">${esc(S.sowText)}</textarea></label>
+    <div class="row"><button class="btn" data-act="parse-sow">Split into lessons</button><span class="small muted">Replaces the lesson list below.</span></div>
+  </section>
+  <section class="panel"><div class="row"><h2>Lessons</h2><span class="chip">${S.lessons.length}</span><span class="sp"></span><button class="btn ghost small" data-act="add-lesson">Add a lesson</button></div>
+    ${items || '<p class="muted">No lessons yet. Upload or paste a scheme of work above.</p>'}
+    ${S.lessons.length ? `<div class="row"><span class="sp"></span><button class="btn" data-tab="pupils">Next: SEND information</button></div>` : ""}
+  </section>`;
+}
+
+function vPupils() {
+  const rows = S.pupils.map(p => {
+    const adj = pupilAdjustments(p), open = S.sel === p.id;
+    return `<button class="pupil-row" data-pupil="${p.id}" aria-expanded="${open}"><span class="lbl">${esc(p.label)}</span><span class="small">${p.status === "ehcp" ? "EHCP" : "SEN support"}</span><span class="needs row">${p.needs.map(n => `<span class="chip need">${esc(NEED[n].label)}</span>`).join("") || '<span class="small muted">No needs recorded yet</span>'}</span><span class="small muted">${adj.size} adjustments</span></button>${open ? pupilEditor(p) : ""}`;
+  }).join("");
+  return `<section class="panel start">
+    <h2>Add your class's SEND information</h2>
+    <p class="small muted">Upload EHCPs and pupil passports or SEN support plans, several at once if you like. Each file becomes a pupil, labelled with initials. The planner reads Sections B, E and F of an EHCP, and all the text of other documents.</p>
+    <div class="grid2">
+      <div class="stack"><h3>EHCPs</h3>${dropZone("ehcp-files", "Upload EHCPs", ".pdf,.docx,.txt,.doc,image/*", true)}</div>
+      <div class="stack"><h3>Pupil passports or SEN support plans</h3>${dropZone("passport-files", "Upload documents", ".pdf,.docx,.txt,.doc,image/*", true)}</div>
+    </div>
+    ${statusLine()}
+    <details><summary>Or paste from your SEN register</summary><div class="stack" style="padding-top:10px">
+      <p class="small muted">One pupil per line: initials, then needs and strategies. For example: <i>CD, dyslexia, extra time, printed slides</i>. Add "EHCP" to a line if the pupil has one.</p>
+      <textarea id="register" rows="5" placeholder="CD, dyslexia, extra time, printed slides"></textarea>
+      <div class="row"><button class="btn" data-act="paste-register">Add these pupils</button></div></div></details>
+  </section>
+  <section class="panel"><div class="row"><h2>Pupils with SEND</h2><span class="chip">${S.pupils.length}</span><span class="sp"></span><button class="btn ghost small" data-act="add-pupil">Add a pupil by hand</button></div>
+    <p class="small muted">Tap a pupil to check their needs and adjustments. Use initials or a code, never full names.</p>
+    <div class="pupils">${rows || '<p class="muted">No pupils yet.</p>'}</div>
+    ${S.pupils.length ? `<div class="row"><span class="sp"></span><button class="btn" data-tab="class">Next: class adjustments</button></div>` : ""}
+  </section>`;
+}
+function pupilEditor(p) {
+  const adj = pupilAdjustments(p), ex = pupilExtras(p);
+  const needBoxes = Object.keys(AREAS).map(area => `<fieldset><legend>${AREAS[area]}</legend>${NEEDS.filter(n => n.area === area).map(n => `<label><input type="checkbox" id="nd-${p.id}-${n.id}" data-need="${n.id}" ${p.needs.includes(n.id) ? "checked" : ""}>${esc(n.label)}</label>`).join("")}</fieldset>`).join("");
+  const adjList = [...adj.entries()].map(([id, src]) => { const a = ADJ_BY[id]; return `<li class="row" style="gap:6px 8px">${prChip(a.p)} <span>${esc(a.label)}</span> ${srcChip(src)} <button class="btn quiet small" data-act="adj-off" data-adj="${id}" aria-label="Remove ${esc(a.label)}">Remove</button></li>`; }).join("");
+  const addOpts = ADJ.filter(a => !adj.has(a.id)).map(a => `<option value="${a.id}">${esc(a.label)}</option>`).join("");
+  return `<div class="editor" data-pid="${p.id}">
+    <div class="grid4">
+      <label class="f"><span>Initials or code</span><input type="text" id="pl-${p.id}" data-pf="label" value="${esc(p.label)}"></label>
+      <label class="f"><span>SEND status</span><select id="ps-${p.id}" data-pf="status"><option value="support" ${p.status === "support" ? "selected" : ""}>SEN support</option><option value="ehcp" ${p.status === "ehcp" ? "selected" : ""}>EHCP</option></select></label>
+    </div>
+    ${p.source ? `<p class="small muted">From: ${esc(p.source)}</p>` : ""}
+    <div class="stack"><h4>Needs</h4><div class="needs-grid">${needBoxes}</div></div>
+    <div class="stack"><h4>Adjustments</h4><ul class="plain" style="list-style:none;padding:0">${adjList || '<li class="muted">None yet.</li>'}</ul>
+      <div class="row"><select id="add-${p.id}" aria-label="Add an adjustment"><option value="">Add an adjustment…</option>${addOpts}</select><button class="btn quiet small" data-act="adj-add">Add</button></div>
+      ${p.off.length ? `<p class="small muted">You removed: ${p.off.map(id => esc(ADJ_BY[id].label)).join(", ")}. <button class="btn quiet small" data-act="adj-restore">Restore</button></p>` : ""}</div>
+    ${ex.other.length ? `<div class="stack"><h4>Other provision in Section F</h4><ul class="plain">${ex.other.map(t => `<li>${esc(t)}</li>`).join("")}</ul><p class="small muted">These lines are kept as individual adjustments in the plan.</p></div>` : ""}
+    ${ex.interventions.length ? `<div class="stack"><h4>Interventions and therapy (outside lessons)</h4><ul class="plain">${ex.interventions.map(t => `<li>${esc(t)}</li>`).join("")}</ul></div>` : ""}
+    ${ex.outcomes.length ? `<div class="stack"><h4>EHCP outcomes</h4><ul class="plain">${ex.outcomes.map(t => `<li>${esc(t)}</li>`).join("")}</ul></div>` : ""}
+    <details><summary>Notes and document text</summary><div class="stack" style="padding-top:10px">
+      <label class="f"><span>Notes, pupil passport or strategies</span><textarea id="pn-${p.id}" rows="4" data-pf="notes">${esc(p.notes)}</textarea></label>
+      ${p.status === "ehcp" ? `<label class="f"><span>EHCP Section F</span><textarea id="pf-${p.id}" rows="4" data-pf="f">${esc(p.f)}</textarea></label><label class="f"><span>EHCP Section B</span><textarea id="pb-${p.id}" rows="3" data-pf="b">${esc(p.b)}</textarea></label><label class="f"><span>EHCP Section E</span><textarea id="pe-${p.id}" rows="3" data-pf="e">${esc(p.e)}</textarea></label>` : ""}
+      <div class="row"><button class="btn quiet small" data-act="redetect">Find needs again from this text</button></div></div></details>
+    <div class="row"><span class="sp"></span><button class="btn danger small" data-act="del-pupil">Remove this pupil</button></div>
+  </div>`;
+}
+
+function vClass() {
+  if (!S.pupils.length) return `<section class="panel"><h2>Class adjustments</h2><p class="muted">Add pupils on the SEND information tab first.</p></section>`;
+  const A = analyse(), N = needsSummary();
+  const byP = p => A.tiers.whole.filter(x => x.a.p === p);
+  const cols = Object.keys(PRINCIPLES).map(k => `<article class="principle" style="--c:var(--${k})"><h3>${PRINCIPLES[k].name}</h3><p class="small muted">${PRINCIPLES[k].why}</p>
+    ${byP(k).map(x => `<div class="adj"><b>${esc(x.a.label)}</b><span>${esc(x.a.cls || x.a.ind)}</span><span class="who">${x.who.length} pupil${x.who.length > 1 ? "s" : ""}: ${esc(initialsList(x.who))} · ${esc(x.a.g)}${x.a.acts.length ? " · in " + x.a.acts.map(a => ACT_LABEL[a].toLowerCase()).join(", ") : " · every lesson"}</span></div>`).join("") || '<p class="small muted">Nothing in this principle yet.</p>'}</article>`).join("");
+  const groups = A.tiers.group.map(x => `<tr><td>${prChip(x.a.p)} ${esc(x.a.label)}</td><td>${esc(initialsList(x.who))}</td><td>${esc(x.a.ind)}</td></tr>`).join("");
+  const indiv = S.pupils.map(p => {
+    const list = A.tiers.individual[p.id], ex = pupilExtras(p);
+    if (!list.length && !ex.other.length && !ex.interventions.length) return "";
+    return `<tr><td><b>${esc(p.label)}</b><div class="small muted">${p.status === "ehcp" ? "EHCP" : "SEN support"}</div></td><td class="small">${p.needs.map(n => esc(NEED[n].label)).join(", ")}</td><td><ul class="plain">${list.map(x => `<li>${esc(x.a.label)}: ${esc(x.a.ind)}${x.couldBeAll ? ' <span class="chip">Could be offered to all</span>' : ""}</li>`).join("")}${ex.other.map(t => `<li>From Section F: ${esc(t)}</li>`).join("")}</ul>${ex.interventions.length ? `<p class="small muted" style="margin-top:6px">Outside lessons: ${ex.interventions.map(esc).join("; ")}</p>` : ""}</td></tr>`;
+  }).join("");
+  const areaRows = Object.keys(AREAS).map(a => `<tr><td>${AREAS[a]}</td><td class="num">${N.byArea[a] || 0}</td><td class="small">${NEEDS.filter(n => n.area === a && N.byNeed[n.id]).map(n => `${esc(n.label)} (${N.byNeed[n.id]})`).join(", ")}</td></tr>`).join("");
+  return `<section class="panel"><h2>${esc(classTitle())}: what the class needs</h2>
+    <div class="stats">
+      <div class="stat"><b>${S.pupils.length}</b><span>pupils with SEND, of ${S.classSize}</span></div>
+      <div class="stat"><b>${S.pupils.filter(p => p.status === "ehcp").length}</b><span>with an EHCP</span></div>
+      <div class="stat"><b>${A.tiers.whole.length}</b><span>whole-class adjustments</span></div>
+      <div class="stat"><b>${A.tiers.group.length}</b><span>group adjustments</span></div>
+      <div class="stat"><b>${Object.values(A.tiers.individual).reduce((t, l) => t + l.length, 0)}</b><span>individual adjustments</span></div>
+    </div>
+    <div class="tbl-wrap"><table><thead><tr><th>Broad area of need</th><th>Pupils</th><th>Needs</th></tr></thead><tbody>${areaRows}</tbody></table></div>
+    <details class="no-print"><summary>How adjustments are sorted</summary><div class="stack small" style="padding-top:10px">
+      <p>Adjustments that help everyone, like chunked instructions or captions, become whole-class practice once at least this many pupils need them:</p>
+      <div class="row"><label class="f" style="max-width:160px"><span>Pupils needed</span><input type="number" id="threshold" min="1" max="10" data-set="threshold" data-num value="${S.threshold}"></label>
+        <label class="row" style="gap:8px"><input type="checkbox" id="useSuggestions" data-set="useSuggestions" ${S.useSuggestions ? "checked" : ""}> Include adjustments suggested from each pupil's needs</label></div>
+      <p>Adjustments like group roles or pre-teaching become whole-class when ${A.flexWhole} or more pupils need them (a fifth of the class), and small-group adjustments below that. Personal items such as a radio aid, laptop or extra time stay individual. Suggestions from needs are marked so you can check them with your SENCo.</p></div></details>
+  </section>
+  <section class="stack"><h2>1. Whole class: universal design</h2><p class="small muted">Plan these into every lesson for everyone. They remove barriers for the pupils who need them and help the rest of the class too.</p><div class="principles">${cols}</div></section>
+  <section class="panel"><h2>2. Small groups</h2><p class="small muted">Needed by a few pupils. Plan them for a group, not the whole class.</p>
+    ${groups ? `<div class="tbl-wrap"><table><thead><tr><th>Adjustment</th><th>Pupils</th><th>How</th></tr></thead><tbody>${groups}</tbody></table></div>` : '<p class="muted">None at the moment.</p>'}</section>
+  <section class="panel"><h2>3. Individual reasonable adjustments</h2><p class="small muted">Specific to one pupil, on top of the whole-class practice.</p>
+    ${indiv ? `<div class="tbl-wrap"><table><thead><tr><th>Pupil</th><th>Needs</th><th>Adjustments</th></tr></thead><tbody>${indiv}</tbody></table></div>` : '<p class="muted">None at the moment.</p>'}</section>`;
+}
+
+function vLessons() {
+  if (!S.lessons.length) return `<section class="panel"><h2>Lesson plans</h2><p class="muted">Add your scheme of work on the first tab.</p></section>`;
+  const A = analyse();
+  const always = A.tiers.whole.filter(x => !x.a.acts.length);
+  const alwaysInd = S.pupils.map(p => ({ p, list: A.tiers.individual[p.id].filter(x => !x.a.acts.length) })).filter(x => x.list.length);
+  const cards = S.lessons.map(l => {
+    const L = lessonPlan(l, A);
+    return `<article class="lesson"><header><h3>${esc(l.title)}</h3>${l.unit ? `<span class="small muted">${esc(l.unit)}</span>` : ""}</header>
+      <p class="small">${esc(l.text)}</p>
+      <div class="row">${L.acts.map(a => `<span class="chip">${ACT_LABEL[a]}</span>`).join("")}</div>
+      ${L.barriers.length ? `<div class="barrier"><h4>Barriers to plan for</h4>${L.barriers.map(b => `<div class="small"><b>${ACT_LABEL[b.act]}:</b> ${esc(b.who.join("; "))}</div>`).join("")}</div>` : ""}
+      <div class="cols">
+        <div class="stack"><h4>Whole class</h4><ul class="plain">${L.whole.map(x => `<li>${prChip(x.a.p)} ${esc(x.a.cls || x.a.ind)}</li>`).join("") || '<li class="muted">Only the every-lesson adjustments.</li>'}</ul></div>
+        <div class="stack"><h4>Groups and individuals</h4><ul class="plain">${L.group.map(x => `<li><b>${esc(initialsList(x.who))}:</b> ${esc(x.a.ind)}</li>`).join("")}${L.indiv.map(x => `<li><b>${esc(x.p.label)}:</b> ${esc(x.a.ind)}</li>`).join("") || (L.group.length ? "" : '<li class="muted">Only the every-lesson adjustments.</li>')}</ul></div>
+      </div></article>`;
+  }).join("");
+  return `<div class="row no-print"><span class="sp"></span>${framed ? "" : `<button class="btn quiet" data-act="print">Print</button>`}<button class="btn" data-tab="export">Download</button></div>
+  <section class="panel"><h2>${esc(classTitle())}: every lesson</h2>
+    <div class="grid2">
+      <div class="stack"><h4>Whole class, every lesson</h4><ul class="plain">${always.map(x => `<li>${prChip(x.a.p)} ${esc(x.a.cls)}</li>`).join("") || '<li class="muted">None.</li>'}</ul></div>
+      <div class="stack"><h4>Individuals, every lesson</h4><ul class="plain">${alwaysInd.map(x => `<li><b>${esc(x.p.label)}:</b> ${x.list.map(y => esc(y.a.label)).join(", ")}</li>`).join("") || '<li class="muted">None.</li>'}</ul></div>
+    </div></section>
+  ${cards}`;
+}
+
+function vExport() {
+  return `<section class="panel start"><h2>Download your plan and tracker</h2>
+    <div class="grid2">
+      <div class="stack"><h3>Adapted scheme of work (Word)</h3><p class="small">The whole-class adjustments by UDL principle, the group and individual adjustments, then every lesson with its barriers and adjustments. Edit it like any Word document.</p><div><button class="btn" data-act="dl-docx">Download the Word plan</button></div></div>
+      <div class="stack"><h3>Progress tracker (Excel)</h3><p class="small">Three sheets: each pupil's adjustments with columns to record whether they're in place and their impact; a lesson-by-lesson log; and a progress grid for each pupil across the lessons.</p><div><button class="btn" data-act="dl-xlsx">Download the Excel tracker</button></div></div>
+    </div>
+    <p class="small" id="dl-msg" role="status"></p>
+  </section>
+  <section class="panel"><h2>Using the tracker: assess, plan, do, review</h2>
+    <ul class="plain small">
+      <li><b>Assess:</b> the needs and adjustments come from each pupil's EHCP or support plan. Check anything marked "Suggested from need" with your SENCo.</li>
+      <li><b>Plan:</b> the Word plan shows where each adjustment fits in the unit.</li>
+      <li><b>Do:</b> record on the Lesson log sheet whether each adjustment happened.</li>
+      <li><b>Review:</b> at the end of the half term, fill in "Impact" on the Adjustments sheet and share it at the pupil's review. Keep what works and change what doesn't.</li>
+    </ul>
+    <p class="small muted">Under the Equality Act 2010, schools must make reasonable adjustments for disabled pupils and plan ahead for them. Universal design is how a class makes many of those adjustments part of everyday teaching.</p>
+  </section>`;
+}
+
+/* ---------- Word and Excel files ---------- */
+const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(b) { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC_T[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function zip(files) {
+  const enc = new TextEncoder(), parts = [], central = []; let off = 0;
+  files.forEach(f => {
+    const name = enc.encode(f.name), data = enc.encode(f.data), crc = crc32(data);
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(12, 0x21, true);
+    lh.setUint32(14, crc, true); lh.setUint32(18, data.length, true); lh.setUint32(22, data.length, true); lh.setUint16(26, name.length, true);
+    parts.push(new Uint8Array(lh.buffer), name, data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(14, 0x21, true);
+    ch.setUint32(16, crc, true); ch.setUint32(20, data.length, true); ch.setUint32(24, data.length, true); ch.setUint16(28, name.length, true); ch.setUint32(42, off, true);
+    central.push(new Uint8Array(ch.buffer), name);
+    off += 30 + name.length + data.length;
+  });
+  const size = central.reduce((t, p) => t + p.length, 0), end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true); end.setUint32(12, size, true); end.setUint32(16, off, true);
+  return new Blob([...parts, ...central, new Uint8Array(end.buffer)]);
+}
+const x = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "");
+function buildDocx() {
+  const A = analyse(), body = [];
+  const run = (t, b) => `<w:r>${b ? "<w:rPr><w:b/></w:rPr>" : ""}<w:t xml:space="preserve">${x(t)}</w:t></w:r>`;
+  const para = (t, style, b) => `<w:p>${style ? `<w:pPr><w:pStyle w:val="${style}"/></w:pPr>` : ""}${Array.isArray(t) ? t.map(r => run(r[0], r[1])).join("") : run(t, b)}</w:p>`;
+  const bullet = t => para(Array.isArray(t) ? t : [[t]], "ListBullet");
+  const table = (head, rows, widths) => {
+    const cell = (t, w, hd) => `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/>${hd ? '<w:shd w:val="clear" w:color="auto" w:fill="DFE7F4"/>' : ""}</w:tcPr>${String(t).split("\n").map(line => para(line, null, hd)).join("")}</w:tc>`;
+    return `<w:tbl><w:tblPr><w:tblStyle w:val="TableGrid"/><w:tblW w:w="0" w:type="auto"/></w:tblPr><w:tblGrid>${widths.map(w => `<w:gridCol w:w="${w}"/>`).join("")}</w:tblGrid>
+      <w:tr><w:trPr><w:tblHeader/></w:trPr>${head.map((h, i) => cell(h, widths[i], true)).join("")}</w:tr>${rows.map(r => `<w:tr>${r.map((c, i) => cell(c, widths[i])).join("")}</w:tr>`).join("")}</w:tbl>${para("")}`;
+  };
+  body.push(para(`${classTitle()}: adapted scheme of work`, "Title"));
+  body.push(para([[`${[S.year, S.subject].filter(Boolean).join(" ")}. ${S.pupils.length} pupils with SEND in a class of ${S.classSize}, ${S.pupils.filter(p => p.status === "ehcp").length} with an EHCP. Made ${new Date().toLocaleDateString("en-GB")}.`]]));
+  body.push(para("Adjustments are sorted into three tiers using Universal Design for Learning (UDL): whole-class practice first, then small groups, then individual reasonable adjustments. Check any adjustment marked as suggested from need with the SENCo."));
+  body.push(para("1. Whole class: universal design", "Heading1"));
+  Object.keys(PRINCIPLES).forEach(k => {
+    const list = A.tiers.whole.filter(i => i.a.p === k); if (!list.length) return;
+    body.push(para(PRINCIPLES[k].name, "Heading2"));
+    list.forEach(i => body.push(bullet([[i.a.label + ": ", true], [`${i.a.cls} (${i.who.length} pupils: ${initialsList(i.who)}; ${i.a.acts.length ? "in " + i.a.acts.map(a => ACT_LABEL[a].toLowerCase()).join(", ") : "every lesson"})`]])));
+  });
+  body.push(para("2. Small groups", "Heading1"));
+  if (A.tiers.group.length) body.push(table(["Adjustment", "Pupils", "How"], A.tiers.group.map(i => [i.a.label, initialsList(i.who), i.a.ind]), [2600, 1800, 5000]));
+  else body.push(para("None at the moment."));
+  body.push(para("3. Individual reasonable adjustments", "Heading1"));
+  const indRows = S.pupils.map(p => {
+    const ex = pupilExtras(p), list = A.tiers.individual[p.id];
+    const adj = list.map(i => `${i.a.label}: ${i.a.ind}`).concat(ex.other.map(t => "From Section F: " + t));
+    return [`${p.label}\n${p.status === "ehcp" ? "EHCP" : "SEN support"}`, p.needs.map(n => NEED[n].label).join(", "), adj.join("\n") || "Whole-class practice only", ex.interventions.join("\n")];
+  });
+  body.push(table(["Pupil", "Needs", "Adjustments", "Outside lessons"], indRows, [1200, 2200, 4200, 2000]));
+  body.push(para("Lesson by lesson", "Heading1"));
+  S.lessons.forEach(l => {
+    const L = lessonPlan(l, A);
+    body.push(para(l.title, "Heading2"));
+    body.push(para(l.text));
+    if (L.acts.length) body.push(para([["Activities: ", true], [L.acts.map(a => ACT_LABEL[a]).join(", ")]]));
+    if (L.barriers.length) { body.push(para("Barriers to plan for", "Heading3")); L.barriers.forEach(b => body.push(bullet([[ACT_LABEL[b.act] + ": ", true], [b.who.join("; ")]]))); }
+    if (L.whole.length) { body.push(para("Whole class", "Heading3")); L.whole.forEach(i => body.push(bullet(i.a.cls))); }
+    if (L.group.length || L.indiv.length) { body.push(para("Groups and individuals", "Heading3")); L.group.forEach(i => body.push(bullet([[initialsList(i.who) + ": ", true], [i.a.ind]]))); L.indiv.forEach(i => body.push(bullet([[i.p.label + ": ", true], [i.a.ind]]))); }
+  });
+  const doc = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${body.join("")}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1000" w:right="1000" w:bottom="1000" w:left="1000" w:header="600" w:footer="600" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/><w:sz w:val="22"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="80" w:line="276" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>
+<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>
+<w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="160"/></w:pPr><w:rPr><w:b/><w:color w:val="2B4878"/><w:sz w:val="40"/></w:rPr></w:style>
+<w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:pPr><w:keepNext/><w:spacing w:before="320" w:after="120"/><w:outlineLvl w:val="0"/></w:pPr><w:rPr><w:b/><w:color w:val="2B4878"/><w:sz w:val="32"/></w:rPr></w:style>
+<w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:pPr><w:keepNext/><w:spacing w:before="240" w:after="80"/><w:outlineLvl w:val="1"/></w:pPr><w:rPr><w:b/><w:sz w:val="26"/></w:rPr></w:style>
+<w:style w:type="paragraph" w:styleId="Heading3"><w:name w:val="heading 3"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:pPr><w:keepNext/><w:spacing w:before="160" w:after="40"/><w:outlineLvl w:val="2"/></w:pPr><w:rPr><w:b/><w:color w:val="566174"/><w:sz w:val="22"/></w:rPr></w:style>
+<w:style w:type="paragraph" w:styleId="ListBullet"><w:name w:val="List Bullet"/><w:basedOn w:val="Normal"/><w:pPr><w:ind w:left="360" w:hanging="240"/></w:pPr></w:style>
+<w:style w:type="table" w:styleId="TableGrid"><w:name w:val="Table Grid"/><w:tblPr><w:tblBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="B7C0CF"/><w:left w:val="single" w:sz="4" w:space="0" w:color="B7C0CF"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="B7C0CF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="B7C0CF"/><w:insideH w:val="single" w:sz="4" w:space="0" w:color="B7C0CF"/><w:insideV w:val="single" w:sz="4" w:space="0" w:color="B7C0CF"/></w:tblBorders><w:tblCellMar><w:top w:w="60" w:type="dxa"/><w:left w:w="100" w:type="dxa"/><w:bottom w:w="60" w:type="dxa"/><w:right w:w="100" w:type="dxa"/></w:tblCellMar></w:tblPr></w:style>
+</w:styles>`;
+  // Bullets use a plain "•" prefix via the List Bullet style's indent, so no numbering part is needed.
+  const docBody = doc.replace(/<w:pStyle w:val="ListBullet"\/><\/w:pPr>/g, '<w:pStyle w:val="ListBullet"/></w:pPr><w:r><w:t xml:space="preserve">•  </w:t></w:r>');
+  return zip([
+    { name: "[Content_Types].xml", data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>` },
+    { name: "_rels/.rels", data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>` },
+    { name: "word/_rels/document.xml.rels", data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>` },
+    { name: "word/document.xml", data: docBody },
+    { name: "word/styles.xml", data: styles },
+  ]);
+}
+function buildXlsx() {
+  const A = analyse();
+  const col = i => { let s = ""; i++; while (i) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
+  const sheet = (rows, widths, lists) => {
+    const data = rows.map((r, ri) => `<row r="${ri + 1}">${r.map((c, ci) => c === "" || c == null ? "" : `<c r="${col(ci)}${ri + 1}" t="inlineStr"${ri === 0 ? ' s="1"' : ' s="2"'}><is><t xml:space="preserve">${x(c)}</t></is></c>`).join("")}</row>`).join("");
+    const dv = lists.length ? `<dataValidations count="${lists.length}">${lists.map(([c, opts]) => `<dataValidation type="list" allowBlank="1" showErrorMessage="0" sqref="${c}2:${c}1000"><formula1>"${opts}"</formula1></dataValidation>`).join("")}</dataValidations>` : "";
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join("")}</cols><sheetData>${data}</sheetData>${dv}</worksheet>`;
+  };
+  const tierName = { whole: "Whole class", group: "Small group", individual: "Individual" };
+  const s1 = [["Pupil", "SEND status", "Needs", "Adjustment", "UDL principle", "Tier", "Source", "In place?", "Impact", "Evidence and notes", "Review date"]];
+  S.pupils.forEach(p => {
+    const adj = pupilAdjustments(p);
+    adj.forEach((src, id) => {
+      const a = ADJ_BY[id];
+      const tier = A.tiers.whole.some(i => i.a.id === id) ? "whole" : A.tiers.group.some(i => i.a.id === id) ? "group" : "individual";
+      s1.push([p.label, p.status === "ehcp" ? "EHCP" : "SEN support", p.needs.map(n => NEED[n].label).join(", "), a.label, PRINCIPLES[a.p].name, tierName[tier], { stated: "In their plan", suggested: "Suggested from need", added: "Added by teacher" }[src], "", "", "", ""]);
+    });
+    pupilExtras(p).other.forEach(t => s1.push([p.label, p.status === "ehcp" ? "EHCP" : "SEN support", p.needs.map(n => NEED[n].label).join(", "), t, "", "Individual", "EHCP Section F", "", "", "", ""]));
+  });
+  const s2 = [["Lesson", "Adjustment", "Tier", "Pupils", "Delivered?", "Notes"]];
+  S.lessons.forEach(l => {
+    const L = lessonPlan(l, A);
+    A.tiers.whole.filter(i => !i.a.acts.length).concat(L.whole).forEach(i => s2.push([l.title, i.a.label, "Whole class", "All", "", ""]));
+    L.group.forEach(i => s2.push([l.title, i.a.label, "Small group", initialsList(i.who), "", ""]));
+    L.indiv.forEach(i => s2.push([l.title, i.a.label, "Individual", i.p.label, "", ""]));
+  });
+  const s3 = [["Pupil", "Needs"].concat(S.lessons.map(l => l.title.replace(/:.*/, "")))];
+  S.pupils.forEach(p => s3.push([p.label, p.needs.map(n => NEED[n].label).join(", ")].concat(S.lessons.map(() => ""))));
+  const sheets = [
+    { name: "Adjustments", xml: sheet(s1, [10, 13, 28, 34, 20, 13, 20, 12, 14, 40, 13], [["H", "Yes,Partly,No"], ["I", "Helping,Some impact,Not yet,Remove"]]) },
+    { name: "Lesson log", xml: sheet(s2, [36, 34, 13, 18, 12, 40], [["E", "Yes,Partly,No"]]) },
+    { name: "Progress", xml: sheet(s3, [10, 28].concat(S.lessons.map(() => 14)), S.lessons.map((_, i) => [col(i + 2), "Secure,Developing,Not yet,Absent"])) },
+  ];
+  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF2B4878"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+  return zip([
+    { name: "[Content_Types].xml", data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((s, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("")}</Types>` },
+    { name: "_rels/.rels", data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>` },
+    { name: "xl/workbook.xml", data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheets.map((s, i) => `<sheet name="${x(s.name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join("")}</sheets></workbook>` },
+    { name: "xl/_rels/workbook.xml.rels", data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((s, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join("")}<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>` },
+    { name: "xl/styles.xml", data: styles },
+    ...sheets.map((s, i) => ({ name: `xl/worksheets/sheet${i + 1}.xml`, data: s.xml })),
+  ]);
+}
+async function saveFile(filename, blob) {
+  const msg = document.getElementById("dl-msg");
+  try {
+    const dl = window.claude && window.claude.use ? await window.claude.use("downloads") : null;
+    if (dl) { await dl.save({ filename, data: blob }); if (msg) msg.textContent = `Saved ${filename}.`; return; }
+  } catch (e) {
+    if (msg) msg.textContent = e && e.code === "declined" ? "Download cancelled." : "Downloads aren't available in this view. Open the website version to download.";
+    return;
+  }
+  if (framed && window.claude) { if (msg) msg.textContent = "Downloads aren't available in this view. Open the website version to download."; return; }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  if (msg) msg.textContent = `Saved ${filename} to your downloads.`;
+}
+const fileStem = () => (classTitle().replace(/[^\w ]+/g, " ").trim().replace(/\s+/g, "-") || "class") ;
+
+/* ---------- Events ---------- */
+async function handleFiles(kind, files) {
+  if (busy || !files || !files.length) return;
+  busy = true; const added = [], failed = [];
+  try {
+    for (const [i, f] of [...files].entries()) {
+      statusMsg = files.length > 1 ? `Reading file ${i + 1} of ${files.length}…` : `Reading ${f.name}…`; upStatus(statusMsg);
+      try {
+        if (kind === "sow") {
+          const lines = await fileToLines(f, { splitCells: false });
+          S.sowText = lines.join("\n"); S.lessons = parseSow(S.sowText); added.push(f.name);
+        } else { const p = await importPupilFile(f, kind); added.push(p.label); }
+      } catch (err) { failed.push(`${f.name}: ${fileError(err)}`); }
+    }
+    if (added.length && S.example) { S.example = false; if (kind !== "sow") S.pupils = S.pupils.filter(p => p.source !== "Example"); else S.pupils = S.pupils.filter(p => p.source !== "Example"); }
+    statusMsg = (kind === "sow" ? (added.length ? `Found ${S.lessons.length} lessons. Check them below.` : "") : (added.length ? `Added ${added.length} pupil${added.length > 1 ? "s" : ""}: ${added.join(", ")}. Check each one below.` : "")) + (failed.length ? " " + failed.join(" ") : "");
+    save(); render();
+  } finally { busy = false; }
+}
+document.addEventListener("click", e => {
+  const tab = e.target.closest("[data-tab]");
+  if (tab) { S.tab = tab.dataset.tab; statusMsg = ""; clearedMsg = false; save(); render(); window.scrollTo(0, 0); return; }
+  const pr = e.target.closest("[data-pupil]");
+  if (pr) { S.sel = S.sel === pr.dataset.pupil ? null : pr.dataset.pupil; save(); render(); return; }
+  const btn = e.target.closest("[data-act]"); if (!btn) return;
+  const act = btn.dataset.act, pid = btn.closest("[data-pid]")?.dataset.pid, p = S.pupils.find(q => q.id === pid);
+  const lid = btn.closest("[data-lid]")?.dataset.lid;
+  if (act === "parse-sow") { S.lessons = parseSow(S.sowText); save(); render(); }
+  else if (act === "add-lesson") { S.lessons.push({ id: uid(), unit: "", n: S.lessons.length + 1, title: `Lesson ${S.lessons.length + 1}: `, text: "" }); save(); render(); }
+  else if (act === "del-lesson") { S.lessons = S.lessons.filter(l => l.id !== lid); save(); render(); }
+  else if (act === "add-pupil") { const np = newPupil({ source: "Added by hand" }); S.pupils.push(np); S.sel = np.id; save(); render(); }
+  else if (act === "paste-register") { const t = document.getElementById("register").value; const added = parseRegister(t); if (added.length && S.example) { S.example = false; S.pupils = S.pupils.filter(q => q.source !== "Example"); } statusMsg = added.length ? `Added ${added.length} pupils.` : ""; save(); render(); }
+  else if (act === "del-pupil" && p) { S.pupils = S.pupils.filter(q => q !== p); S.sel = null; save(); render(); }
+  else if (act === "adj-off" && p) { const id = btn.dataset.adj; p.add = p.add.filter(a => a !== id); if (!p.off.includes(id)) p.off.push(id); save(); render(); }
+  else if (act === "adj-add" && p) { const id = document.getElementById("add-" + p.id).value; if (id) { p.off = p.off.filter(a => a !== id); if (!p.add.includes(id)) p.add.push(id); save(); render(); } }
+  else if (act === "adj-restore" && p) { p.off = []; save(); render(); }
+  else if (act === "redetect" && p) { p.needs = detectNeeds(pupilText(p)); save(); render(); }
+  else if (act === "clear-example") { Object.assign(S, blank(), { tab: "sow" }); save(); render(); }
+  else if (act === "print") window.print();
+  else if (act === "dl-docx") saveFile(`${fileStem()}-adapted-scheme.docx`, buildDocx());
+  else if (act === "dl-xlsx") saveFile(`${fileStem()}-adjustments-tracker.xlsx`, buildXlsx());
+  else if (act === "ask-clear") { confirmClear = true; clearedMsg = false; render(); window.scrollTo(0, 0); document.getElementById("do-clear")?.focus(); }
+  else if (act === "cancel-clear") { confirmClear = false; render(); }
+  else if (act === "do-clear") { try { localStorage.removeItem(KEY); } catch (err) { } S = blank(); confirmClear = false; clearedMsg = true; statusMsg = ""; save(); render(); window.scrollTo(0, 0); }
+});
+document.addEventListener("change", e => {
+  const t = e.target;
+  if (t.type === "file" && t.files.length) { const kind = { "sow-file": "sow", "ehcp-files": "ehcp", "passport-files": "passport" }[t.id]; if (kind) handleFiles(kind, t.files); t.value = ""; return; }
+  if (t.dataset.set) {
+    const k = t.dataset.set;
+    S[k] = t.type === "checkbox" ? t.checked : t.dataset.num ? Math.max(+t.min || 1, Math.min(+t.max || 99, parseInt(t.value, 10) || 1)) : t.value;
+    save(); if (k !== "sowText") render(); return;
+  }
+  const lid = t.closest("[data-lid]")?.dataset.lid;
+  if (lid && t.dataset.lf) { const l = S.lessons.find(q => q.id === lid); l[t.dataset.lf] = t.value; save(); render(); return; }
+  const pid = t.closest("[data-pid]")?.dataset.pid, p = S.pupils.find(q => q.id === pid);
+  if (p && t.dataset.need) { const n = t.dataset.need; p.needs = t.checked ? [...new Set([...p.needs, n])] : p.needs.filter(x => x !== n); save(); render(); return; }
+  if (p && t.dataset.pf) { p[t.dataset.pf] = t.dataset.pf === "label" ? (t.value.trim() || p.label) : t.value; save(); render(); return; }
+});
+document.addEventListener("input", e => { if (e.target.dataset.set === "sowText") { S.sowText = e.target.value; save(); } });
+document.addEventListener("dragover", e => { const d = e.target.closest && e.target.closest("[data-drop]"); if (d) { e.preventDefault(); d.classList.add("over"); } });
+document.addEventListener("dragleave", e => { const d = e.target.closest && e.target.closest("[data-drop]"); if (d) d.classList.remove("over"); });
+document.addEventListener("drop", e => {
+  const d = e.target.closest && e.target.closest("[data-drop]"); if (!d) return;
+  e.preventDefault(); d.classList.remove("over");
+  const kind = { "sow-file": "sow", "ehcp-files": "ehcp", "passport-files": "passport" }[d.dataset.drop];
+  handleFiles(kind, kind === "sow" ? [e.dataTransfer.files[0]] : e.dataTransfer.files);
+});
+render();
+</script>
+</body>
+</html>
