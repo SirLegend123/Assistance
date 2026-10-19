@@ -157,6 +157,7 @@ td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .log-item { display: grid; grid-template-columns: 70px minmax(0, 1fr) 140px 150px minmax(0, 1.2fr); gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
 @media (max-width: 820px) { .log-item { grid-template-columns: 1fr 1fr; } .log-item .what { grid-column: 1 / -1; } .log-item .time { grid-column: 1 / -1; } .log-item input[type=text] { grid-column: 1 / -1; } }
 
+.start { border: 2px solid var(--accent); }
 .drop { border: 2px dashed var(--line); border-radius: var(--r); padding: 18px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center; background: var(--sunk); }
 .drop.over { border-color: var(--accent); background: var(--accent-soft); }
 .rec { display: grid; gap: 8px; max-width: 560px; }
@@ -185,7 +186,7 @@ footer { padding-block: 0 40px; font-size: .85rem; color: var(--muted); }
 <header class="top">
   <div class="wrap">
     <h1>EOTAS Scheme Planner</h1>
-    <p>A scheme of work built on the EQUALS curriculum pathways that follows what Section F of the EHCP says must happen.</p>
+    <p>A scheme of work built on the EQUALS curriculum pathways that follows what Section F of the EHCP says must happen. Start by uploading the EHCP.</p>
     <nav class="tabs" id="tabs" role="tablist" aria-label="Planner sections"></nav>
   </div>
 </header>
@@ -969,7 +970,7 @@ function lessonFor(week, h, w, d, sIdx) {
 }
 
 /* ---------- Rendering ---------- */
-const TABS = [["setup", "About you"], ["ehcp", "EHCP"], ["long", "Long-term plan"], ["half", "Half-term plan"], ["week", "Weekly timetable"], ["check", "Provision check"], ["log", "Delivery log"]];
+const TABS = [["ehcp", "Upload EHCP"], ["setup", "About you"], ["long", "Long-term plan"], ["half", "Half-term plan"], ["week", "Weekly timetable"], ["check", "Provision check"], ["log", "Delivery log"]];
 const framed = (() => { try { return window.self !== window.top; } catch (e) { return true; } })();
 
 function renderTabs() {
@@ -979,8 +980,12 @@ function renderTabs() {
 function render() {
   renderTabs();
   const m = document.getElementById("main");
-  const banner = S.example ? `<div class="banner no-print"><p><b>Example data loaded.</b> Sam and his EHCP are made up so you can see how the planner works. Paste your son's Section F on the EHCP tab, or start blank.</p><button class="btn" data-act="blank">Start with a blank plan</button></div>` : "";
-  m.innerHTML = banner + ({ setup: vSetup, ehcp: vEhcp, long: vLong, half: vHalf, week: vWeek, check: vCheck, log: vLog })[S.tab]();
+  const banner = !S.example ? "" : S.tab === "ehcp"
+    ? `<div class="banner no-print"><p><b>Showing an example.</b> Until you upload your son's EHCP, the plans use a made-up child called Sam.</p><button class="btn ghost" data-act="blank">Clear the example</button></div>`
+    : `<div class="banner no-print"><p><b>Showing an example.</b> These plans are for a made-up child called Sam. Upload your son's EHCP to build his.</p><button class="btn" data-act="go-ehcp">Upload the EHCP</button></div>`;
+  const view = ({ setup: vSetup, ehcp: vEhcp, long: vLong, half: vHalf, week: vWeek, check: vCheck, log: vLog })[S.tab]();
+  if (S.tab === "ehcp") { const i = view.indexOf("</section>") + 10; m.innerHTML = view.slice(0, i) + banner + view.slice(i); }
+  else m.innerHTML = banner + view;
 }
 function areaDot(a) { return `<span class="dot" style="--c:${color(a)}"></span>`; }
 function htWeekPickers(withWeek) {
@@ -1068,8 +1073,8 @@ function vEhcp() {
     <td><button class="btn quiet" data-act="del-prov" aria-label="Remove this line">Remove</button></td></tr>`).join("");
   const outs = S.outcomes.map(o => `<li>${areaDot(scoreArea(o))} ${esc(o.text)} <span class="small muted">→ ${esc(scoreArea(o).name)}</span></li>`).join("");
   return `
-  <section class="panel no-print">
-    <h2>Upload the EHCP</h2>
+  <section class="panel no-print start">
+    <h2>Start here: upload the EHCP</h2>
     <p class="small muted">A PDF, a Word document (.docx) or a photo of the pages. The file is read on this device and is never uploaded anywhere. The planner finds Sections B, E and F and fills in the boxes below.</p>
     <div class="drop" id="drop"><label class="btn" for="ehcp-file">Choose the EHCP file</label><input type="file" id="ehcp-file" accept=".pdf,.docx,.doc,.txt,image/*" hidden><span class="small muted">or drag it here</span></div>
     <p id="up-status" class="small" role="status"></p>
@@ -1304,7 +1309,8 @@ document.addEventListener("click", e => {
   const btn = e.target.closest("[data-act]"); if (!btn) return;
   const act = btn.dataset.act, pid = btn.closest("[data-pid]")?.dataset.pid;
   if (act === "parse") { reparse(); save(); render(); }
-  else if (act === "blank") { Object.assign(S, { example: false, name: "", interests: "", fText: "", eText: "", bText: "", provisions: [], outcomes: [], log: {}, sel: null, tab: "setup" }); save(); render(); }
+  else if (act === "blank") { Object.assign(S, { example: false, name: "", interests: "", fText: "", eText: "", bText: "", provisions: [], outcomes: [], log: {}, sel: null, tab: "ehcp" }); save(); render(); }
+  else if (act === "go-ehcp") { S.tab = "ehcp"; save(); render(); window.scrollTo(0, 0); }
   else if (act === "use-all-f" && lastExtract) { lastExtract.sec.F = lastExtract.text; applyExtract(lastExtract); }
   else if (act === "use-pathway") { S.pathway = btn.dataset.pw; S.provisions.forEach(p => { p.area = ""; }); S.outcomes.forEach(o => { o.area = ""; }); S.sel = null; save(); render(); }
   else if (act === "del-prov") { S.provisions = S.provisions.filter(p => p.id !== pid); save(); render(); }
