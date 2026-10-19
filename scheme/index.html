@@ -53,6 +53,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 header.top { background: var(--accent); color: var(--accent-ink); }
 header.top .wrap { padding-block: 22px 0; display: grid; gap: 4px; }
+.title-row { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; }
+.btn.clear-btn { background: transparent; color: var(--accent-ink); border-color: var(--accent-ink); }
+.confirm { border: 2px solid var(--bad); }
 header.top p { opacity: .85; font-size: .95rem; }
 nav.tabs { display: flex; gap: 2px; overflow-x: auto; margin-top: 16px; scrollbar-width: none; }
 nav.tabs button { flex: none; border: 0; background: transparent; color: var(--accent-ink); opacity: .8; padding: 10px 14px; border-radius: 10px 10px 0 0; cursor: pointer; font-family: var(--display); font-size: .92rem; display: flex; gap: 8px; align-items: center; }
@@ -185,7 +188,7 @@ footer { padding-block: 0 40px; font-size: .85rem; color: var(--muted); }
 <body>
 <header class="top">
   <div class="wrap">
-    <h1>EOTAS Scheme Planner</h1>
+    <div class="title-row"><h1>EOTAS Scheme Planner</h1><button class="btn clear-btn no-print" data-act="ask-clear">Clear app</button></div>
     <p>A scheme of work built on the EQUALS curriculum pathways that follows what Section F of the EHCP says must happen. Start by uploading the EHCP.</p>
     <nav class="tabs" id="tabs" role="tablist" aria-label="Planner sections"></nav>
   </div>
@@ -984,8 +987,8 @@ function render() {
     ? `<div class="banner no-print"><p><b>Showing an example.</b> Until you upload your son's EHCP, the plans use a made-up child called Sam.</p><button class="btn ghost" data-act="blank">Clear the example</button></div>`
     : `<div class="banner no-print"><p><b>Showing an example.</b> These plans are for a made-up child called Sam. Upload your son's EHCP to build his.</p><button class="btn" data-act="go-ehcp">Upload the EHCP</button></div>`;
   const view = ({ setup: vSetup, ehcp: vEhcp, long: vLong, half: vHalf, week: vWeek, check: vCheck, log: vLog })[S.tab]();
-  if (S.tab === "ehcp") { const i = view.indexOf("</section>") + 10; m.innerHTML = view.slice(0, i) + banner + view.slice(i); }
-  else m.innerHTML = banner + view;
+  const i = S.tab === "ehcp" ? view.indexOf("</section>") + 10 : 0;
+  m.innerHTML = clearHtml() + view.slice(0, i) + banner + view.slice(i);
 }
 function areaDot(a) { return `<span class="dot" style="--c:${color(a)}"></span>`; }
 function htWeekPickers(withWeek) {
@@ -1037,7 +1040,7 @@ function vSetup() {
       ${framed ? `<button class="btn" data-act="copy-backup">Copy backup text</button>` : `<button class="btn" data-act="download">Save a backup</button>`}
       <label class="btn quiet" for="restore">Load a backup<input type="file" id="restore" accept=".json,application/json,text/plain" hidden></label>
       <span class="sp"></span>
-      <button class="btn danger" data-act="reset" id="reset-btn">Clear everything</button>
+      <button class="btn danger" data-act="ask-clear">Clear everything</button>
     </div>
     <p class="small" id="backup-msg" role="status"></p>
   </section>
@@ -1300,7 +1303,21 @@ async function copyText(text, msgEl) {
   }
 }
 function reparse() { S.provisions = parseSectionF(S.fText, S); S.outcomes = parseOutcomes(S.eText); S.sel = null; }
-let resetArmed = false;
+let confirmClear = false, clearedMsg = false;
+function clearApp() {
+  try { localStorage.removeItem(KEY); } catch (e) { }
+  S = Object.assign(defaults(), { example: false, name: "", interests: "", fText: "", eText: "", bText: "", tab: "ehcp" });
+  lastExtract = null; confirmClear = false; clearedMsg = true;
+  save(); render(); window.scrollTo(0, 0);
+}
+function clearHtml() {
+  if (confirmClear) return `<section class="panel confirm no-print" role="alertdialog" aria-labelledby="clear-h"><h2 id="clear-h">Clear everything?</h2>
+    <p>This deletes the EHCP text, your son's details, all the plans and the delivery log from this browser. It can't be undone.</p>
+    <p class="small muted">If you might want them again, save a backup first from the About you tab.</p>
+    <div class="row"><button class="btn danger" data-act="do-clear" id="do-clear">Yes, clear everything</button><button class="btn quiet" data-act="cancel-clear">Cancel</button></div></section>`;
+  if (clearedMsg) return `<div class="banner no-print" role="status"><p><b>Cleared.</b> Nothing from the EHCP is stored in this browser now. Upload an EHCP to start again.</p></div>`;
+  return "";
+}
 document.addEventListener("click", e => {
   const tab = e.target.closest("[data-tab]");
   if (tab) { S.tab = tab.dataset.tab; save(); render(); window.scrollTo(0, 0); return; }
@@ -1323,10 +1340,9 @@ document.addEventListener("click", e => {
   }
   else if (act === "copy-backup") copyText(JSON.stringify(S), document.getElementById("backup-msg"));
   else if (act === "copy-report") copyText(weekReport(), document.getElementById("report-msg"));
-  else if (act === "reset") {
-    if (!resetArmed) { resetArmed = true; btn.textContent = "Tap again to clear everything"; setTimeout(() => { resetArmed = false; if (btn.isConnected) btn.textContent = "Clear everything"; }, 4000); }
-    else { resetArmed = false; S = defaults(); S.example = false; S.name = ""; S.interests = ""; S.fText = ""; S.eText = ""; save(); render(); }
-  }
+  else if (act === "ask-clear") { confirmClear = true; clearedMsg = false; render(); window.scrollTo(0, 0); document.getElementById("do-clear")?.focus(); }
+  else if (act === "cancel-clear") { confirmClear = false; render(); }
+  else if (act === "do-clear") clearApp();
 });
 document.addEventListener("change", e => {
   const t = e.target;
