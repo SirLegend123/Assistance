@@ -157,6 +157,10 @@ td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .log-item { display: grid; grid-template-columns: 70px minmax(0, 1fr) 140px 150px minmax(0, 1.2fr); gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
 @media (max-width: 820px) { .log-item { grid-template-columns: 1fr 1fr; } .log-item .what { grid-column: 1 / -1; } .log-item .time { grid-column: 1 / -1; } .log-item input[type=text] { grid-column: 1 / -1; } }
 
+.rec { display: grid; gap: 8px; max-width: 560px; }
+.rec-row { display: grid; grid-template-columns: minmax(0, 11em) 1fr auto; gap: 10px; align-items: center; font-size: .9rem; }
+.rec-bar { height: 10px; border-radius: 99px; background: var(--sunk); overflow: hidden; }
+.rec-bar span { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
 details > summary { cursor: pointer; font-family: var(--display); }
 details { border-top: 1px solid var(--line); padding-top: 10px; }
 .info { font-size: .92rem; display: grid; gap: 8px; }
@@ -450,6 +454,83 @@ function parseOutcomes(text) {
   return splitLines(text).filter(l => l.length >= 12 && !/^(section e|outcomes?)\b.{0,20}$/i.test(l)).map(l => ({ id: uid(), text: l, tags: tagsOf(l), area: "" }));
 }
 
+/* ---------- Recommending a pathway ---------- */
+// Each signal: [pattern, weight, reason shown to the parent]. A signal counts once however often it appears.
+const PATHWAY_SIGNALS = {
+  pre: [
+    [/profound and multiple|\bpmld\b|profound learning/i, 6, "Profound and multiple learning difficulties"],
+    [/pre[- ]?intentional|early developmental|routes for learning|engagement (profile|model|scale)|quest for learning/i, 3, "Early-development wording (Routes for Learning, engagement)"],
+    [/intensive interaction/i, 2, "Intensive Interaction"],
+    [/objects? of reference/i, 2, "Objects of reference"],
+    [/\bswitch(es)?\b|cause and effect/i, 2, "Switches or cause-and-effect work"],
+    [/eye[- ]?gaze/i, 2, "Eye-gaze"],
+    [/hoist|standing frame|postural|positioning|wheelchair|specialist seating|sleep system/i, 2, "Postural care and positioning"],
+    [/\bmsi\b|multi[- ]?sensory impair|deafblind/i, 2, "Multi-sensory impairment"],
+    [/sensory stor(y|ies)|massage|multi[- ]?sensory/i, 1.5, "Sensory stories or massage"],
+    [/gastrostomy|peg feed|tube[- ]?fe(d|eding)|suction|seizure/i, 1.5, "Complex medical needs"],
+    [/hydrotherapy|rebound therapy/i, 1.5, "Hydrotherapy or rebound therapy"],
+    [/tolerat\w+|anticipat\w+|awareness of/i, 1, "Targets about tolerating, anticipating or awareness"],
+    [/nappy|pad chang|changing routine|full personal care/i, 1, "Full personal care"],
+  ],
+  semi: [
+    [/severe learning|\bsld\b|global developmental delay/i, 6, "Severe learning difficulties or global developmental delay"],
+    [/non[- ]?verbal|minimally verbal|pre[- ]?verbal|limited (spoken|verbal) language|single words|\b(one|two|1|2)[- ]key[- ]words?|key[- ]word level/i, 2.5, "Little or early spoken language"],
+    [/\baac\b|communication aid|talker|voice output|\bpecs\b|picture exchange/i, 2, "AAC or PECS"],
+    [/attention autism|bucket time/i, 2, "Attention Autism"],
+    [/teacch|workstation|structured teaching/i, 2, "TEACCH or workstations"],
+    [/makaton|signalong|\bsigns?\b|\bsigning\b/i, 1.5, "Signing"],
+    [/toilet\w*|backward chaining|self[- ]care|dressing/i, 1.5, "Self-care and toileting targets"],
+    [/play skills|turn[- ]taking|shared attention|joint attention/i, 1.5, "Play and shared attention"],
+    [/visual timetable|now[- ](and[- ])?next|first[- ](and[- ])?then|\bsymbols?\b/i, 1, "Visual supports and symbols"],
+    [/life skills|functional|community (visits|access)|travel training/i, 1, "Functional life skills"],
+    [/autis\w*|\basc\b|\basd\b/i, 1, "Autism"],
+    [/count\w* (objects )?to (5|10|five|ten)\b|matching|sorting/i, 1, "Early number, matching and sorting"],
+  ],
+  formal: [
+    [/moderate learning|\bmld\b|specific learning|dyslexi\w*|dyscalcul\w*/i, 6, "Moderate or specific learning difficulties"],
+    [/gcse|entry level|functional skills|asdan|key stage [345]|national curriculum|curriculum subjects?/i, 3, "Qualifications or national curriculum work"],
+    [/phonics|read write inc|\brwi\b|decod\w*|blending/i, 2, "Phonics"],
+    [/comprehension|inference|spelling/i, 2, "Reading comprehension and spelling"],
+    [/homework|exams?\b|access arrangements|\bscribe\b|touch[- ]typing/i, 2, "Exam and study support"],
+    [/writ\w+ (sentences?|paragraphs?|independently)|sentence (structure|writing)|punctuation/i, 1.5, "Writing sentences"],
+    [/times tables|place value|multiplication|fractions|number bonds|numeracy/i, 1.5, "Maths beyond early number"],
+    [/class teacher|differentiat\w+|small group (work|teaching)|in class|mainstream/i, 1.5, "Classroom-based support"],
+    [/social skills group|friendship|self[- ]esteem|\blego\b/i, 0.75, "Social and emotional groups"],
+  ],
+};
+function recommendPathway(s = S) {
+  const text = [s.bText, s.fText, s.eText].filter(Boolean).join("\n");
+  const res = Object.keys(PATHWAY_SIGNALS).map(k => {
+    const hits = PATHWAY_SIGNALS[k].filter(([rx]) => rx.test(text));
+    return { k, score: hits.reduce((t, h) => t + h[1], 0), reasons: hits.map(h => h[2]) };
+  }).sort((a, b) => b.score - a.score);
+  const [top, second] = res;
+  if (!top.score) return { res, top: null };
+  const margin = top.score - second.score;
+  const level = top.score >= 6 && margin >= top.score * 0.4 ? "strong" : margin >= 2 ? "moderate" : "between";
+  return { res, top, second, level };
+}
+function recHtml(compact) {
+  const r = recommendPathway();
+  if (!r.top) return compact ? "" : `<section class="panel"><h2>Suggested pathway</h2><p class="muted">Paste Section F above and the planner will suggest a pathway from its wording.</p></section>`;
+  const name = k => PATHWAYS[k].label, max = r.top.score;
+  const headline = r.level === "between"
+    ? `Somewhere between <b>${name(r.top.k)}</b> and <b>${name(r.second.k)}</b>`
+    : `<b>${name(r.top.k)}</b> <span class="pill ${r.level === "strong" ? "ok" : "warn"}">${r.level === "strong" ? "Clear match" : "Likely match"}</span>`;
+  const current = S.pathway === r.top.k ? `<span class="small muted">This is the pathway you're using.</span>`
+    : `<button class="btn" data-act="use-pathway" data-pw="${r.top.k}">Use ${name(r.top.k)}</button>${r.level === "between" && S.pathway !== r.second.k ? ` <button class="btn ghost" data-act="use-pathway" data-pw="${r.second.k}">Use ${name(r.second.k)}</button>` : ""}`;
+  if (compact) return `<div class="banner"><p>Suggested from the EHCP: ${headline}</p>${current}</div>`;
+  const bars = r.res.map(x => `<div class="rec-row"><span>${name(x.k)}</span><span class="rec-bar"><span style="width:${max ? Math.round(x.score / max * 100) : 0}%"></span></span><span class="small muted">${x.reasons.length} sign${x.reasons.length === 1 ? "" : "s"}</span></div>`).join("");
+  const why = r.res.filter(x => x.reasons.length).map(x => `<li><b>${name(x.k)}:</b> ${x.reasons.map(esc).join("; ")}</li>`).join("");
+  return `<section class="panel"><h2>Suggested pathway</h2>
+    <p>${headline}</p>
+    <div class="rec">${bars}</div>
+    <details><summary>Why</summary><ul class="stack small" style="margin:10px 0 0;padding-left:1.1em">${why}</ul></details>
+    <div class="row">${current}</div>
+    <p class="small muted">This is a suggestion from the wording of the EHCP, not an assessment. Section F describes support, which hints at how a child learns but doesn't settle it. Pasting Section B makes the suggestion more reliable. Choose the pathway that fits most of your son's day; you can change it at any time and the plans rebuild.</p>
+  </section>`;
+}
+
 /* ---------- State ---------- */
 const KEY = "eotas-scheme-v1";
 const EXAMPLE_F = `Communication and interaction
@@ -484,7 +565,7 @@ function defaults() {
   return { v: 1, example: true, name: "Sam", interests: "trains, Bluey, bubbles", pathway: "semi",
     start: nextMonday(), halfTerms: 6, weeks: 6, days: [true, true, true, true, true], perDay: 4, slotMins: 40, startTime: "09:30",
     themes: ["All about me", "Food", "Animals", "Water", "Transport", "Growing"],
-    fText: EXAMPLE_F, eText: EXAMPLE_E, provisions: [], outcomes: [], custom: {}, log: {}, tab: "ehcp", ht: 0, wk: 0, sel: null };
+    fText: EXAMPLE_F, eText: EXAMPLE_E, bText: "", provisions: [], outcomes: [], custom: {}, log: {}, tab: "ehcp", ht: 0, wk: 0, sel: null };
 }
 let S;
 try { S = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { S = null; }
@@ -690,6 +771,7 @@ function vSetup() {
       <label class="f"><span>Interests and motivators</span><input type="text" id="interests" data-set="interests" value="${esc(S.interests)}" placeholder="e.g. trains, water, a favourite programme">Separate with commas. They are worked into activities and rewards.</label>
     </div>
     <h3>EQUALS pathway</h3>
+    ${recHtml(true)}
     <div class="pathways">${pw}</div>
   </section>
   <section class="panel"><h2>Your teaching week</h2>
@@ -761,8 +843,11 @@ function vEhcp() {
     <textarea id="fText" rows="12" data-set="fText">${esc(S.fText)}</textarea>
     <h3>Section E: outcomes <span class="small muted">(optional)</span></h3>
     <textarea id="eText" rows="5" data-set="eText" placeholder="One outcome per line">${esc(S.eText)}</textarea>
+    <h3>Section B: needs <span class="small muted">(optional, helps suggest a pathway)</span></h3>
+    <textarea id="bText" rows="4" data-set="bText" placeholder="Paste the description of your son's needs, or leave empty">${esc(S.bText)}</textarea>
     <div class="row"><button class="btn" data-act="parse">Read the EHCP and build the plan</button><span class="small muted">This replaces any changes you made in the table below.</span></div>
   </section>
+  ${recHtml(false)}
   <section class="panel">
     <div class="row"><h2>What Section F asks for</h2></div>
     <div class="stats">
@@ -981,7 +1066,8 @@ document.addEventListener("click", e => {
   const btn = e.target.closest("[data-act]"); if (!btn) return;
   const act = btn.dataset.act, pid = btn.closest("[data-pid]")?.dataset.pid;
   if (act === "parse") { reparse(); save(); render(); }
-  else if (act === "blank") { Object.assign(S, { example: false, name: "", interests: "", fText: "", eText: "", provisions: [], outcomes: [], log: {}, sel: null, tab: "setup" }); save(); render(); }
+  else if (act === "blank") { Object.assign(S, { example: false, name: "", interests: "", fText: "", eText: "", bText: "", provisions: [], outcomes: [], log: {}, sel: null, tab: "setup" }); save(); render(); }
+  else if (act === "use-pathway") { S.pathway = btn.dataset.pw; S.provisions.forEach(p => { p.area = ""; }); S.outcomes.forEach(o => { o.area = ""; }); S.sel = null; save(); render(); }
   else if (act === "del-prov") { S.provisions = S.provisions.filter(p => p.id !== pid); save(); render(); }
   else if (act === "add-prov") { S.provisions.push({ id: uid(), text: "New provision", kind: "session", perWeek: 1, mins: S.slotMins, who: [], by: "You", review: "", tags: [], ctx: [], strategies: [], first: false, area: "" }); save(); render(); }
   else if (act === "print") window.print();
@@ -1012,6 +1098,7 @@ document.addEventListener("change", e => {
     if (k === "halfTerms" && S.ht >= v) S.ht = 0;
     if (k === "weeks" && S.wk >= v) S.wk = 0;
     if (k === "fText" || k === "eText") { save(); return; }
+    if (k === "bText") { save(); render(); return; }
     save(); render(); return;
   }
   if (t.dataset.day) { S.days[+t.dataset.day] = t.checked; save(); render(); return; }
@@ -1031,7 +1118,7 @@ document.addEventListener("change", e => {
 document.addEventListener("input", e => {
   const t = e.target;
   if (t.dataset.custom) { S.custom[t.dataset.custom] = t.value; save(); }
-  if (t.dataset.set === "fText" || t.dataset.set === "eText") { S[t.dataset.set] = t.value; save(); }
+  if (["fText", "eText", "bText"].includes(t.dataset.set)) { S[t.dataset.set] = t.value; save(); }
 });
 render();
 </script>

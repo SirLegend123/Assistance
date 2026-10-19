@@ -54,6 +54,7 @@ A scheme of work for teaching at home under EOTAS, built on the EQUALS curriculu
 **Open the app:** https://sirlegend123.github.io/Assistance/scheme/
 
 - Paste Section F (and optionally Section E). Each line is sorted into timetabled sessions, daily approaches and reviews, with how often, how long and who reads from the wording. Every line can be corrected.
+- Suggests an EQUALS pathway from the wording of the EHCP (Sections F, E and optionally B), with its reasons.
 - Builds a long-term plan, half-term plans by curriculum area, and a weekly timetable. Section F sessions are placed first, and named approaches (AAC, Makaton, Attention Autism, Zones, sensory circuits and more) are written into every lesson.
 - A provision check shows whether everything in Section F fits the week, and a delivery log records what happened, with a copyable weekly report for reviews.
 - Paste your own licensed EQUALS objectives to use them instead of the built-in examples. Not made by or connected to EQUALS. Not legal advice.
