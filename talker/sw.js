@@ -1,7 +1,7 @@
 // Keeps My Talker working without Wi-Fi once it has been opened.
 // The page and fonts come from the cache first; board.json is fetched fresh when online.
-var CACHE = 'my-talker-v11';
-var SHELL = ['./', 'index.html', 'board.json', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'symbols/juice-cup.webp', 'symbols/pom-bear.webp', 'symbols/cadbury-animals.webp', 'symbols/barny.webp'];
+var CACHE = 'my-talker-v12';
+var SHELL = ['./', 'index.html', 'board.json', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'symbols/juice-cup.webp', 'symbols/pom-bear.webp', 'symbols/cadbury-animals.webp', 'symbols/barny.webp', 'symbols/hey-duggee.webp'];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); }));
