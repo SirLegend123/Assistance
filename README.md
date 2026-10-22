@@ -44,3 +44,17 @@ A picture talking board (AAC) for a pre-verbal child. Tap a symbol and the table
 - Works without Wi-Fi once it has been opened, and can be added to the home screen like an app.
 - Symbols only, no photos. The board's words live in `talker/board.json`.
 - **Save for everyone:** on the owner's own device, add a GitHub key in Settings (a fine-grained token with *Contents: read and write* on this repository only). Changes made in grown-up mode can then be saved to `board.json`, and every other device picks them up within a few minutes when online. On devices without the key, changes stay on that device only.
+
+---
+
+# Cognalign Quotes
+
+Works out a charge from the Cognalign pricing formulae and produces a branded quote to send to a school.
+
+**Open the app:** https://sirlegend123.github.io/Assistance/quote/
+
+- **CPD workshops:** session fee + customisation + travel − pilot discount.
+- **Consultancy:** Stage 1 consultation (free), Stage 2 business case (£300 + travel), Stage 3 project (days × day rate + travel − business case credit).
+- Travel is the one-way distance × 2 × 45p for each visit.
+- **Save as PDF / Print** gives a one-page A4 quote. Choose *Save as PDF* in the print window, then attach it to your email. **Copy email text** copies a ready-to-paste covering email.
+- Prices, branding, logo, VAT and payment terms can be changed under *Branding and prices*. They are saved in your browser only, as is the current quote.
