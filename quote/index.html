@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Work out a Cognalign charge from the pricing formulae and produce a branded quote to send to a school.">
+<meta name="theme-color" content="#1c2a4a">
+<title>Cognalign Quotes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: form panel beside a live quote sheet; stacks on phones. Printing shows only the sheet (A4). */
+:root {
+  --navy: #1c2a4a;
+  --purple: #5c3e96;
+  --lavender: #ece6f7;
+  --lavender-ink: #c9b8ef;
+  --bg: #f4f4f8;
+  --box: #e3e6ee;
+  --ink: #1c2a4a;
+  --muted: #5d6680;
+  --line: #d8dce6;
+  --white: #ffffff;
+  --danger: #a33a2a;
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.45 var(--font); }
+[hidden] { display: none !important; }
+
+.app { display: grid; grid-template-columns: minmax(300px, 400px) 1fr; gap: 24px; padding: 24px; max-width: 1400px; margin: 0 auto; align-items: start; }
+@media (max-width: 900px) { .app { grid-template-columns: 1fr; padding: 16px; gap: 16px; } }
+
+.panel { display: grid; gap: 16px; }
+.brandbar { background: var(--navy); color: var(--white); border-radius: 16px; padding: 18px 20px; }
+.brandbar .eyebrow { color: var(--lavender-ink); letter-spacing: .14em; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+.brandbar h1 { margin: 4px 0 0; font-size: 24px; font-weight: 800; }
+
+.card { background: var(--white); border-radius: 16px; padding: 18px 20px; display: grid; gap: 12px; }
+.card h2 { margin: 0; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: var(--purple); font-weight: 700; }
+.card h3 { margin: 6px 0 0; font-size: 14px; font-weight: 700; }
+label { display: grid; gap: 4px; font-size: 13px; font-weight: 600; color: var(--muted); }
+label.check { display: flex; align-items: center; gap: 8px; color: var(--ink); font-size: 14px; font-weight: 500; }
+label.check input { width: 18px; height: 18px; accent-color: var(--purple); }
+input, select, textarea { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; width: 100%; min-width: 0; }
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--purple); outline-offset: 1px; border-color: transparent; }
+textarea { resize: vertical; min-height: 64px; }
+.row { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 10px; }
+.hint { font-size: 12px; color: var(--muted); margin: -4px 0 0; }
+.stage { border-top: 1px solid var(--line); padding-top: 10px; display: grid; gap: 10px; }
+
+.seg { position: relative; display: grid; grid-template-columns: 1fr 1fr; background: var(--bg); border-radius: 12px; padding: 4px; }
+.seg input { position: absolute; left: 0; top: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.seg label { text-align: center; padding: 9px; border-radius: 9px; cursor: pointer; color: var(--ink); font-size: 14px; }
+.seg input:checked + label { background: var(--navy); color: var(--white); }
+.seg input:focus-visible + label { outline: 2px solid var(--purple); }
+
+.actions { display: grid; gap: 10px; }
+button { font: inherit; font-weight: 600; border: 0; border-radius: 12px; padding: 12px 14px; cursor: pointer; }
+.primary { background: var(--purple); color: var(--white); font-size: 16px; }
+.secondary { background: var(--lavender); color: var(--navy); }
+.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+.toast { font-size: 13px; color: var(--purple); min-height: 1em; margin: 0; text-align: center; }
+details.card summary { cursor: pointer; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: var(--purple); font-weight: 700; }
+details.card[open] summary { margin-bottom: 4px; }
+.logo-row { display: flex; gap: 10px; align-items: center; }
+.logo-row img { max-height: 40px; max-width: 120px; background: var(--navy); padding: 4px; border-radius: 6px; }
+
+/* ---------- Quote sheet ---------- */
+.sheet-wrap { position: sticky; top: 24px; }
+@media (max-width: 900px) { .sheet-wrap { position: static; } }
+.sheet { background: var(--bg); width: 100%; max-width: 820px; margin: 0 auto; border-radius: 6px; overflow: hidden; box-shadow: 0 8px 30px rgba(28,42,74,.15); display: flex; flex-direction: column; min-height: 1060px; }
+.q-head { background: var(--navy); color: var(--white); padding: 40px 44px 34px; display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.q-head .eyebrow { color: var(--lavender-ink); letter-spacing: .16em; font-size: 13px; font-weight: 700; text-transform: uppercase; }
+.q-head .logo { max-height: 48px; max-width: 200px; display: block; margin-bottom: 6px; }
+.q-head h2 { margin: 6px 0 4px; font-size: 44px; line-height: 1.05; font-weight: 800; letter-spacing: -.01em; }
+.q-head .sub { color: #d4d9e6; font-size: 15px; }
+.q-meta { background: var(--purple); border-radius: 14px; padding: 16px 20px; display: grid; grid-template-columns: auto auto; gap: 4px 16px; align-self: start; font-size: 13px; }
+.q-meta dt { color: var(--lavender-ink); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; font-size: 11px; align-self: center; }
+.q-meta dd { margin: 0; font-weight: 600; text-align: right; }
+
+.q-body { padding: 30px 44px 36px; display: grid; gap: 22px; flex: 1; align-content: start; }
+.parties { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.party { background: var(--white); border-radius: 14px; padding: 16px 18px; font-size: 14px; }
+.party .lbl, .q-section .lbl { color: var(--purple); font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 6px; }
+.party strong { display: block; font-size: 16px; }
+.party .addr { white-space: pre-line; color: var(--muted); }
+
+.q-section { display: grid; gap: 10px; }
+.q-section h3 { margin: 0; font-size: 22px; font-weight: 800; display: flex; align-items: center; gap: 12px; }
+.q-section h3 .num { background: var(--navy); color: var(--white); width: 30px; height: 30px; border-radius: 50%; font-size: 14px; display: inline-grid; place-items: center; flex: none; }
+.q-section .snote { color: var(--muted); font-size: 13px; margin: -4px 0 0; }
+.lines { background: var(--white); border-radius: 14px; padding: 6px 18px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { text-align: left; color: var(--purple); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; padding: 10px 6px 8px; }
+td { padding: 10px 6px; border-top: 1px solid var(--line); vertical-align: top; }
+th.n, td.n { text-align: right; white-space: nowrap; }
+td .detail { color: var(--muted); font-size: 12.5px; }
+td.neg { color: var(--purple); }
+tr.sub td { font-weight: 700; }
+
+.totals { justify-self: end; width: min(100%, 340px); display: grid; gap: 6px; font-size: 14px; }
+.totals div { display: flex; justify-content: space-between; gap: 12px; }
+.totals .grand { background: var(--navy); color: var(--white); border-radius: 12px; padding: 12px 16px; font-size: 18px; font-weight: 800; margin-top: 4px; }
+.totals .grand span:first-child { font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; align-self: center; }
+.q-note { background: var(--box); border-radius: 14px; padding: 14px 18px; font-size: 13.5px; white-space: pre-line; }
+.q-note strong { color: var(--navy); }
+.q-foot { background: var(--navy); color: var(--white); padding: 18px 44px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 13px; }
+.q-foot .tag { font-weight: 700; }
+.q-foot .contact { color: #d4d9e6; }
+
+@media (max-width: 600px) {
+  .q-head { padding: 24px 18px; }
+  .q-head h2 { font-size: 32px; }
+  .q-body { padding: 20px 14px 24px; }
+  .q-foot { padding: 14px 18px; }
+  .parties { grid-template-columns: 1fr; }
+  .lines { padding: 4px 10px; }
+  table { font-size: 13px; }
+  th.hide-sm, td.hide-sm { display: none; }
+  .sheet { min-height: 0; }
+}
+
+@media print {
+  @page { size: A4; margin: 0; }
+  html, body { background: #fff; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .panel { display: none !important; }
+  .app { display: block; padding: 0; max-width: none; }
+  .sheet-wrap { position: static; }
+  .sheet { box-shadow: none; border-radius: 0; max-width: none; min-height: 296mm; }
+  /* Tighter spacing so a full three-stage quote fits on one A4 page. */
+  .q-head { padding: 24px 36px 20px; }
+  .q-head h2 { font-size: 34px; margin: 2px 0; }
+  .q-body { padding: 16px 36px 18px; gap: 12px; }
+  #q-sections { gap: 10px !important; }
+  table { font-size: 13px; }
+  td .detail { font-size: 11.5px; }
+  .lines { padding: 2px 16px; }
+  .q-note { padding: 10px 16px; font-size: 12.5px; }
+  .q-section { gap: 6px; }
+  .q-section h3 { font-size: 18px; }
+  .q-section h3 .num { width: 26px; height: 26px; font-size: 13px; }
+  .party { padding: 12px 16px; }
+  th { padding: 6px 6px 4px; }
+  td { padding: 5px 6px; }
+  .q-foot { padding: 14px 36px; }
+  .q-section, .party, .q-note, .totals { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <form class="panel" id="form" autocomplete="off" onsubmit="return false">
+    <div class="brandbar">
+      <div class="eyebrow" id="ui-brand">Cognalign</div>
+      <h1>Quote builder</h1>
+    </div>
+
+    <section class="card">
+      <h2>Service</h2>
+      <div class="seg" role="radiogroup" aria-label="Service">
+        <input type="radio" name="service" id="svc-cpd" value="cpd" checked><label for="svc-cpd">CPD workshops</label>
+        <input type="radio" name="service" id="svc-con" value="consultancy"><label for="svc-con">Consultancy</label>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Client</h2>
+      <label>School / organisation<input data-k="school" placeholder="e.g. Oakfield Primary School"></label>
+      <div class="row">
+        <label>Contact name<input data-k="contact" placeholder="e.g. Ms Patel"></label>
+        <label>Contact email<input data-k="contactEmail" type="email" placeholder="name@school.org.uk"></label>
+      </div>
+      <label>Address<textarea data-k="address" rows="3"></textarea></label>
+      <label>Distance from you, one way (miles)<input data-k="miles" type="number" min="0" step="1" inputmode="decimal" value="0"></label>
+      <p class="hint">Travel is charged as a return journey per visit.</p>
+    </section>
+
+    <section class="card" id="cpd-card">
+      <h2>CPD workshops</h2>
+      <label>Session
+        <select data-k="cpdSession">
+          <option value="one">One 90-minute workshop</option>
+          <option value="both">Both workshops on one day</option>
+        </select>
+      </label>
+      <label>Workshop title(s) <span style="font-weight:400">(optional)</span><input data-k="cpdTitle" placeholder="Shown under the session line"></label>
+      <label>Customisation hours<input data-k="cpdCustomHours" type="number" min="0" step="0.5" inputmode="decimal" value="0"></label>
+      <p class="hint">Extra tailoring, usually 0.</p>
+      <label class="check"><input type="checkbox" data-k="cpdPilot">Pilot school (discount in return for an evaluation)</label>
+      <label id="pilot-pct-wrap">Pilot discount on the session fee (%)<input data-k="cpdPilotPct" type="number" min="0" max="100" step="1" inputmode="decimal" value="30"></label>
+    </section>
+
+    <section class="card" id="con-card" hidden>
+      <h2>Consultancy</h2>
+      <label class="check"><input type="checkbox" data-k="s1" checked>Stage 1: Initial consultation (free)</label>
+      <div class="stage">
+        <label class="check"><input type="checkbox" data-k="s2" checked>Stage 2: Business case</label>
+        <label>Visits for the business case<input data-k="s2Visits" type="number" min="0" step="1" inputmode="decimal" value="1"></label>
+      </div>
+      <div class="stage">
+        <label class="check"><input type="checkbox" data-k="s3" checked>Stage 3: Project</label>
+        <label>Project description <span style="font-weight:400">(optional)</span><input data-k="s3Title" placeholder="e.g. Whole-school inclusion review"></label>
+        <div class="row">
+          <label>Days<input data-k="s3Days" type="number" min="0" step="0.5" inputmode="decimal" value="4"></label>
+          <label>On-site visits<input data-k="s3Visits" type="number" min="0" step="1" inputmode="decimal" value="3"></label>
+        </div>
+        <p class="hint">Use 0.5 for a half day. Days are set by the business case.</p>
+        <label class="check"><input type="checkbox" data-k="s3Credit" checked>Credit the business case fee</label>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Quote details</h2>
+      <div class="row">
+        <label>Quote number<input data-k="number"></label>
+        <label>Date<input data-k="date" type="date"></label>
+      </div>
+      <label>Notes for the client <span style="font-weight:400">(optional)</span><textarea data-k="notes" rows="3" placeholder="e.g. Proposed date: Tuesday 3 March, after school."></textarea></label>
+    </section>
+
+    <div class="actions">
+      <button type="button" class="primary" id="btn-pdf">Save as PDF / Print</button>
+      <button type="button" class="secondary" id="btn-email">Copy email text</button>
+      <button type="button" class="ghost" id="btn-new">Start a new quote</button>
+      <p class="toast" id="toast" aria-live="polite"></p>
+    </div>
+
+    <details class="card" id="settings">
+      <summary>Branding and prices</summary>
+      <h3>Branding</h3>
+      <label>Business name<input data-s="name"></label>
+      <label>Tagline<input data-s="tagline"></label>
+      <div class="row">
+        <label>Email<input data-s="email" type="email"></label>
+        <label>Website<input data-s="web"></label>
+      </div>
+      <label>Postal address <span style="font-weight:400">(optional)</span><textarea data-s="address" rows="2"></textarea></label>
+      <div class="logo-row">
+        <label style="flex:1">Logo <span style="font-weight:400">(optional, shown on the dark header)</span><input type="file" id="logo-file" accept="image/*"></label>
+        <img id="logo-thumb" alt="" hidden>
+        <button type="button" class="ghost" id="logo-clear" hidden>Remove</button>
+      </div>
+
+      <h3>Prices</h3>
+      <div class="row">
+        <label>Day rate (£)<input data-s="dayRate" type="number" min="0" step="1"></label>
+        <label>Mileage (£ per mile)<input data-s="mileage" type="number" min="0" step="0.01"></label>
+        <label>One workshop (£)<input data-s="cpdOne" type="number" min="0" step="1"></label>
+        <label>Both workshops (£)<input data-s="cpdBoth" type="number" min="0" step="1"></label>
+        <label>Customisation (£/hour)<input data-s="customRate" type="number" min="0" step="1"></label>
+        <label>Business case (£)<input data-s="businessCase" type="number" min="0" step="1"></label>
+      </div>
+
+      <h3>Terms</h3>
+      <div class="row">
+        <label>Quote valid for (days)<input data-s="validDays" type="number" min="1" step="1"></label>
+        <label>Quote number prefix<input data-s="prefix"></label>
+      </div>
+      <label class="check"><input type="checkbox" data-s="vat">Add VAT</label>
+      <label>VAT rate (%)<input data-s="vatRate" type="number" min="0" step="0.5"></label>
+      <label>Payment terms<textarea data-s="terms" rows="3"></textarea></label>
+      <button type="button" class="ghost" id="btn-reset-prices">Restore the standard prices</button>
+    </details>
+  </form>
+
+  <div class="sheet-wrap">
+    <article class="sheet" id="sheet" aria-label="Quote preview">
+      <header class="q-head">
+        <div>
+          <img class="logo" id="q-logo" alt="" hidden>
+          <div class="eyebrow" id="q-brand"></div>
+          <h2>Quote</h2>
+          <div class="sub" id="q-service"></div>
+        </div>
+        <dl class="q-meta">
+          <dt>Quote no.</dt><dd id="q-number"></dd>
+          <dt>Date</dt><dd id="q-date"></dd>
+          <dt>Valid until</dt><dd id="q-valid"></dd>
+        </dl>
+      </header>
+      <div class="q-body">
+        <div class="parties">
+          <div class="party"><div class="lbl">Prepared for</div><strong id="q-school"></strong><div id="q-contact"></div><div class="addr" id="q-address"></div></div>
+          <div class="party"><div class="lbl">From</div><strong id="q-from"></strong><div id="q-from-email"></div><div id="q-from-web"></div><div class="addr" id="q-from-address"></div></div>
+        </div>
+        <div id="q-sections" style="display:grid;gap:22px"></div>
+        <div class="totals" id="q-totals"></div>
+        <div class="q-note" id="q-notes" hidden></div>
+        <div class="q-note" id="q-terms"></div>
+      </div>
+      <footer class="q-foot">
+        <span class="tag" id="q-tagline"></span>
+        <span class="contact" id="q-foot-contact"></span>
+      </footer>
+    </article>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // Standard prices and branding, from the Cognalign pricing formulae sheet.
+  var DEFAULT_SETTINGS = {
+    name: "Cognalign",
+    tagline: "Inclusion Emerges When School Systems Align",
+    email: "info@cognalign.co.uk",
+    web: "www.cognalign.co.uk",
+    address: "",
+    logo: "",
+    dayRate: 600,
+    mileage: 0.45,
+    cpdOne: 350,
+    cpdBoth: 600,
+    customRate: 50,
+    businessCase: 300,
+    validDays: 30,
+    prefix: "CA",
+    vat: false,
+    vatRate: 20,
+    terms: "Payment is due within 30 days of the invoice date. Travel is charged at the mileage rate for each return journey."
+  };
+  var DEFAULT_DRAFT = {
+    service: "cpd",
+    school: "", contact: "", contactEmail: "", address: "", miles: 0,
+    cpdSession: "one", cpdTitle: "", cpdCustomHours: 0, cpdPilot: false, cpdPilotPct: 30,
+    s1: true, s2: true, s2Visits: 1, s3: true, s3Title: "", s3Days: 4, s3Visits: 3, s3Credit: true,
+    number: "", date: "", notes: ""
+  };
+  var KEY_SETTINGS = "cognalign-quote-settings";
+  var KEY_DRAFT = "cognalign-quote-draft";
+  var KEY_COUNTER = "cognalign-quote-counter";
+
+  function load(key, fallback) {
+    try { var v = JSON.parse(localStorage.getItem(key)); return v && typeof v === "object" ? Object.assign({}, fallback, v) : Object.assign({}, fallback); }
+    catch (e) { return Object.assign({}, fallback); }
+  }
+  function save(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* storage unavailable: app still works for this visit */ } }
+  function getCounter() { try { return parseInt(localStorage.getItem(KEY_COUNTER), 10) || 0; } catch (e) { return 0; } }
+  function setCounter(n) { try { localStorage.setItem(KEY_COUNTER, String(n)); } catch (e) {} }
+
+  var settings = load(KEY_SETTINGS, DEFAULT_SETTINGS);
+  var draft = load(KEY_DRAFT, DEFAULT_DRAFT);
+
+  function today() {
+    var d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function nextNumber() {
+    var n = getCounter() + 1;
+    setCounter(n);
+    return settings.prefix + "-" + new Date().getFullYear() + "-" + String(n).padStart(3, "0");
+  }
+  if (!draft.number) draft.number = nextNumber();
+  if (!draft.date) draft.date = today();
+
+  // ---------- Helpers ----------
+  var $ = function (id) { return document.getElementById(id); };
+  function num(v) { var n = parseFloat(v); return isFinite(n) && n > 0 ? n : 0; }
+  function pence(n) { return Math.round(n * 100) / 100; }
+  function money(n) {
+    var whole = Math.abs(n - Math.round(n)) < 0.005;
+    return (n < 0 ? "−" : "") + "£" + Math.abs(n).toLocaleString("en-GB", { minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: 2 });
+  }
+  function qty(n) { return n.toLocaleString("en-GB", { maximumFractionDigits: 2 }); }
+  function longDate(iso) {
+    var d = iso ? new Date(iso + "T12:00:00") : new Date();
+    if (isNaN(d)) d = new Date();
+    return d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  }
+  function addDays(iso, days) {
+    var d = iso ? new Date(iso + "T12:00:00") : new Date();
+    if (isNaN(d)) d = new Date();
+    d.setDate(d.getDate() + days);
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+  // Travel = miles each way × 2 × mileage rate, per visit.
+  function travelLine(miles, visits) {
+    var mi = miles * 2 * visits;
+    return {
+      desc: "Travel",
+      detail: miles + " miles each way, return" + (visits === 1 ? "" : ", " + qty(visits) + " visits") + " (" + qty(mi) + " miles at " + money(settings.mileage) + ")",
+      qty: qty(mi) + " mi", rate: money(settings.mileage), amount: pence(mi * settings.mileage)
+    };
+  }
+
+  // ---------- The pricing formulae ----------
+  function calculate(d) {
+    var miles = num(d.miles), sections = [];
+
+    if (d.service === "cpd") {
+      // Session fee + Customisation + Travel − Discount = Quote
+      var both = d.cpdSession === "both";
+      var fee = num(both ? settings.cpdBoth : settings.cpdOne);
+      var lines = [{
+        desc: both ? "CPD: both workshops on one day" : "CPD: one 90-minute workshop",
+        detail: [d.cpdTitle.trim(), "Flat fee for up to around 100 staff"].filter(Boolean).join(" · "),
+        qty: "1", rate: money(fee), amount: fee
+      }];
+      var hours = num(d.cpdCustomHours);
+      if (hours) lines.push({ desc: "Customisation", detail: "Extra tailoring to the school's context", qty: qty(hours) + " h", rate: money(settings.customRate), amount: pence(hours * settings.customRate) });
+      if (miles) lines.push(travelLine(miles, 1));
+      var pct = Math.min(num(d.cpdPilotPct), 100);
+      if (d.cpdPilot && pct) lines.push({ desc: "Pilot school discount", detail: qty(pct) + "% off the session fee, in return for an evaluation", qty: qty(pct) + "%", rate: money(fee), amount: -pence(fee * pct / 100), neg: true });
+      sections.push({ title: "CPD workshops", lines: lines });
+    } else {
+      if (d.s1) sections.push({
+        stage: 1, title: "Initial consultation",
+        note: "45–60 minutes, online, to understand the school's needs.",
+        lines: [{ desc: "Initial consultation", detail: "Online, 45–60 minutes", qty: "1", rate: "Free", amount: 0 }]
+      });
+      if (d.s2) {
+        var bc = [{ desc: "Business case", detail: "SWOT analysis and costed project plan", qty: "1", rate: money(settings.businessCase), amount: num(settings.businessCase) }];
+        var v2 = num(d.s2Visits);
+        if (miles && v2) bc.push(travelLine(miles, v2));
+        sections.push({ stage: 2, title: "Business case", note: "Credited against the project if the school goes ahead.", lines: bc, showSubtotal: true });
+      }
+      if (d.s3) {
+        var days = num(d.s3Days);
+        var pr = [{
+          desc: "Project" + (d.s3Title.trim() ? ": " + d.s3Title.trim() : ""),
+          detail: days === 0.5 ? "Half day" : "Days set by the business case",
+          qty: qty(days) + (days === 1 ? " day" : " days"), rate: money(settings.dayRate), amount: pence(days * settings.dayRate)
+        }];
+        var v3 = num(d.s3Visits);
+        if (miles && v3) pr.push(travelLine(miles, v3));
+        if (d.s3Credit && num(settings.businessCase)) pr.push({ desc: "Business case credit", detail: "Business case fee credited against the project", qty: "", rate: "", amount: -num(settings.businessCase), neg: true });
+        sections.push({ stage: 3, title: "Project", note: "Charged if the school goes ahead.", lines: pr, showSubtotal: true });
+      }
+    }
+
+    var subtotal = 0;
+    sections.forEach(function (s) {
+      s.subtotal = pence(s.lines.reduce(function (a, l) { return a + l.amount; }, 0));
+      subtotal += s.subtotal;
+    });
+    subtotal = pence(subtotal);
+    var vat = settings.vat ? pence(subtotal * num(settings.vatRate) / 100) : 0;
+    return { sections: sections, subtotal: subtotal, vat: vat, total: pence(subtotal + vat) };
+  }
+
+  // ---------- Rendering ----------
+  function serviceName(d) { return d.service === "cpd" ? "CPD workshops" : "Consultancy"; }
+
+  function render() {
+    var d = draft, q = calculate(d);
+    document.querySelectorAll("#ui-brand, #q-brand").forEach(function (n) { n.textContent = settings.name; });
+    $("q-logo").hidden = !settings.logo;
+    if (settings.logo) $("q-logo").src = settings.logo;
+    $("q-brand").hidden = !!settings.logo;
+    $("q-service").textContent = serviceName(d);
+    $("q-number").textContent = d.number;
+    $("q-date").textContent = longDate(d.date);
+    $("q-valid").textContent = longDate(addDays(d.date, num(settings.validDays) || 30));
+
+    $("q-school").textContent = d.school.trim() || "School name";
+    $("q-contact").textContent = [d.contact.trim(), d.contactEmail.trim()].filter(Boolean).join(" · ");
+    $("q-address").textContent = d.address.trim();
+    $("q-from").textContent = settings.name;
+    $("q-from-email").textContent = settings.email;
+    $("q-from-web").textContent = settings.web;
+    $("q-from-address").textContent = settings.address.trim();
+
+    var wrap = $("q-sections");
+    wrap.textContent = "";
+    if (!q.sections.length) wrap.appendChild(el("p", "snote", "Tick at least one stage to build the quote."));
+    q.sections.forEach(function (s) {
+      var sec = el("section", "q-section");
+      var h = el("h3");
+      if (s.stage) { h.appendChild(el("span", "num", String(s.stage))); h.appendChild(document.createTextNode("Stage " + s.stage + ": " + s.title)); }
+      else h.textContent = s.title;
+      sec.appendChild(h);
+      if (s.note) sec.appendChild(el("p", "snote", s.note));
+      var box = el("div", "lines"), t = el("table"), thead = el("thead"), hr = el("tr");
+      [["Description", ""], ["Qty", "n hide-sm"], ["Rate", "n hide-sm"], ["Amount", "n"]].forEach(function (c) { hr.appendChild(el("th", c[1], c[0])); });
+      thead.appendChild(hr); t.appendChild(thead);
+      var tb = el("tbody");
+      s.lines.forEach(function (l) {
+        var tr = el("tr"), td = el("td");
+        td.appendChild(el("div", null, l.desc));
+        if (l.detail) td.appendChild(el("div", "detail", l.detail));
+        tr.appendChild(td);
+        tr.appendChild(el("td", "n hide-sm", l.qty));
+        tr.appendChild(el("td", "n hide-sm", l.rate));
+        tr.appendChild(el("td", "n" + (l.neg ? " neg" : ""), l.rate === "Free" ? "Free" : money(l.amount)));
+        tb.appendChild(tr);
+      });
+      if (s.showSubtotal && q.sections.length > 1) {
+        var sr = el("tr", "sub");
+        var c = el("td", null, "Stage " + s.stage + " total"); c.colSpan = 3; c.className = "";
+        sr.appendChild(c);
+        sr.appendChild(el("td", "n", money(s.subtotal)));
+        tb.appendChild(sr);
+      }
+      t.appendChild(tb); box.appendChild(t); sec.appendChild(box);
+      wrap.appendChild(sec);
+    });
+    // Subtotal row spans: on phones the Qty/Rate columns are hidden, so shrink the span to match.
+    var small = window.matchMedia("(max-width: 600px)").matches && !window.matchMedia("print").matches;
+    wrap.querySelectorAll("tr.sub td:first-child").forEach(function (c) { c.colSpan = small ? 1 : 3; });
+
+    var tot = $("q-totals");
+    tot.textContent = "";
+    function row(label, val, cls) { var r = el("div", cls); r.appendChild(el("span", null, label)); r.appendChild(el("span", null, val)); tot.appendChild(r); }
+    if (settings.vat) {
+      row("Subtotal", money(q.subtotal));
+      row("VAT (" + qty(num(settings.vatRate)) + "%)", money(q.vat));
+    }
+    row(d.service === "consultancy" && q.sections.filter(function (s) { return s.subtotal; }).length > 1 ? "Total, all stages" : "Total", money(q.total), "grand");
+
+    $("q-notes").hidden = !d.notes.trim();
+    $("q-notes").textContent = d.notes.trim();
+    var terms = $("q-terms");
+    terms.textContent = "";
+    terms.appendChild(el("strong", null, "Terms. "));
+    terms.appendChild(document.createTextNode("This quote is valid until " + longDate(addDays(d.date, num(settings.validDays) || 30)) + ". " + settings.terms.trim()));
+
+    $("q-tagline").textContent = settings.tagline;
+    $("q-foot-contact").textContent = [settings.email, settings.web].filter(Boolean).join(" · ");
+
+    $("cpd-card").hidden = d.service !== "cpd";
+    $("con-card").hidden = d.service !== "consultancy";
+    $("pilot-pct-wrap").hidden = !d.cpdPilot;
+    var logoThumb = $("logo-thumb");
+    logoThumb.hidden = $("logo-clear").hidden = !settings.logo;
+    if (settings.logo) logoThumb.src = settings.logo;
+    return q;
+  }
+
+  // ---------- Form binding ----------
+  function fillForm() {
+    document.querySelectorAll("[data-k]").forEach(function (i) {
+      var v = draft[i.dataset.k];
+      if (i.type === "checkbox") i.checked = !!v; else i.value = v == null ? "" : v;
+    });
+    document.querySelectorAll("[data-s]").forEach(function (i) {
+      var v = settings[i.dataset.s];
+      if (i.type === "checkbox") i.checked = !!v; else i.value = v == null ? "" : v;
+    });
+    document.querySelectorAll("input[name=service]").forEach(function (r) { r.checked = r.value === draft.service; });
+  }
+  function readValue(i) {
+    if (i.type === "checkbox") return i.checked;
+    if (i.type === "number") return i.value === "" ? 0 : parseFloat(i.value) || 0;
+    return i.value;
+  }
+  $("form").addEventListener("input", function (e) {
+    var i = e.target;
+    if (i.name === "service") draft.service = i.value;
+    else if (i.dataset.k) draft[i.dataset.k] = readValue(i);
+    else if (i.dataset.s) { settings[i.dataset.s] = readValue(i); save(KEY_SETTINGS, settings); }
+    else return;
+    save(KEY_DRAFT, draft);
+    render();
+  });
+
+  $("logo-file").addEventListener("change", function (e) {
+    var f = e.target.files && e.target.files[0];
+    if (!f) return;
+    var r = new FileReader();
+    r.onload = function () {
+      // Shrink large logos so they fit in browser storage.
+      var img = new Image();
+      img.onload = function () {
+        var scale = Math.min(1, 400 / img.width, 160 / img.height);
+        var c = document.createElement("canvas");
+        c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        settings.logo = c.toDataURL("image/png");
+        save(KEY_SETTINGS, settings);
+        render();
+      };
+      img.src = r.result;
+    };
+    r.readAsDataURL(f);
+  });
+  $("logo-clear").addEventListener("click", function () { settings.logo = ""; $("logo-file").value = ""; save(KEY_SETTINGS, settings); render(); });
+
+  $("btn-reset-prices").addEventListener("click", function () {
+    ["dayRate", "mileage", "cpdOne", "cpdBoth", "customRate", "businessCase"].forEach(function (k) { settings[k] = DEFAULT_SETTINGS[k]; });
+    save(KEY_SETTINGS, settings); fillForm(); render(); toast("Standard prices restored.");
+  });
+
+  var toastTimer;
+  function toast(msg) { $("toast").textContent = msg; clearTimeout(toastTimer); toastTimer = setTimeout(function () { $("toast").textContent = ""; }, 3500); }
+
+  $("btn-pdf").addEventListener("click", function () {
+    // The document title becomes the suggested PDF file name.
+    var old = document.title;
+    document.title = [settings.name, "quote", draft.number, draft.school.trim()].filter(Boolean).join(" ");
+    window.print();
+    setTimeout(function () { document.title = old; }, 1000);
+  });
+
+  function emailText() {
+    var q = calculate(draft);
+    var lines = [];
+    lines.push("Dear " + (draft.contact.trim() || "colleague") + ",", "");
+    lines.push("Thank you for your interest in " + settings.name + ". Please find attached quote " + draft.number + " for " + serviceName(draft).toLowerCase() + (draft.school.trim() ? " at " + draft.school.trim() : "") + ".", "");
+    q.sections.forEach(function (s) {
+      if (s.stage) lines.push("Stage " + s.stage + ": " + s.title + (s.subtotal ? " – " + money(s.subtotal) : " – free"));
+      else s.lines.forEach(function (l) { lines.push(l.desc + " – " + money(l.amount)); });
+    });
+    if (settings.vat) lines.push("VAT – " + money(q.vat));
+    lines.push("Total – " + money(q.total), "");
+    if (draft.notes.trim()) lines.push(draft.notes.trim(), "");
+    lines.push("The quote is valid until " + longDate(addDays(draft.date, num(settings.validDays) || 30)) + ". Please get in touch if you have any questions.", "");
+    lines.push("Kind regards,", settings.name, [settings.email, settings.web].filter(Boolean).join(" · "));
+    return lines.join("\n");
+  }
+  $("btn-email").addEventListener("click", function () {
+    var text = emailText();
+    var done = function () { toast("Email text copied. Paste it into your email and attach the PDF."); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
+    function fallback() {
+      var ta = document.createElement("textarea");
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); done(); } catch (e) { toast("Could not copy. Your browser blocked the clipboard."); }
+      ta.remove();
+    }
+  });
+
+  $("btn-new").addEventListener("click", function () {
+    if (!confirm("Start a new quote? The client details on this one will be cleared.")) return;
+    draft = Object.assign({}, DEFAULT_DRAFT, { service: draft.service, number: nextNumber(), date: today() });
+    save(KEY_DRAFT, draft); fillForm(); render(); toast("New quote " + draft.number + " started.");
+  });
+
+  window.addEventListener("resize", render);
+  fillForm();
+  render();
+  // Exposed for checking the formulae from the console.
+  window.cognalignQuote = { calculate: calculate };
+})();
+</script>
+</body>
+</html>
