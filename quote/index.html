@@ -229,7 +229,8 @@ body.printing .q-section, body.printing .party, body.printing .q-note, body.prin
     </section>
 
     <div class="actions">
-      <button type="button" class="primary" id="btn-pdf">Save as PDF / Print</button>
+      <button type="button" class="primary" id="btn-pdf">Save PDF</button>
+      <button type="button" class="ghost" id="btn-print">Print</button>
       <button type="button" class="secondary" id="btn-email">Copy email text</button>
       <button type="button" class="ghost" id="btn-new">Start a new quote</button>
       <p class="toast" id="toast" aria-live="polite"></p>
@@ -622,11 +623,100 @@ body.printing .q-section, body.printing .party, body.printing .q-note, body.prin
   window.addEventListener("beforeprint", fitToPage);
   window.addEventListener("afterprint", unfit);
 
+  function fileName() {
+    return [settings.name, "quote", draft.number, draft.school.trim()].filter(Boolean).join(" ").replace(/[\\/:*?"<>|]+/g, "-");
+  }
+
+  // Printing doesn't work in an app added to the home screen, so "Save PDF" builds the PDF file
+  // itself: html2canvas draws the sheet, jsPDF puts it on an A4 page. Libraries load on first use.
+  var standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  var preferShare = standalone || window.matchMedia("(pointer: coarse)").matches;
+  $("btn-print").hidden = standalone;
+
+  function loadScript(src) {
+    return new Promise(function (resolve, reject) {
+      var s = document.createElement("script");
+      s.src = src; s.onload = resolve;
+      s.onerror = function () { reject(new Error("could not load " + src)); };
+      document.head.appendChild(s);
+    });
+  }
+  var libs = null;
+  function loadLibs() {
+    if (!libs) libs = Promise.all([loadScript("lib/html2canvas.min.js"), loadScript("lib/jspdf.umd.min.js")])
+      .catch(function (e) { libs = null; throw e; });
+    return libs;
+  }
+
+  var A4_W = 794, A4_H = 1123; // A4 in CSS pixels
+  function makePdf() {
+    return loadLibs().then(function () {
+      return document.fonts ? document.fonts.ready : null;
+    }).then(function () {
+      return window.html2canvas($("sheet"), {
+        scale: 2, windowWidth: 1400, backgroundColor: "#f4f4f8", logging: false,
+        onclone: function (doc) {
+          // Lay the copy out as a desktop-width A4 page in the print styles, whatever screen this is.
+          doc.body.classList.add("printing");
+          var s = doc.getElementById("sheet");
+          s.style.cssText = "width:" + A4_W + "px;min-height:" + A4_H + "px;max-width:none;box-shadow:none;border-radius:0;zoom:1";
+        }
+      });
+    }).then(function (canvas) {
+      var pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+      var pw = 210, ph = 297, w = pw, h = canvas.height * pw / canvas.width;
+      if (h > ph) { w = w * ph / h; h = ph; pdf.setFillColor(244, 244, 248); pdf.rect(0, 0, pw, ph, "F"); } // shrink a long quote onto one page
+      pdf.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", (pw - w) / 2, 0, w, h);
+      pdf.setProperties({ title: fileName() });
+      return new File([pdf.output("blob")], fileName() + ".pdf", { type: "application/pdf" });
+    });
+  }
+
+  function download(file) {
+    var url = URL.createObjectURL(file), a = document.createElement("a");
+    a.href = url; a.download = file.name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+    toast("PDF saved to your downloads.");
+  }
+
+  // On phones and tablets, open the share sheet (Mail, Save to Files and so on); elsewhere, download.
+  var readyFile = null;
+  function setPdfButton(text) { $("btn-pdf").textContent = text; }
+  function deliver(file) {
+    if (preferShare && navigator.canShare && navigator.canShare({ files: [file] })) {
+      return navigator.share({ files: [file], title: file.name }).catch(function (e) {
+        if (e.name === "AbortError") return;
+        if (e.name === "NotAllowedError") {
+          // Making the PDF took too long for the browser to count it as part of the tap; ask for another.
+          readyFile = file; setPdfButton("PDF ready: tap to send or save"); return;
+        }
+        download(file);
+      });
+    }
+    download(file);
+  }
+  var busy = false;
   $("btn-pdf").addEventListener("click", function () {
+    if (readyFile) { var f = readyFile; readyFile = null; setPdfButton("Save PDF"); deliver(f); return; }
+    if (busy) return;
+    busy = true;
+    setPdfButton("Making PDF…");
+    makePdf().then(deliver).catch(function (e) {
+      toast("Could not make the PDF (" + e.message + "). Check your connection and try again.");
+    }).then(function () {
+      busy = false;
+      if (!readyFile) setPdfButton("Save PDF");
+    });
+  });
+  $("form").addEventListener("input", function () { if (readyFile) { readyFile = null; setPdfButton("Save PDF"); } });
+  window.addEventListener("load", function () { setTimeout(function () { loadLibs().catch(function () {}); }, 1500); });
+
+  $("btn-print").addEventListener("click", function () {
     fitToPage();
     // The document title becomes the suggested PDF file name.
     var old = document.title;
-    document.title = [settings.name, "quote", draft.number, draft.school.trim()].filter(Boolean).join(" ");
+    document.title = fileName();
     window.print();
     setTimeout(function () { document.title = old; }, 1000);
   });
