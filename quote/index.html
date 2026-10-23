@@ -107,6 +107,15 @@ tr.sub td { font-weight: 700; }
 .totals .grand { background: var(--navy); color: var(--white); border-radius: 12px; padding: 12px 16px; font-size: 18px; font-weight: 800; margin-top: 4px; }
 .totals .grand span:first-child { font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; align-self: center; }
 .q-note { background: var(--box); border-radius: 14px; padding: 14px 18px; font-size: 13.5px; white-space: pre-line; }
+/* Invoice payment box: filled from the payment details in settings, or left as lines to write on. */
+.pay { background: var(--white); border-radius: 14px; padding: 16px 18px; border-left: 6px solid var(--purple); }
+.pay .lbl { color: var(--purple); font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 8px; }
+.pay dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; margin: 0; font-size: 14px; }
+.pay dt { color: var(--muted); }
+.pay dd { margin: 0; font-weight: 600; min-height: 1.45em; }
+.pay dd.blank { border-bottom: 1px solid var(--line); }
+.pay .other { white-space: pre-line; font-size: 13px; color: var(--muted); margin-top: 10px; }
+.pay .other.blank { min-height: 44px; border-bottom: 1px solid var(--line); }
 .q-note strong { color: var(--navy); }
 .q-foot { background: var(--navy); color: var(--white); padding: 18px 44px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 13px; }
 .q-foot .tag { font-weight: 700; }
@@ -141,10 +150,12 @@ body.printing .q-section { gap: 6px; }
 body.printing .q-section h3 { font-size: 18px; }
 body.printing .q-section h3 .num { width: 26px; height: 26px; font-size: 13px; }
 body.printing .party { padding: 12px 16px; }
+body.printing .pay { padding: 12px 16px; }
+body.printing .pay dl { font-size: 13px; gap: 4px 18px; }
 body.printing th { padding: 6px 6px 4px; }
 body.printing td { padding: 5px 6px; }
 body.printing .q-foot { padding: 14px 36px; }
-body.printing .q-section, body.printing .party, body.printing .q-note, body.printing .totals { break-inside: avoid; }
+body.printing .q-section, body.printing .party, body.printing .q-note, body.printing .totals, body.printing .pay { break-inside: avoid; }
 
 @media print {
   @page { size: A4; margin: 0; }
@@ -162,8 +173,17 @@ body.printing .q-section, body.printing .party, body.printing .q-note, body.prin
   <form class="panel" id="form" autocomplete="off" onsubmit="return false">
     <div class="brandbar">
       <div class="eyebrow" id="ui-brand">Cognalign</div>
-      <h1>Quote builder</h1>
+      <h1>Quotes and invoices</h1>
     </div>
+
+    <section class="card">
+      <h2>Document</h2>
+      <div class="seg" role="radiogroup" aria-label="Document">
+        <input type="radio" name="doc" id="doc-quote" value="quote" checked><label for="doc-quote">Quote</label>
+        <input type="radio" name="doc" id="doc-inv" value="invoice"><label for="doc-inv">Invoice</label>
+      </div>
+      <p class="hint" id="doc-hint">Switch to Invoice to bill for the same work: the client and prices carry over.</p>
+    </section>
 
     <section class="card">
       <h2>Service</h2>
@@ -219,12 +239,26 @@ body.printing .q-section, body.printing .party, body.printing .q-note, body.prin
       </div>
     </section>
 
-    <section class="card">
+    <section class="card" id="quote-details">
       <h2>Quote details</h2>
       <div class="row">
         <label>Quote number<input data-k="number"></label>
         <label>Date<input data-k="date" type="date"></label>
       </div>
+    </section>
+
+    <section class="card" id="invoice-details" hidden>
+      <h2>Invoice details</h2>
+      <div class="row">
+        <label>Invoice number<input data-k="invNumber"></label>
+        <label>Invoice date<input data-k="invDate" type="date"></label>
+        <label>Quote reference <span style="font-weight:400">(optional)</span><input data-k="invQuoteRef" id="inv-quote-ref"></label>
+        <label>School's order (PO) number <span style="font-weight:400">(optional)</span><input data-k="invPO"></label>
+      </div>
+      <p class="hint">For consultancy, tick only the stage(s) you are billing for.</p>
+    </section>
+
+    <section class="card">
       <label>Notes for the client <span style="font-weight:400">(optional)</span><textarea data-k="notes" rows="3" placeholder="e.g. Proposed date: Tuesday 3 March, after school."></textarea></label>
     </section>
 
@@ -233,6 +267,7 @@ body.printing .q-section, body.printing .party, body.printing .q-note, body.prin
       <button type="button" class="ghost" id="btn-print">Print</button>
       <button type="button" class="secondary" id="btn-email">Copy email text</button>
       <button type="button" class="ghost" id="btn-new">Start a new quote</button>
+      <p class="hint" style="margin:0;text-align:center">Starting a new one clears the client details.</p>
       <p class="toast" id="toast" aria-live="polite"></p>
     </div>
 
@@ -269,7 +304,20 @@ body.printing .q-section, body.printing .party, body.printing .q-note, body.prin
       </div>
       <label class="check"><input type="checkbox" data-s="vat">Add VAT</label>
       <label>VAT rate (%)<input data-s="vatRate" type="number" min="0" step="0.5"></label>
-      <label>Payment terms<textarea data-s="terms" rows="3"></textarea></label>
+      <label>Quote terms<textarea data-s="terms" rows="3"></textarea></label>
+
+      <h3>Invoices and payment details</h3>
+      <p class="hint" style="margin:0">Shown in the "How to pay" box on invoices. Anything left blank prints as a line you can write on.</p>
+      <div class="row">
+        <label>Invoice number prefix<input data-s="invPrefix"></label>
+        <label>Payment due within (days)<input data-s="payDays" type="number" min="0" step="1"></label>
+        <label>Account name<input data-s="payName"></label>
+        <label>Bank<input data-s="payBank"></label>
+        <label>Sort code<input data-s="paySort" inputmode="numeric" placeholder="00-00-00"></label>
+        <label>Account number<input data-s="payAccount" inputmode="numeric"></label>
+      </div>
+      <label>Other details <span style="font-weight:400">(e.g. IBAN, company or VAT number, who to contact about payment)</span><textarea data-s="payOther" rows="3"></textarea></label>
+      <label>Invoice terms<textarea data-s="invoiceTerms" rows="2"></textarea></label>
       <button type="button" class="ghost" id="btn-reset-prices">Restore the standard prices</button>
     </details>
   </form>
@@ -280,22 +328,25 @@ body.printing .q-section, body.printing .party, body.printing .q-note, body.prin
         <div>
           <img class="logo" id="q-logo" alt="" hidden>
           <div class="eyebrow" id="q-brand"></div>
-          <h2>Quote</h2>
+          <h2 id="q-title">Quote</h2>
           <div class="sub" id="q-service"></div>
         </div>
         <dl class="q-meta">
-          <dt>Quote no.</dt><dd id="q-number"></dd>
+          <dt id="q-number-lbl">Quote no.</dt><dd id="q-number"></dd>
           <dt>Date</dt><dd id="q-date"></dd>
-          <dt>Valid until</dt><dd id="q-valid"></dd>
+          <dt id="q-valid-lbl">Valid until</dt><dd id="q-valid"></dd>
+          <dt id="q-ref-lbl">Quote ref.</dt><dd id="q-ref"></dd>
+          <dt id="q-po-lbl">PO no.</dt><dd id="q-po"></dd>
         </dl>
       </header>
       <div class="q-body">
         <div class="parties">
-          <div class="party"><div class="lbl">Prepared for</div><strong id="q-school"></strong><div id="q-contact"></div><div class="addr" id="q-address"></div></div>
+          <div class="party"><div class="lbl" id="q-for-lbl">Prepared for</div><strong id="q-school"></strong><div id="q-contact"></div><div class="addr" id="q-address"></div></div>
           <div class="party"><div class="lbl">From</div><strong id="q-from"></strong><div id="q-from-email"></div><div id="q-from-web"></div><div class="addr" id="q-from-address"></div></div>
         </div>
         <div id="q-sections" style="display:grid;gap:22px"></div>
         <div class="totals" id="q-totals"></div>
+        <div class="pay" id="q-pay" hidden></div>
         <div class="q-note" id="q-notes" hidden></div>
         <div class="q-note" id="q-terms"></div>
       </div>
@@ -329,28 +380,34 @@ body.printing .q-section, body.printing .party, body.printing .q-note, body.prin
     prefix: "CA",
     vat: false,
     vatRate: 20,
-    terms: "Payment is due within 30 days of the invoice date. Travel is charged at the mileage rate for each return journey."
+    terms: "Payment is due within 30 days of the invoice date. Travel is charged at the mileage rate for each return journey.",
+    invPrefix: "INV",
+    payDays: 30,
+    payName: "", payBank: "", paySort: "", payAccount: "", payOther: "",
+    invoiceTerms: "Please pay by bank transfer, quoting the invoice number as the payment reference."
   };
   var DEFAULT_DRAFT = {
     service: "cpd",
     school: "", contact: "", contactEmail: "", address: "", miles: 0,
     cpdSession: "one", cpdTitle: "", cpdCustomHours: 0, cpdPilot: false, cpdPilotPct: 30,
     s1: true, s2: true, s2Visits: 1, s3: true, s3Title: "", s3Days: 4, s3Visits: 3, s3Credit: true,
-    number: "", date: "", notes: ""
+    number: "", date: "", notes: "",
+    doc: "quote", invNumber: "", invDate: "", invQuoteRef: "", invPO: ""
   };
   // The CognAlign logo, recoloured for the dark header. An uploaded logo replaces it.
   var DEFAULT_LOGO = "logo-header.png";
   var KEY_SETTINGS = "cognalign-quote-settings";
   var KEY_DRAFT = "cognalign-quote-draft";
   var KEY_COUNTER = "cognalign-quote-counter";
+  var KEY_INV_COUNTER = "cognalign-invoice-counter";
 
   function load(key, fallback) {
     try { var v = JSON.parse(localStorage.getItem(key)); return v && typeof v === "object" ? Object.assign({}, fallback, v) : Object.assign({}, fallback); }
     catch (e) { return Object.assign({}, fallback); }
   }
   function save(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* storage unavailable: app still works for this visit */ } }
-  function getCounter() { try { return parseInt(localStorage.getItem(KEY_COUNTER), 10) || 0; } catch (e) { return 0; } }
-  function setCounter(n) { try { localStorage.setItem(KEY_COUNTER, String(n)); } catch (e) {} }
+  function getCounter(key) { try { return parseInt(localStorage.getItem(key), 10) || 0; } catch (e) { return 0; } }
+  function setCounter(key, n) { try { localStorage.setItem(key, String(n)); } catch (e) {} }
 
   var settings = load(KEY_SETTINGS, DEFAULT_SETTINGS);
   var draft = load(KEY_DRAFT, DEFAULT_DRAFT);
@@ -359,13 +416,27 @@ body.printing .q-section, body.printing .party, body.printing .q-note, body.prin
     var d = new Date();
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   }
-  function nextNumber() {
-    var n = getCounter() + 1;
-    setCounter(n);
-    return settings.prefix + "-" + new Date().getFullYear() + "-" + String(n).padStart(3, "0");
+  function nextNumber(invoice) {
+    var key = invoice ? KEY_INV_COUNTER : KEY_COUNTER, n = getCounter(key) + 1;
+    setCounter(key, n);
+    return (invoice ? settings.invPrefix : settings.prefix) + "-" + new Date().getFullYear() + "-" + String(n).padStart(3, "0");
   }
-  if (!draft.number) draft.number = nextNumber();
-  if (!draft.date) draft.date = today();
+  // Numbers are only used up when that kind of document is opened, so quotes and invoices count separately.
+  function ensureNumbers() {
+    if (draft.doc === "invoice") {
+      if (!draft.invNumber) draft.invNumber = nextNumber(true);
+      if (!draft.invDate) draft.invDate = today();
+    } else {
+      if (!draft.number) draft.number = nextNumber(false);
+      if (!draft.date) draft.date = today();
+    }
+  }
+  ensureNumbers();
+  function isInvoice() { return draft.doc === "invoice"; }
+  function docWord() { return isInvoice() ? "invoice" : "quote"; }
+  function docNumber() { return isInvoice() ? draft.invNumber : draft.number; }
+  function docDate() { return isInvoice() ? draft.invDate : draft.date; }
+  function dueDate() { return isInvoice() ? addDays(draft.invDate, num(settings.payDays)) : addDays(draft.date, num(settings.validDays) || 30); }
 
   // ---------- Helpers ----------
   var $ = function (id) { return document.getElementById(id); };
@@ -433,7 +504,7 @@ body.printing .q-section, body.printing .party, body.printing .q-note, body.prin
         var bc = [{ desc: "Business case", detail: "SWOT analysis and costed project plan", qty: "1", rate: money(settings.businessCase), amount: num(settings.businessCase) }];
         var v2 = num(d.s2Visits);
         if (miles && v2) bc.push(travelLine(miles, v2));
-        sections.push({ stage: 2, title: "Business case", note: "Credited against the project if the school goes ahead.", lines: bc, showSubtotal: true });
+        sections.push({ stage: 2, title: "Business case", note: d.doc === "invoice" ? "" : "Credited against the project if the school goes ahead.", lines: bc, showSubtotal: true });
       }
       if (d.s3) {
         var days = num(d.s3Days);
@@ -445,7 +516,7 @@ body.printing .q-section, body.printing .party, body.printing .q-note, body.prin
         var v3 = num(d.s3Visits);
         if (miles && v3) pr.push(travelLine(miles, v3));
         if (d.s3Credit && num(settings.businessCase)) pr.push({ desc: "Business case credit", detail: "Business case fee credited against the project", qty: "", rate: "", amount: -num(settings.businessCase), neg: true });
-        sections.push({ stage: 3, title: "Project", note: "Charged if the school goes ahead.", lines: pr, showSubtotal: true });
+        sections.push({ stage: 3, title: "Project", note: d.doc === "invoice" ? "" : "Charged if the school goes ahead.", lines: pr, showSubtotal: true });
       }
     }
 
@@ -470,10 +541,20 @@ body.printing .q-section, body.printing .party, body.printing .q-note, body.prin
     if (logo && $("q-logo").getAttribute("src") !== logo) $("q-logo").src = logo;
     $("q-logo").alt = settings.name;
     $("q-brand").hidden = !!logo;
+    var inv = isInvoice();
+    $("q-title").textContent = inv ? "Invoice" : "Quote";
+    $("sheet").setAttribute("aria-label", inv ? "Invoice preview" : "Quote preview");
     $("q-service").textContent = serviceName(d);
-    $("q-number").textContent = d.number;
-    $("q-date").textContent = longDate(d.date);
-    $("q-valid").textContent = longDate(addDays(d.date, num(settings.validDays) || 30));
+    $("q-number-lbl").textContent = inv ? "Invoice no." : "Quote no.";
+    $("q-number").textContent = docNumber();
+    $("q-date").textContent = longDate(docDate());
+    $("q-valid-lbl").textContent = inv ? "Payment due" : "Valid until";
+    $("q-valid").textContent = longDate(dueDate());
+    [["q-ref", inv && d.invQuoteRef.trim()], ["q-po", inv && d.invPO.trim()]].forEach(function (m) {
+      $(m[0]).textContent = m[1] || "";
+      $(m[0]).hidden = $(m[0] + "-lbl").hidden = !m[1];
+    });
+    $("q-for-lbl").textContent = inv ? "Bill to" : "Prepared for";
 
     $("q-school").textContent = d.school.trim() || "School name";
     $("q-contact").textContent = [d.contact.trim(), d.contactEmail.trim()].filter(Boolean).join(" · ");
@@ -485,7 +566,7 @@ body.printing .q-section, body.printing .party, body.printing .q-note, body.prin
 
     var wrap = $("q-sections");
     wrap.textContent = "";
-    if (!q.sections.length) wrap.appendChild(el("p", "snote", "Tick at least one stage to build the quote."));
+    if (!q.sections.length) wrap.appendChild(el("p", "snote", "Tick at least one stage to build the " + docWord() + "."));
     q.sections.forEach(function (s) {
       var sec = el("section", "q-section");
       var h = el("h3");
@@ -528,20 +609,42 @@ body.printing .q-section, body.printing .party, body.printing .q-note, body.prin
       row("Subtotal", money(q.subtotal));
       row("VAT (" + qty(num(settings.vatRate)) + "%)", money(q.vat));
     }
-    row(d.service === "consultancy" && q.sections.filter(function (s) { return s.subtotal; }).length > 1 ? "Total, all stages" : "Total", money(q.total), "grand");
+    row(inv ? "Total due" : d.service === "consultancy" && q.sections.filter(function (s) { return s.subtotal; }).length > 1 ? "Total, all stages" : "Total", money(q.total), "grand");
+
+    var pay = $("q-pay");
+    pay.hidden = !inv;
+    pay.textContent = "";
+    if (inv) {
+      pay.appendChild(el("div", "lbl", "How to pay"));
+      var dl = el("dl");
+      [["Account name", settings.payName], ["Bank", settings.payBank], ["Sort code", settings.paySort], ["Account number", settings.payAccount], ["Payment reference", d.invNumber]].forEach(function (f) {
+        var v = String(f[1] || "").trim();
+        dl.appendChild(el("dt", null, f[0]));
+        dl.appendChild(el("dd", v ? null : "blank", v));
+      });
+      pay.appendChild(dl);
+      var other = settings.payOther.trim();
+      pay.appendChild(el("div", "other" + (other ? "" : " blank"), other));
+    }
 
     $("q-notes").hidden = !d.notes.trim();
     $("q-notes").textContent = d.notes.trim();
     var terms = $("q-terms");
     terms.textContent = "";
     terms.appendChild(el("strong", null, "Terms. "));
-    terms.appendChild(document.createTextNode("This quote is valid until " + longDate(addDays(d.date, num(settings.validDays) || 30)) + ". " + settings.terms.trim()));
+    terms.appendChild(document.createTextNode(inv
+      ? "Payment is due by " + longDate(dueDate()) + ". " + settings.invoiceTerms.trim()
+      : "This quote is valid until " + longDate(dueDate()) + ". " + settings.terms.trim()));
 
     $("q-tagline").textContent = settings.tagline;
     $("q-foot-contact").textContent = [settings.email, settings.web].filter(Boolean).join(" · ");
 
     $("cpd-card").hidden = d.service !== "cpd";
     $("con-card").hidden = d.service !== "consultancy";
+    $("quote-details").hidden = inv;
+    $("invoice-details").hidden = !inv;
+    $("btn-new").textContent = "Start a new " + docWord();
+    $("inv-quote-ref").placeholder = d.number ? "e.g. " + d.number : "";
     $("pilot-pct-wrap").hidden = !d.cpdPilot;
     var logoThumb = $("logo-thumb");
     logoThumb.hidden = $("logo-clear").hidden = !settings.logo;
@@ -560,6 +663,7 @@ body.printing .q-section, body.printing .party, body.printing .q-note, body.prin
       if (i.type === "checkbox") i.checked = !!v; else i.value = v == null ? "" : v;
     });
     document.querySelectorAll("input[name=service]").forEach(function (r) { r.checked = r.value === draft.service; });
+    document.querySelectorAll("input[name=doc]").forEach(function (r) { r.checked = r.value === draft.doc; });
   }
   function readValue(i) {
     if (i.type === "checkbox") return i.checked;
@@ -569,6 +673,7 @@ body.printing .q-section, body.printing .party, body.printing .q-note, body.prin
   $("form").addEventListener("input", function (e) {
     var i = e.target;
     if (i.name === "service") draft.service = i.value;
+    else if (i.name === "doc") { draft.doc = i.value; ensureNumbers(); fillForm(); }
     else if (i.dataset.k) draft[i.dataset.k] = readValue(i);
     else if (i.dataset.s) { settings[i.dataset.s] = readValue(i); save(KEY_SETTINGS, settings); }
     else return;
@@ -624,7 +729,7 @@ body.printing .q-section, body.printing .party, body.printing .q-note, body.prin
   window.addEventListener("afterprint", unfit);
 
   function fileName() {
-    return [settings.name, "quote", draft.number, draft.school.trim()].filter(Boolean).join(" ").replace(/[\\/:*?"<>|]+/g, "-");
+    return [settings.name, docWord(), docNumber(), draft.school.trim()].filter(Boolean).join(" ").replace(/[\\/:*?"<>|]+/g, "-");
   }
 
   // Printing doesn't work in an app added to the home screen, so "Save PDF" builds the PDF file
@@ -725,15 +830,18 @@ body.printing .q-section, body.printing .party, body.printing .q-note, body.prin
     var q = calculate(draft);
     var lines = [];
     lines.push("Dear " + (draft.contact.trim() || "colleague") + ",", "");
-    lines.push("Thank you for your interest in " + settings.name + ". Please find attached quote " + draft.number + " for " + serviceName(draft).toLowerCase() + (draft.school.trim() ? " at " + draft.school.trim() : "") + ".", "");
+    var what = (draft.service === "cpd" ? "CPD workshops" : "consultancy") + (draft.school.trim() ? " at " + draft.school.trim() : "");
+    if (isInvoice()) lines.push("Please find attached invoice " + draft.invNumber + " for " + what + (draft.invPO.trim() ? " (your order number " + draft.invPO.trim() + ")" : "") + ".", "");
+    else lines.push("Thank you for your interest in " + settings.name + ". Please find attached quote " + draft.number + " for " + what + ".", "");
     q.sections.forEach(function (s) {
       if (s.stage) lines.push("Stage " + s.stage + ": " + s.title + (s.subtotal ? " – " + money(s.subtotal) : " – free"));
       else s.lines.forEach(function (l) { lines.push(l.desc + " – " + money(l.amount)); });
     });
     if (settings.vat) lines.push("VAT – " + money(q.vat));
-    lines.push("Total – " + money(q.total), "");
+    lines.push((isInvoice() ? "Total due – " : "Total – ") + money(q.total), "");
     if (draft.notes.trim()) lines.push(draft.notes.trim(), "");
-    lines.push("The quote is valid until " + longDate(addDays(draft.date, num(settings.validDays) || 30)) + ". Please get in touch if you have any questions.", "");
+    if (isInvoice()) lines.push("Payment is due by " + longDate(dueDate()) + ". Payment details are on the invoice; please quote " + draft.invNumber + " as the reference. Thank you.", "");
+    else lines.push("The quote is valid until " + longDate(dueDate()) + ". Please get in touch if you have any questions.", "");
     lines.push("Kind regards,", settings.name, [settings.email, settings.web].filter(Boolean).join(" · "));
     return lines.join("\n");
   }
@@ -750,9 +858,11 @@ body.printing .q-section, body.printing .party, body.printing .q-note, body.prin
   });
 
   $("btn-new").addEventListener("click", function () {
-    if (!confirm("Start a new quote? The client details on this one will be cleared.")) return;
-    draft = Object.assign({}, DEFAULT_DRAFT, { service: draft.service, number: nextNumber(), date: today() });
-    save(KEY_DRAFT, draft); fillForm(); render(); toast("New quote " + draft.number + " started.");
+    var word = docWord();
+    if (!confirm("Start a new " + word + "? The client details on this one will be cleared.")) return;
+    draft = Object.assign({}, DEFAULT_DRAFT, { service: draft.service, doc: draft.doc });
+    ensureNumbers();
+    save(KEY_DRAFT, draft); fillForm(); render(); toast("New " + word + " " + docNumber() + " started.");
   });
 
   window.addEventListener("resize", render);

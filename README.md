@@ -57,4 +57,5 @@ Works out a charge from the Cognalign pricing formulae and produces a branded qu
 - **Consultancy:** Stage 1 consultation (free), Stage 2 business case (£300 + travel), Stage 3 project (days × day rate + travel − business case credit).
 - Travel is the one-way distance × 2 × 45p for each visit.
 - **Save PDF** makes a one-page A4 PDF of the quote. On a computer it downloads; on a phone or tablet it opens the share menu, so you can attach it to an email or save it to Files. This also works when the app is added to the home screen. **Print** is still there on computers. **Copy email text** copies a ready-to-paste covering email.
+- **Invoices:** switch *Document* to **Invoice** to bill for the same work. The client and prices carry over; invoices get their own numbers (INV-2026-001…), a payment due date, optional quote and order (PO) references, and a *How to pay* box. Fill in your bank details under *Branding and prices*; anything left blank prints as a line to write on.
 - Prices, branding, logo, VAT and payment terms can be changed under *Branding and prices*. They are saved in your browser only, as is the current quote.
